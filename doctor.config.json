@@ -1,0 +1,11 @@
+{
+  "ignore": {
+    "files": [
+      "src/routeTree.gen.ts",
+      "tools/oxlint/anti-slop/**",
+      "dist/**",
+      ".tanstack/**",
+      ".wrangler/**"
+    ]
+  }
+}

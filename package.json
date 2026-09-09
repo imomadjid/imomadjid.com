@@ -1,0 +1,63 @@
+{
+  "name": "imomadjidcom",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "vp dev --port 3000",
+    "generate-routes": "tsr generate",
+    "build": "vp build",
+    "preview": "vp preview",
+    "lint": "vp lint",
+    "lint:fix": "bun run lint --fix",
+    "format": "vp fmt --write",
+    "format:check": "vp fmt --check",
+    "typecheck": "bun run generate-routes && tsc --noEmit",
+    "check": "bun run generate-routes && vp check && tsc --noEmit",
+    "doctor": "react-doctor --yes --no-telemetry --no-supply-chain --blocking error",
+    "doctor:staged": "react-doctor --staged --yes --no-telemetry --no-supply-chain --blocking warning",
+    "deadcode": "fallow dead-code --format json --quiet",
+    "audit:code": "fallow --format json --quiet",
+    "audit:ui": "shadscan --no-roast",
+    "audit:ui:browser": "shadscan --check-ui",
+    "deps:check": "taze",
+    "prepare": "lefthook install",
+    "deploy": "bun run build && wrangler deploy"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-devtools": "latest",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-router-devtools": "latest",
+    "@tanstack/react-start": "latest",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.26.0",
+    "@oxlint/plugins": "1.82.0",
+    "@shadscan/cli": "0.17.0",
+    "@tanstack/devtools-vite": "latest",
+    "@tanstack/intent": "^0.4.0",
+    "@tanstack/router-cli": "^1.132.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "fallow": "3.23.0",
+    "lefthook": "2.1.12",
+    "react-doctor": "0.9.13",
+    "taze": "21.1.0",
+    "typescript": "7.0.2",
+    "vite-plus": "0.3.1",
+    "wrangler": "^4.70.0"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.1",
+    "vitest": "4.1.11"
+  },
+  "packageManager": "bun@1.4.2"
+}

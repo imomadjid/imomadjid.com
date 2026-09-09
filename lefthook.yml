@@ -1,0 +1,23 @@
+pre-commit:
+  parallel: false
+  commands:
+    format:
+      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,css,md,yml,yaml,html}'
+      exclude: ['tools/oxlint/anti-slop/**', 'src/routeTree.gen.ts']
+      run: bun run format:check {staged_files}
+    lint:
+      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'
+      exclude: ['tools/oxlint/anti-slop/**', 'src/routeTree.gen.ts']
+      run: PORTFOLIO_STAGED_LINT=1 bun run lint {staged_files}
+    react-doctor:
+      glob: '*.{js,jsx,ts,tsx}'
+      exclude: ['tools/oxlint/anti-slop/**', 'src/routeTree.gen.ts']
+      run: bun run doctor:staged
+    fallow:
+      glob: '*.{js,jsx,ts,tsx,json}'
+      run: |
+        if git rev-parse --verify HEAD >/dev/null 2>&1; then
+          bun run deadcode --changed-since HEAD || echo 'Fallow reported findings or could not complete; review its output.'
+        else
+          echo 'Fallow advisory: no HEAD yet; run bun run deadcode after the first commit.'
+        fi

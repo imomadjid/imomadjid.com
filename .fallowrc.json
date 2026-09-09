@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "ignorePatterns": ["tools/oxlint/anti-slop/**", "dist/**", ".tanstack/**", ".wrangler/**"],
+  "ignoreDependencies": ["@oxlint/plugins"],
+  "duplicates": { "ignore": ["tools/oxlint/anti-slop/**"] },
+  "health": { "ignore": ["tools/oxlint/anti-slop/**"] }
+}
