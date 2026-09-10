@@ -4,6 +4,18 @@ Personal portfolio built with TanStack Start, React 19, Tailwind CSS v4, and
 Cloudflare Workers. Bun manages dependencies. Vite+ provides Vite, Oxfmt,
 Oxlint, and type-aware linting; TypeScript 7 checks application types.
 
+## AI coding guidance
+
+TanStack Intent loads version-matched Start and Router skills from installed
+packages. The allowlist is in `package.json`; loading instructions are in
+`AGENTS.md`. Use `bun run intent list` and, for example,
+`bun run intent load '@tanstack/react-start#react-start'`.
+
+The script calls the local Intent CLI directly because TanStack Devtools also
+provides an `intent` executable. After regenerating guidance with
+`bun run intent install`, keep the managed block's commands set to
+`bun run intent` to avoid this conflict. No Intent agent hooks are installed.
+
 ## Development
 
 ```bash
@@ -48,6 +60,18 @@ Biome is not installed or configured.
 Install the recommended Oxc and Tailwind CSS IntelliSense editor extensions
 for format-on-save and lint fixes. Keep formatting and lint configuration in
 Vite+ rather than adding separate Oxc configuration files.
+
+## Fluid Functionalism
+
+`components.json` registers `@fluid`. The installed foundation includes all
+eight light/dark surface levels, interaction tokens, `SurfaceProvider`,
+`useSurface`, `surfaceClasses`, and `cn`. The root page starts at level 1.
+Add UI components on demand with `bunx shadcn@latest add @fluid/base/button --yes`.
+Base UI variants follow the project's preferred primitive library.
+
+Follow the surface rules in `AGENTS.md`. Local changes to the upstream helpers
+use a closed level type and share normalization between context and CSS classes.
+Review these changes before re-installing helpers with overwrite.
 
 ## Commit hooks
 

@@ -1,3 +1,16 @@
+<!-- intent-skills:start -->
+
+## Skill Loading
+
+Before editing files for a substantial task:
+
+- Run `bun run intent list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `bun run intent load '<package>#<skill>'` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+
+<!-- intent-skills:end -->
+
 # Repository Guidelines
 
 ## Project structure
@@ -11,31 +24,35 @@ This is the personal portfolio website for imomadjid.com, built with TanStack St
 
 ## Development and validation commands
 
-Use Bun and update `bun.lock` with dependency changes.
-
-- `bun install`: install dependencies and Lefthook hooks.
-- `bun run dev`: start the development server on port 3000.
-- `bun run build`: build client and server output.
-- `bun run preview`: preview the production build locally.
-- `bun run format`: format files and sort imports and Tailwind classes.
-- `bun run lint:fix`: apply safe Oxlint fixes.
-- `bun run check`: check formatting, run type-aware linting, generate routes, and check TypeScript.
-- `bun run deploy`: build and deploy to Cloudflare. Run only with deployment authorization.
+Use Bun and update `bun.lock` with dependency changes. See `README.md` and `package.json` for commands. Run `bun run deploy` only with deployment authorization.
 
 ## Coding style and naming
 
-Use two-space indentation, single quotes, and no semicolons. Let Oxfmt enforce formatting. Use PascalCase for React components and camelCase for functions and variables. Follow TanStack file-based route naming. Use type-only imports where appropriate.
+Let Oxfmt enforce formatting. Use PascalCase for React components and camelCase for functions and variables. Follow TanStack file-based route naming. Use type-only imports where appropriate.
 
-Use Tailwind utilities for styling. Oxfmt sorts classes in JSX and `clsx`, `cn`, `cva`, and `twMerge` calls. Keep Oxfmt, Oxlint, and anti-slop settings in `vite.config.ts`. Do not add Biome. Treat `tools/oxlint/anti-slop/` as vendored code.
+Use Tailwind utilities for styling. Keep Oxfmt, Oxlint, and anti-slop settings in `vite.config.ts`. Do not add Biome. Treat `tools/oxlint/anti-slop/` as vendored code.
 
 ## Testing guidelines
 
-No test suite or coverage threshold is configured. Run `bun run check` and `bun run build` before review. Verify UI changes in a browser. Use descriptive `*.test.ts` or `*.test.tsx` names for future tests.
+No test suite or coverage threshold is configured. For implementation changes, run `bun run check` and `bun run build` before review. Verify UI changes in a browser. For documentation-only changes, check formatting and verify affected instructions against the repository. A read-only audit does not require a build unless needed to investigate a finding. Use descriptive `*.test.ts` or `*.test.tsx` names for future tests.
 
-Lefthook checks staged formatting, syntax linting, and React Doctor warnings. Run `bun run doctor` for a full React audit. Fallow is advisory in hooks; Shadscan is a manual advisory. Review findings before changing code. `bun run deps:check` reports updates without applying them.
+Run `bun run doctor` when the task requests a full React audit or a React-related finding needs broader investigation. The full audit blocks errors; staged React Doctor warnings block commits. Review advisory findings before changing code. See `README.md` for hook and advisory tool details.
 
 ## Commits and pull requests
 
-There are no commits yet, so no historical convention exists. Use concise imperative messages, optionally prefixed with `feat:`, `fix:`, or `chore:`. Keep changes focused.
+Use concise imperative messages with `feat:`, `fix:`, or `chore:` prefixes. Keep changes focused.
 
 PRs should describe the change, link relevant issues, and report validation results. Include screenshots for visible UI changes. Never commit credentials, environment files, or generated build output.
+
+## Fluid Functionalism surfaces
+
+FF is a copy-in registry configured in `components.json`. Add components only when needed: `bunx shadcn@latest add @fluid/base/button --yes`. Prefer the Base UI variants (`@fluid/base/<name>`). Review source and dependencies before installation; do not overwrite local adaptations blindly.
+
+The root provides level 1 and paints `bg-surface-1`. Surface colors and shadows live in `src/styles.css`; light mode uses shadows above white surfaces, while dark mode also increases background brightness. Activate dark tokens with `.dark` on `<html>`.
+
+- Read the parent level with `useSurface()` from `#/lib/surface-context`. For custom overlays, use `normalizeSurfaceLevel(parent + offset)` from `#/lib/surface-classes`: menus/popovers use `+2`, dialogs use `+4`, capped at 8.
+- Paint the container with `surfaceClasses(level)` and wrap its children in `<SurfaceProvider value={level}>`. Context alone does not paint a background. Preserve this context through portals.
+- Keep FF components' existing elevation logic. Do not add a second offset around them.
+- Use `surfaceClasses(level, shadowLevel)` when a component deliberately keeps its shadow depth separate. Avoid arbitrary background colors or shadows for elevated panels.
+- Never interpolate `bg-surface-${level}` or `shadow-surface-${level}`. Use the literal lookup helpers so Tailwind emits the classes. Use `bg-hover` and `bg-active` for interaction overlays.
+- Check nested surfaces in light and dark modes, including focus and clipping. See [upstream surface rules](https://www.fluidfunctionalism.com/docs/surfaces).
