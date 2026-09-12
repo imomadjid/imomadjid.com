@@ -1,6 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useDialKit, useDialKitController } from 'dialkit'
 
+import { AmbientLight } from '#/components/ambient-light'
+import { ProfileAvatar } from '#/components/profile-avatar'
 import { ThemeToggle } from '#/components/theme-toggle'
+import { ambientControls } from '#/lib/ambient-settings'
+
+import '../sunlit.css'
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -17,22 +23,24 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
+  const sunlit = useDialKitController('Sunlit', ambientControls, {
+    id: 'sunlit-tuning',
+    persist: import.meta.env.DEV,
+    onAction(action) {
+      if (action === 'reset') sunlit.resetValues()
+    },
+  })
+  const profile = useDialKit('Profile', { isSleeping: false })
+  const isSleeping = import.meta.env.DEV && profile.isSleeping
+
   return (
-    <main className="flex min-h-svh items-center justify-center px-6 py-16">
-      <div className="w-full max-w-[34rem]">
+    <main className="sunlit-study relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
+      <AmbientLight settings={sunlit.values} />
+      <div className="relative z-10 w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
         <div className="mb-10 flex items-center justify-between gap-6">
-          <div className="relative size-12 overflow-hidden rounded-full">
-            <img
-              src="/images/imo.png"
-              alt="Imo smiling in a field of blue flowers"
-              width={1086}
-              height={1448}
-              fetchPriority="high"
-              className="absolute top-[-151%] left-[-73%] w-[230%] max-w-none"
-            />
-          </div>
+          <ProfileAvatar isSleeping={isSleeping} />
           <ThemeToggle />
         </div>
 

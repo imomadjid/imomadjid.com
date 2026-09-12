@@ -27,7 +27,14 @@ bun run preview       # Preview the production build
 
 Routes live in `src/routes/`. The root route loads `src/styles.css`, which
 imports Tailwind and holds theme variables. Do not edit `src/routeTree.gen.ts`;
-the router CLI generates it.
+the TanStack Start plugin generates it during development and builds. Keep the
+generated file committed. After adding or moving routes, run the dev server or
+`bun run build` before checking types. Do not run a separate Router CLI against
+this file; its output differs from Start's and triggers dev-server reloads.
+
+DialKit is installed with one development-only `DialRoot` and stylesheet in
+`src/routes/__root.tsx`. No controls are registered yet. Add `useDialKit` in
+a component when it has values to tune. The root displays registered panels.
 
 ## Quality checks
 
@@ -35,8 +42,8 @@ the router CLI generates it.
 bun run format        # Format files; sort imports and Tailwind classes
 bun run lint          # Oxlint with type-aware checks and anti-slop rules
 bun run lint:fix      # Apply safe lint fixes
-bun run typecheck     # Generate routes and run TypeScript 7
-bun run check         # Generate routes; check formatting, lint, and types
+bun run typecheck     # Run TypeScript 7
+bun run check         # Check formatting, lint, and types
 bun run doctor        # React Doctor; errors block
 bun run deadcode      # Fallow unused-code report; findings exit nonzero
 bun run audit:code    # Fallow codebase audit

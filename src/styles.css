@@ -1,13 +1,75 @@
 @import 'tailwindcss';
 
-/* The head script selects the saved icon before React hydrates. */
-[data-initial-theme-icon] {
-  display: none;
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
 }
-html[data-theme='system'] [data-initial-theme-icon='system'],
-html[data-theme='light'] [data-initial-theme-icon='light'],
-html[data-theme='dark'] [data-initial-theme-icon='dark'] {
-  display: grid;
+
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sunghyun Sans';
+  src: url('/fonts/sunghyun-sans/SunghyunSans-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -24,6 +86,7 @@ body,
 
 body {
   margin: 0;
+  font-family: var(--font-sans);
 }
 
 /* Animate color owners, not each descendant that inherits their animated color.
@@ -39,6 +102,7 @@ body {
 }
 
 @theme inline {
+  --font-sans: 'Sunghyun Sans', ui-sans-serif, system-ui, sans-serif;
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);

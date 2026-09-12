@@ -1,11 +1,19 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { DialRoot } from 'dialkit'
+import { useSyncExternalStore } from 'react'
 
 import { SurfaceProvider } from '../lib/surface-context'
-import { THEME_SCRIPT } from '../lib/theme'
+import {
+  THEME_SCRIPT,
+  getServerThemeSnapshot,
+  getThemeSnapshot,
+  subscribeTheme,
+} from '../lib/theme'
 
 import appCss from '../styles.css?url'
+import dialkitCss from 'dialkit/styles.css?url'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -22,6 +30,7 @@ export const Route = createRootRoute({
       },
     ],
     links: [
+      ...(import.meta.env.DEV ? [{ rel: 'stylesheet', href: dialkitCss }] : []),
       {
         rel: 'stylesheet',
         href: appCss,
@@ -30,6 +39,11 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootDocument,
 })
+
+function ThemedDialKit() {
+  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot)
+  return <DialRoot theme={theme} defaultOpen={false} />
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
@@ -40,6 +54,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="bg-surface-1 text-neutral-950 dark:text-neutral-50">
         <SurfaceProvider value={1}>{children}</SurfaceProvider>
+        {import.meta.env.DEV && <ThemedDialKit />}
         <TanStackDevtools
           config={{
             position: 'bottom-right',

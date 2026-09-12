@@ -18,7 +18,7 @@ Before editing files for a substantial task:
 This is the personal portfolio website for imomadjid.com, built with TanStack Start, React, TypeScript 7, Vite+, Tailwind CSS v4, and Cloudflare Workers. Keep content accurate and personal. Do not invent projects, experience, achievements, or testimonials.
 
 - `src/routes/` contains file-based routes. `index.tsx` defines `/`; `__root.tsx` defines the document shell and stylesheet link.
-- `src/router.tsx` creates the router. `src/routeTree.gen.ts` is generated; do not edit it manually.
+- `src/router.tsx` creates the router. Start generates `src/routeTree.gen.ts` during development and builds. Keep it committed; do not edit it manually or run a separate Router CLI against it.
 - `src/styles.css` imports Tailwind and holds global styles and theme extensions.
 - `wrangler.jsonc` configures the Worker. Build output goes to `dist/`.
 
