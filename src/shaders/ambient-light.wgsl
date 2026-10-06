@@ -71,25 +71,36 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let blindOrigin = vec3f(0.0, 0.0, params.blindDepth);
   let blindNormal = normalize(vec3f(0.342, 0.0, 0.94));
   let blindAxis = normalize(vec3f(0.94, 0.0, -0.342));
-  let nearOrigin = vec3f(-0.352, -0.625, 0.85 + params.casterDepth * 0.5);
+  // Enlarge both canopy planes around their attached branch, not their top-left
+  // texture corner. Their depth stays fixed, preserving light-driven parallax.
+  let canopyScale = 2.0 * params.foliageScale;
+  let branchAnchor = vec2f(1.0, 0.95);
+  let nearOffset = branchAnchor * 0.932 * (1.0 - canopyScale);
+  let farOffset = branchAnchor * 0.85 * (1.0 - canopyScale);
+  let nearOrigin = vec3f(vec2f(-0.352, -0.625) + nearOffset, 0.85 + params.casterDepth * 0.5);
   // A lower, farther branch catches moonlight. Keep it fixed in world space
   // so its shadow enters and leaves the wall naturally as the source moves.
-  let farOrigin = vec3f(0.210, 0.22, 1.55 + params.casterDepth * 0.65);
-  let nearSize = 0.932 * params.foliageScale;
-  let farSize = 0.85 * params.foliageScale;
+  let farOrigin = vec3f(vec2f(0.210, 0.22) + farOffset, 1.55 + params.casterDepth * 0.65);
+  let nearSize = 0.932 * canopyScale;
+  let farSize = 0.85 * canopyScale;
   let nearLod = clamp(log2(max(1.0, nearOrigin.z / source.z * foliageRadius / nearSize * 1024.0 / sqrt(32.0))), 0.0, 4.0);
   let farLod = clamp(log2(max(1.0, farOrigin.z / source.z * foliageRadius / farSize * 1024.0 / sqrt(32.0))), 0.0, 4.0);
   let planeNormal = vec3f(0.0, 0.0, 1.0);
   let centerRay = source - wall;
   let nearCenter = (planeHit(wall, centerRay, nearOrigin, planeNormal).xy - nearOrigin.xy) / nearSize;
   let farCenter = (planeHit(wall, centerRay, farOrigin, planeNormal).xy - farOrigin.xy) / farSize;
-  let nearAnchor = smoothstep(0.0, 0.8, length(nearCenter - vec2f(1.0, 0.95)));
-  let farAnchor = smoothstep(0.0, 0.8, length(farCenter - vec2f(1.0, 0.95)));
+  // Measure anchor falloff before texture scaling. Enlarging the canopy must
+  // not expand its pinned region across the visible branches.
+  let nearAnchor = smoothstep(0.0, 0.8, length(nearCenter - branchAnchor) * canopyScale);
+  let farAnchor = smoothstep(0.0, 0.8, length(farCenter - branchAnchor) * canopyScale);
   let pointerDistance = length((uv - vec2f(params.pointerX, params.pointerY)) * vec2f(params.aspect, 1.0));
   let influence = 1.0 - smoothstep(0.05, 0.55, pointerDistance);
   let gust = vec2f(params.breezeX, params.breezeY) * influence;
-  let nearWind = (wind(nearCenter, params.time) * (0.032 * params.movement) + gust) * nearAnchor;
-  let farWind = (wind(farCenter + vec2f(0.7, 1.3), params.time * 0.79) * (0.021 * params.movement) + gust * 0.45) * farAnchor;
+  // Larger branches get a modest increase in wind travel; pointer gusts keep
+  // their original world-space displacement.
+  let windScale = sqrt(canopyScale);
+  let nearWind = (wind(nearCenter, params.time) * (0.032 * params.movement) / windScale + gust / canopyScale) * nearAnchor;
+  let farWind = (wind(farCenter + vec2f(0.7, 1.3), params.time * 0.79) * (0.021 * params.movement) / windScale + gust * 0.45 / canopyScale) * farAnchor;
   let centerBlind = planeHit(wall, centerRay, blindOrigin, blindNormal);
   let pixelWidth = max(fwidth(centerBlind.y), 0.0005);
   let railPixelWidth = max(fwidth(dot(centerBlind - blindOrigin, blindAxis)), 0.0005);
