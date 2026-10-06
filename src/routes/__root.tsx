@@ -2,6 +2,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { DialRoot } from 'dialkit'
+import { MotionConfig } from 'motion/react'
 import { useSyncExternalStore } from 'react'
 
 import { SurfaceProvider } from '../lib/surface-context'
@@ -53,7 +54,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="bg-surface-1 text-neutral-950 dark:text-neutral-50">
-        <SurfaceProvider value={1}>{children}</SurfaceProvider>
+        <MotionConfig reducedMotion="user">
+          <SurfaceProvider value={1}>{children}</SurfaceProvider>
+        </MotionConfig>
         {import.meta.env.DEV && <ThemedDialKit />}
         <TanStackDevtools
           config={{

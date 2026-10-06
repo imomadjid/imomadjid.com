@@ -4,6 +4,7 @@ import { useDialKit, useDialKitController } from 'dialkit'
 import { AmbientLight } from '#/components/ambient-light'
 import { ProfileAvatar } from '#/components/profile-avatar'
 import { ThemeToggle } from '#/components/theme-toggle'
+import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls } from '#/lib/ambient-settings'
 
 import '../sunlit.css'
@@ -11,11 +12,11 @@ import '../sunlit.css'
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      { title: 'Imo Madjid — Design engineer & product designer' },
+      { title: 'Imo Madjid, design engineer and product designer' },
       {
         name: 'description',
         content:
-          'I’m Imo, a design engineer and product designer based in Jakarta. I design interfaces and build them, from early prototypes to shipped products.',
+          'I’m Imo, a design engineer and product designer based in Jakarta. I design and build interfaces, from early prototypes to shipped products.',
       },
     ],
   }),
@@ -49,25 +50,39 @@ function Home() {
           className="space-y-8 text-base leading-[1.8] text-neutral-600 dark:text-neutral-400"
         >
           <p data-theme-color className="text-neutral-900 dark:text-neutral-100">
-            I’m Imo, a design engineer and product designer based in Jakarta. I design interfaces
-            and build them, from early prototypes to shipped products.
+            I’m Imo, a design engineer and product designer based in Jakarta. I design and build
+            interfaces, from early prototypes to shipped products.
           </p>
 
           <p>
-            I’m currently a software engineer at DocDraft, working on document drafting and
-            consultation tools. Before that, I was a UX engineer at Meeting.ai, where I designed and
-            built experiences across web and mobile.
+            I’m a software engineer at{' '}
+            <LinkButton href="https://docdraft.ai" logoSrc="/images/companies/docdraft.svg">
+              DocDraft
+            </LinkButton>
+            , working on document drafting and consultation tools. Before that, I was a UX engineer
+            at{' '}
+            <LinkButton href="https://meeting.ai" logoSrc="/images/companies/meeting-ai.png">
+              Meeting.ai
+            </LinkButton>
+            , where I designed and built experiences across web and mobile.
           </p>
 
           <p>
-            My work spans user research, design systems, and frontend engineering. I like working
-            through the details in code, seeing how an interaction feels, and refining it until it
-            makes sense.
+            I work across user research, design systems, and frontend engineering. I like working
+            through interaction details in code, trying them out and refining how they feel.
           </p>
 
           <p>
-            I’ve also built native apps at the Apple Developer Academy. I’m always happy to talk
-            about design, a product you’re building, or an idea you’d like to explore.
+            I’ve also built native apps at the{' '}
+            <LinkButton
+              href="https://developer.apple.com/academies/"
+              logoSrc="/images/companies/apple.svg"
+              invertLogo
+            >
+              Apple Developer Academy
+            </LinkButton>
+            . I’m happy to talk about design, a product you’re building, or an idea you’d like to
+            explore.
           </p>
         </div>
 
