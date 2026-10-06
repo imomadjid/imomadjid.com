@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "imomadjid-com",
   "workers_dev": true,
+  "routes": [{ "pattern": "imomadjid.com", "custom_domain": true }],
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",

@@ -101,12 +101,12 @@ to `master`. Run
 ## Deployment
 
 `wrangler.jsonc` configures the `imomadjid-com` Cloudflare Worker. The site is
-served on the account's `workers.dev` subdomain. A custom domain is not configured.
+served at `imomadjid.com` and the account's `workers.dev` subdomain.
 
 The current deployment is at https://imomadjid-com.mhmmadjid.workers.dev.
-The `imomadjid.com` zone is on Cloudflare's Free plan and awaits delegation to
-`bailey.ns.cloudflare.com` and `micah.ns.cloudflare.com`. Add the Worker custom
-domain after the zone becomes active.
+The `imomadjid.com` zone is on Cloudflare's Free plan. Rumahweb delegates DNS to
+`bailey.ns.cloudflare.com` and `micah.ns.cloudflare.com`. The Worker custom domain
+is configured in `wrangler.jsonc` so deployments preserve it.
 
 The [Check and deploy workflow](.github/workflows/deploy.yml) deploys after all
 checks pass on pushes to `master`. Pull requests run checks without deploying.
@@ -115,7 +115,8 @@ You can also run the workflow manually on `master`.
 Configure these GitHub Actions values in the repository settings:
 
 - Secret `CLOUDFLARE_API_TOKEN`: a Cloudflare API token scoped to the deployment
-  account, with Workers Scripts Edit and Account Settings Read permissions.
+  account, with Workers Scripts Edit and Account Settings Read permissions, plus
+  Zone Read and Workers Routes Edit scoped to the `imomadjid.com` zone.
 - Variable `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account ID.
 
 Use an API token for CI, not a local Wrangler OAuth token. Keep credentials out
