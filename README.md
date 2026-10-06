@@ -93,11 +93,45 @@ this comparison before the first commit. Shadscan stays a manual advisory;
 its findings can describe missing product features rather than defects.
 React Doctor telemetry and supply-chain checks are disabled in these scripts.
 
-No test suite, coverage threshold, or CI workflow is configured yet. Run
+No test suite or coverage threshold is configured yet. GitHub Actions runs the
+formatting, lint, type, React Doctor, and build checks on pull requests and pushes
+to `master`. Run
 `bun run check`, `bun run build`, and relevant browser checks before review.
 
 ## Deployment
 
-`wrangler.jsonc` configures Cloudflare Workers. With deployment authorization
-and Cloudflare authentication, run `bun run deploy`. Store secrets with
-Wrangler secret commands, never in source control.
+`wrangler.jsonc` configures the `imomadjid-com` Cloudflare Worker. The site is
+served on the account's `workers.dev` subdomain. A custom domain is not configured.
+
+The current deployment is at https://imomadjid-com.mhmmadjid.workers.dev.
+The `imomadjid.com` zone is on Cloudflare's Free plan and awaits delegation to
+`bailey.ns.cloudflare.com` and `micah.ns.cloudflare.com`. Add the Worker custom
+domain after the zone becomes active.
+
+The [Check and deploy workflow](.github/workflows/deploy.yml) deploys after all
+checks pass on pushes to `master`. Pull requests run checks without deploying.
+You can also run the workflow manually on `master`.
+
+Configure these GitHub Actions values in the repository settings:
+
+- Secret `CLOUDFLARE_API_TOKEN`: a Cloudflare API token scoped to the deployment
+  account, with Workers Scripts Edit and Account Settings Read permissions.
+- Variable `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account ID.
+
+Use an API token for CI, not a local Wrangler OAuth token. Keep credentials out
+of source control. No runtime secrets are required by the portfolio.
+
+For an authorized local deployment, authenticate with Wrangler and run
+`bun run deploy`. To roll back, use `bunx wrangler rollback` and select a prior
+deployed version. Check `bunx wrangler deployments list` for deployment history.
+
+### Dependency audit
+
+On 6 October 2026, `bun audit fix` updated compatible transitive dependencies.
+Remaining advisories affect Solid's development tools serializer, Miniflare's
+`sharp` and `undici`, and Oxfmt's `tinypool`. Their parents pin affected versions.
+The production build removes TanStack Devtools; TanStack's runtime uses patched
+`seroval` 1.6.7. No vulnerable Solid serializer is used by the portfolio in
+production. Recheck these tool dependencies before updating the build stack.
+The dependency audit is not clean; formatting, lint, types, React Doctor, build,
+and Wrangler dry-run checks pass.
