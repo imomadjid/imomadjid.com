@@ -10,70 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PersonalUtilitiesRouteImport } from './routes/personal-utilities'
-import { Route as PersonalUtilitiesIndexRouteImport } from './routes/personal-utilities.index'
-import { Route as PersonalUtilitiesPrivacyRouteImport } from './routes/personal-utilities.privacy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PersonalUtilitiesRoute = PersonalUtilitiesRouteImport.update({
-  id: '/personal-utilities',
-  path: '/personal-utilities',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PersonalUtilitiesIndexRoute = PersonalUtilitiesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PersonalUtilitiesRoute,
-} as any)
-const PersonalUtilitiesPrivacyRoute =
-  PersonalUtilitiesPrivacyRouteImport.update({
-    id: '/privacy',
-    path: '/privacy',
-    getParentRoute: () => PersonalUtilitiesRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/personal-utilities': typeof PersonalUtilitiesRouteWithChildren
-  '/personal-utilities/privacy': typeof PersonalUtilitiesPrivacyRoute
-  '/personal-utilities/': typeof PersonalUtilitiesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/personal-utilities/privacy': typeof PersonalUtilitiesPrivacyRoute
-  '/personal-utilities': typeof PersonalUtilitiesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/personal-utilities': typeof PersonalUtilitiesRouteWithChildren
-  '/personal-utilities/privacy': typeof PersonalUtilitiesPrivacyRoute
-  '/personal-utilities/': typeof PersonalUtilitiesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/personal-utilities'
-    | '/personal-utilities/privacy'
-    | '/personal-utilities/'
+  fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/personal-utilities/privacy' | '/personal-utilities'
-  id:
-    | '__root__'
-    | '/'
-    | '/personal-utilities'
-    | '/personal-utilities/privacy'
-    | '/personal-utilities/'
+  to: '/'
+  id: '__root__' | '/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  PersonalUtilitiesRoute: typeof PersonalUtilitiesRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -85,46 +48,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/personal-utilities': {
-      id: '/personal-utilities'
-      path: '/personal-utilities'
-      fullPath: '/personal-utilities'
-      preLoaderRoute: typeof PersonalUtilitiesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/personal-utilities/': {
-      id: '/personal-utilities/'
-      path: '/'
-      fullPath: '/personal-utilities/'
-      preLoaderRoute: typeof PersonalUtilitiesIndexRouteImport
-      parentRoute: typeof PersonalUtilitiesRoute
-    }
-    '/personal-utilities/privacy': {
-      id: '/personal-utilities/privacy'
-      path: '/privacy'
-      fullPath: '/personal-utilities/privacy'
-      preLoaderRoute: typeof PersonalUtilitiesPrivacyRouteImport
-      parentRoute: typeof PersonalUtilitiesRoute
-    }
   }
 }
 
-interface PersonalUtilitiesRouteChildren {
-  PersonalUtilitiesPrivacyRoute: typeof PersonalUtilitiesPrivacyRoute
-  PersonalUtilitiesIndexRoute: typeof PersonalUtilitiesIndexRoute
-}
-
-const PersonalUtilitiesRouteChildren: PersonalUtilitiesRouteChildren = {
-  PersonalUtilitiesPrivacyRoute: PersonalUtilitiesPrivacyRoute,
-  PersonalUtilitiesIndexRoute: PersonalUtilitiesIndexRoute,
-}
-
-const PersonalUtilitiesRouteWithChildren =
-  PersonalUtilitiesRoute._addFileChildren(PersonalUtilitiesRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  PersonalUtilitiesRoute: PersonalUtilitiesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
