@@ -10,11 +10,13 @@ export const signatureControls = {
   returnTime: [1.3, 0.3, 2.5, 0.05],
   /** Time multiplier for the final flick to the right. */
   flickTime: [0.5, 0.2, 2, 0.05],
+  /** Seconds to erase along the path before a replay redraws it. */
+  exitDuration: [0.45, 0.15, 1.5, 0.05],
 } satisfies DialConfig
 
 export type SignatureTiming = Omit<ResolvedValues<typeof signatureControls>, 'replay'>
 
-const { duration, lengthWeight, returnTime, flickTime } = signatureControls
+const { duration, lengthWeight, returnTime, flickTime, exitDuration } = signatureControls
 
 // Production values; DialKit only tunes these in development.
 export const defaultSignatureTiming: SignatureTiming = {
@@ -22,4 +24,5 @@ export const defaultSignatureTiming: SignatureTiming = {
   lengthWeight: lengthWeight[0],
   returnTime: returnTime[0],
   flickTime: flickTime[0],
+  exitDuration: exitDuration[0],
 }
