@@ -1,72 +1,17 @@
 @import 'tailwindcss';
 
+/* Allo 1.0.3, SIL Open Font License 1.1: https://github.com/joshpuckett/allo */
 @font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-Thin.woff2') format('woff2');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-ExtraLight.woff2') format('woff2');
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-Regular.woff2') format('woff2');
+  font-family: 'Allo';
+  src: url('/fonts/allo/Allo-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-ExtraBold.woff2') format('woff2');
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sunghyun Sans';
-  src: url('/fonts/sunghyun-sans/SunghyunSans-Black.woff2') format('woff2');
+  font-family: 'Allo';
+  src: url('/fonts/allo/Allo-Black.woff2') format('woff2');
   font-weight: 900;
   font-style: normal;
   font-display: swap;
@@ -83,6 +28,31 @@
   }
 }
 
+/* Staged page entrance: chunks 100ms apart, set per element with --enter-index.
+   The hidden state lives only in the keyframe, so content stays visible if it never runs. */
+@utility animate-enter {
+  animation: enter-fade 300ms ease-out both;
+  animation-delay: calc(var(--enter-index, 0) * 100ms);
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation-name: enter-rise;
+  }
+}
+
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html.theme-transitioning body {
     transition: background-color 180ms ease-in-out;
@@ -90,7 +60,7 @@
 }
 
 @theme inline {
-  --font-sans: 'Sunghyun Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Allo', ui-sans-serif, system-ui, sans-serif;
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);

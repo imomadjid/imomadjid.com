@@ -47,18 +47,18 @@ function Home() {
       <div data-sunlit-anchor className="relative z-10 w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
-        <div className="mb-10 flex items-center justify-between gap-6">
+        <div className="mb-10 flex animate-enter items-center justify-between gap-6">
           <ProfileAvatar isSleeping={isSleeping} />
           <ThemeToggle />
         </div>
 
         <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
-          <p className="text-neutral-900 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-100">
+          <p className="animate-enter text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
             I’m Imo, a design engineer and product designer based in Jakarta. I design and build
             interfaces, from early prototypes to shipped products.
           </p>
 
-          <p>
+          <p className="animate-enter [--enter-index:2]">
             I’m a software engineer at{' '}
             <LinkButton href="https://docdraft.ai" logoSrc="/images/companies/docdraft.svg">
               DocDraft
@@ -71,12 +71,12 @@ function Home() {
             , where I designed and built experiences across web and mobile.
           </p>
 
-          <p>
+          <p className="animate-enter [--enter-index:3]">
             I work across user research, design systems, and frontend engineering. I like working
             through interaction details in code, trying them out and refining how they feel.
           </p>
 
-          <p>
+          <p className="animate-enter [--enter-index:4]">
             I’ve also built native apps at the{' '}
             <LinkButton
               href="https://developer.apple.com/academies/"
@@ -90,7 +90,7 @@ function Home() {
           </p>
         </div>
 
-        <footer className="mt-12 flex flex-wrap items-center justify-between gap-x-10 gap-y-6">
+        <footer className="mt-12 flex animate-enter flex-wrap items-center justify-between gap-x-10 gap-y-6 [--enter-index:5]">
           <img
             src="/images/signature.svg"
             alt="Imo’s signature"
