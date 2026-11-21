@@ -7,15 +7,17 @@ import { ThemeToggle } from '#/components/theme-toggle'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
 
+const description =
+  'I’m Imo, a design engineer and product designer based in Jakarta. I design and build interfaces, from early prototypes to shipped products.'
+
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      { title: 'Imo Madjid, design engineer and product designer' },
-      {
-        name: 'description',
-        content:
-          'I’m Imo, a design engineer and product designer based in Jakarta. I design and build interfaces, from early prototypes to shipped products.',
-      },
+      { title: 'Imo’s Portfolio' },
+      { name: 'description', content: description },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:title', content: 'Imo’s Portfolio' },
+      { property: 'og:description', content: description },
     ],
   }),
   component: Home,
