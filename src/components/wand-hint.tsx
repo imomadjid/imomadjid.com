@@ -38,14 +38,13 @@ const FONT_TIMEOUT = 3000
  */
 export function useWandHint() {
   const [phase, setPhase] = useState<HintPhase | null>(null)
+  // Whether the note is gone for good: erased on an earlier visit or this one. Nothing it
+  // renders depends on this, so reading storage while hydrating is safe.
+  const [gone, setGone] = useState(() => !import.meta.env.SSR && readDismissed())
   const dismissed = useRef(false)
 
   useEffect(() => {
-    try {
-      if (localStorage.getItem(STORAGE_KEY)) return
-    } catch {
-      // Without storage the note shows on each visit until the wand is used.
-    }
+    if (readDismissed()) return
     let cancelled = false
     const timeout = new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT))
     void Promise.race([document.fonts.load('500 22px Caveat'), timeout])
@@ -69,8 +68,20 @@ export function useWandHint() {
     setPhase((current) => (current ? 'erasing' : null))
   }, [])
 
-  const erased = useCallback(() => setPhase(null), [])
-  return { phase, dismiss, erased }
+  const erased = useCallback(() => {
+    setPhase(null)
+    setGone(true)
+  }, [])
+  return { phase, gone, dismiss, erased }
+}
+
+function readDismissed() {
+  try {
+    return Boolean(localStorage.getItem(STORAGE_KEY))
+  } catch {
+    // Without storage the note shows on each visit until the wand is used.
+    return false
+  }
 }
 
 /** `onErased` runs once the eraser finishes, so the note can unmount. */
