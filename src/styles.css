@@ -71,19 +71,37 @@
 /* The signature's entrance is the pen drawing it from its --enter-index slot; reduced motion
    fades it in with animate-enter instead. Each segment draws in its own slot, set by
    --stroke-start and --stroke-duration. Linear within a slot, because the slots already carry
-   the pen's recorded speed. The hidden state lives only in the keyframe. */
+   the pen's recorded speed. The hidden state lives only in the keyframe. A replay erases along
+   the path in the same rhythm, scaled by --exit-scale, then redraws without the entrance slot. */
 @utility animate-signature-stroke {
   stroke-dasharray: 1 2;
 
   @media (prefers-reduced-motion: no-preference) {
     animation: signature-stroke var(--stroke-duration) linear both;
     animation-delay: calc(var(--enter-index, 0) * var(--enter-step) + var(--stroke-start));
+
+    [data-phase='exit'] > & {
+      animation-name: signature-erase;
+      animation-duration: calc(var(--stroke-duration) * var(--exit-scale));
+      animation-delay: calc(var(--stroke-start) * var(--exit-scale));
+    }
+
+    [data-phase='redraw'] > & {
+      animation-delay: var(--stroke-start);
+    }
   }
 }
 
 @keyframes signature-stroke {
   from {
     stroke-dashoffset: 1;
+  }
+}
+
+/* A dash shrunk to nothing at the path's end still paints its round cap, so push it just past. */
+@keyframes signature-erase {
+  to {
+    stroke-dashoffset: -1.01;
   }
 }
 
