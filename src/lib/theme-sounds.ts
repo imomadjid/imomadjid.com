@@ -1,21 +1,33 @@
-import { defineSound } from '@web-kits/audio'
+import { defineSound, ensureReady } from '@web-kits/audio'
 import type { Layer } from '@web-kits/audio'
 
 import type { Theme } from './theme'
 
-// A small switch thrown, then a soft struck note that names the theme.
-// Built like cuelume's toggle: a noise click for the contact, a sine "knock"
-// that drops to pitch fast enough to read as body rather than a slide, and a
-// quiet note under 5 kHz so repeated toggling never gets shrill.
+// A small switch thrown, then a struck note that names the theme: glass G5
+// for light, a rounder wooden C5 for dark, both at once for system.
+// Built like cuelume's toggle: a click for the contact, a sine "knock" that
+// drops to pitch fast enough to read as body rather than a slide, and a note
+// loud enough to carry the theme. Nothing is centred above 5 kHz.
 // Envelope decays here reach about -26 dB at `decay` seconds.
 
-/** The contact: a burst of band-passed noise a few milliseconds long. */
-const click = (frequency: number, gain: number): Layer => ({
-  source: { type: 'noise' },
-  filter: { type: 'bandpass', frequency, resonance: 0.9 },
-  envelope: { attack: 0.001, decay: 0.006 },
-  gain,
-})
+/** Cuts the hiss above the click's resonances. */
+const HISS_CUT = { type: 'lowpass', frequency: 4500, resonance: -3 } as const
+
+/** The contact: a narrow ring over a wider body below it, so it reads as a part rather than a puff of noise. */
+const click = (frequency: number, gain: number): Layer[] => [
+  {
+    source: { type: 'noise' },
+    filter: [{ type: 'bandpass', frequency, resonance: 5 }, HISS_CUT],
+    envelope: { attack: 0.001, decay: 0.005 },
+    gain,
+  },
+  {
+    source: { type: 'noise' },
+    filter: [{ type: 'bandpass', frequency: frequency * 0.6, resonance: 1.5 }, HISS_CUT],
+    envelope: { attack: 0.001, decay: 0.006 },
+    gain: gain * 0.45,
+  },
+]
 
 /** The body: a sine struck 60% sharp that settles onto `frequency` within ~20 ms. */
 const knock = (frequency: number, gain: number): Layer => ({
@@ -24,49 +36,68 @@ const knock = (frequency: number, gain: number): Layer => ({
   gain,
 })
 
-/** A soft struck note: a sine with a faint glass-bar partial at 2.76x that dies first. */
-const note = (frequency: number, gain: number, delay = 0): Layer[] => [
-  {
-    source: { type: 'sine', frequency },
-    envelope: { attack: 0.003, decay: 0.07 },
-    gain,
-    delay,
-  },
-  {
-    source: { type: 'sine', frequency: frequency * 2.76 },
-    envelope: { attack: 0.003, decay: 0.025 },
-    gain: gain * 0.25,
-    delay,
-  },
+/** Overtones of a struck material as [ratio to the note, level, decay]. Real bars are inharmonic. */
+type Mode = readonly [ratio: number, level: number, decay: number]
+/** A free glass bar: modes at 2.76x and 5.4x, the higher dying first. */
+const GLASS: readonly Mode[] = [
+  [2.76, 0.3, 0.03],
+  [5.4, 0.08, 0.014],
+]
+/** An undercut wooden bar, like a marimba: one rounder mode at 3.99x. */
+const WOOD: readonly Mode[] = [[3.99, 0.14, 0.02]]
+
+/** A struck note: a sine fundamental plus the material's overtones. */
+const note = (frequency: number, gain: number, decay: number, modes: readonly Mode[]): Layer[] => [
+  { source: { type: 'sine', frequency }, envelope: { attack: 0.003, decay }, gain },
+  ...modes.map(([ratio, level, modeDecay]): Layer => ({
+    source: { type: 'sine', frequency: frequency * ratio },
+    envelope: { attack: 0.002, decay: modeDecay },
+    gain: gain * level,
+  })),
 ]
 
-// Synthesized on demand: no audio files, and the AudioContext is only created on the first click.
+// Synthesized on demand: no audio files, and the AudioContext only starts on interaction.
 const themeSounds = {
-  // Brightest contact, higher knock, and a G5 that lifts.
-  light: defineSound({ layers: [click(2600, 1.7), knock(440, 0.15), ...note(784, 0.03)] }),
-  // Duller contact, lower knock, and a C5 that settles.
-  dark: defineSound({ layers: [click(1500, 2.2), knock(262, 0.18), ...note(523, 0.034)] }),
-  // Neutral contact, then both notes in turn: following the system means either.
+  light: defineSound({
+    layers: [...click(2400, 1.4), knock(392, 0.2), ...note(784, 0.07, 0.07, GLASS)],
+  }),
+  dark: defineSound({
+    layers: [...click(1400, 1.6), knock(262, 0.22), ...note(523, 0.08, 0.08, WOOD)],
+  }),
+  // An open fifth: C5 and G5 struck together. The C5 has no overtone, so it doesn't beat against the glass.
   system: defineSound({
-    layers: [click(2000, 2), knock(330, 0.15), ...note(523, 0.026), ...note(784, 0.024, 0.045)],
+    layers: [
+      ...click(1900, 1.4),
+      knock(330, 0.18),
+      ...note(523, 0.05, 0.075, []),
+      ...note(784, 0.045, 0.07, GLASS),
+    ],
   }),
 } satisfies Record<Theme, ReturnType<typeof defineSound>>
 
-/** Overall level: the loudest 30 ms sit near -27 dBFS, a few dB above Allo's switch. */
-const LEVEL = 0.45
-/** Repeats closer than this play softer, as a real switch flicked quickly does. */
-const QUICK_REPEAT_MS = 220
+/** Overall level: the loudest 30 ms sit near -30 dBA, about where Allo's switch plays. */
+const LEVEL = 0.55
+/** Repeats faster than FAST_MS play 30% softer, easing back to full by SLOW_MS, as cuelume does. */
+const FAST_MS = 80
+const SLOW_MS = 250
 let lastPlayedAt = -Infinity
 
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/** Starts the AudioContext on press so the sound on release isn't late. */
+export function warmThemeSounds() {
+  if (prefersReducedMotion()) return
+  ensureReady().catch(() => {})
+}
+
 export function playThemeSound(theme: Theme) {
+  // Reduced motion doubles as the opt-out for interface sound.
+  if (prefersReducedMotion()) return
   const now = performance.now()
-  const quickness = Math.max(0, 1 - (now - lastPlayedAt) / QUICK_REPEAT_MS)
+  const quickness = Math.min(1, Math.max(0, (SLOW_MS - (now - lastPlayedAt)) / (SLOW_MS - FAST_MS)))
   lastPlayedAt = now
   try {
-    themeSounds[theme]({
-      volume: LEVEL * (1 - 0.25 * quickness),
-      jitter: { detune: 15, volume: 0.06 },
-    })
+    themeSounds[theme]({ volume: LEVEL * (1 - 0.3 * quickness), jitter: { detune: 15 } })
   } catch {
     // Sound is decoration; the theme change must not depend on Web Audio.
   }
