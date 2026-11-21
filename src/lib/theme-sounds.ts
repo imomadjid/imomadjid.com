@@ -1,6 +1,7 @@
 import { defineSound, ensureReady } from '@web-kits/audio'
 import type { Layer } from '@web-kits/audio'
 
+import { prefersReducedMotion } from './theme'
 import type { Theme } from './theme'
 
 // A small switch thrown, then a struck note that names the theme: glass G5
@@ -81,8 +82,6 @@ const LEVEL = 0.55
 const FAST_MS = 80
 const SLOW_MS = 250
 let lastPlayedAt = -Infinity
-
-const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Starts the AudioContext on press so the sound on release isn't late. */
 export function warmThemeSounds() {
