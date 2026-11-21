@@ -14,17 +14,26 @@ export type SceneLight = {
 }
 
 /**
- * The wand in canvas UV space (0 to 1, y down). `angle` swings the rod around its pivot in
- * radians. Lengths are fractions of the canvas height: distances along the rod from the pivot
- * to the flat tip's ends and the rod's end, and the rod's and tip's half widths as seen.
+ * The wand in canvas UV space (0 to 1, y down). (x, y) is the origin of its axis, `hang`
+ * above the point where it hangs on the hook, and `angle` swings the wand around that point in
+ * radians. Lengths are fractions of the canvas height, measured along the axis from the origin;
+ * widths are half-widths as seen.
  */
 export type WandPose = {
   x: number
   y: number
   angle: number
+  /** Where it hangs on the hook; the hook's wire runs straight up from here. */
+  hang: number
   tipStart: number
-  tipEnd: number
   tipWidth: number
+  tipCorner: number
+  /** The tip narrows from `taperStart` into the rod, which is full width from `rodStart`. */
+  taperStart: number
+  rodStart: number
+  holeY: number
+  holeWidth: number
+  holeHeight: number
   length: number
   radius: number
 }

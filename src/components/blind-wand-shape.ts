@@ -14,7 +14,9 @@ export const HOLE_RADIUS = 2.4
 export const HANG_Y = HOLE_Y - 1
 export const ROD_RADIUS = 4
 // The flat tip narrows into the shaft over a short molded taper.
-const TAPER_START = TIP_END - 5
+export const TAPER_START = TIP_END - 5
+/** The radius of the tip's rounded top corners. */
+export const TIP_CORNER = 3
 export const ROD_START = TIP_END + 2
 // Before layout is measured, a long rod reaches past the top of the page.
 export const UNMEASURED_LENGTH = 4000
@@ -30,7 +32,7 @@ const f = (value: number) => value.toFixed(2)
 
 /** The flat tip with rounded top corners, tapering from its own width into the shaft's. */
 export function tipPath(left: number, right: number, rodLeft: number, rodRight: number) {
-  const corner = Math.min(3, (right - left) / 2)
+  const corner = Math.min(TIP_CORNER, (right - left) / 2)
   const bend = (ROD_START - TAPER_START) / 2
   return [
     `M${f(left + corner)} ${TIP_START}`,

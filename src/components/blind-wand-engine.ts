@@ -20,11 +20,13 @@ import type { Facet, Rgb, WandLight } from './blind-wand-light'
 import {
   HANG_Y,
   HOLE_RADIUS,
+  HOLE_Y,
   PIVOT_ABOVE,
   ROD_RADIUS,
   ROD_START,
   SECTIONS,
-  TIP_END,
+  TAPER_START,
+  TIP_CORNER,
   TIP_START,
   UNMEASURED_LENGTH,
   hookPaths,
@@ -349,9 +351,8 @@ export function startBlindWand(
     }
     // The hole faces the room at rest and closes to a slit as the flat tip turns edge-on.
     const facing = Math.abs(Math.cos(turn))
-    for (const hole of holes) {
-      hole.setAttribute('rx', (HOLE_RADIUS * smoothstep(0.12, 1, facing)).toFixed(3))
-    }
+    const holeWidth = HOLE_RADIUS * smoothstep(0.12, 1, facing)
+    for (const hole of holes) hole.setAttribute('rx', holeWidth.toFixed(3))
     const hookPath = hookPaths(turn)
     const metal = mixRgb(light.surface, [0.55, 0.57, 0.6], 0.6)
     for (const hook of hooks) {
@@ -368,9 +369,15 @@ export function startBlindWand(
       x: (pivotX - downX * HANG_Y) / width,
       y: (hangTop - downY * HANG_Y) / height,
       angle,
+      hang: HANG_Y / height,
       tipStart: TIP_START / height,
-      tipEnd: TIP_END / height,
       tipWidth: tipWidth / height,
+      tipCorner: TIP_CORNER / height,
+      taperStart: TAPER_START / height,
+      rodStart: ROD_START / height,
+      holeY: HOLE_Y / height,
+      holeWidth: holeWidth / height,
+      holeHeight: HOLE_RADIUS / height,
       length: length / height,
       radius: ROD_RADIUS / height,
     })

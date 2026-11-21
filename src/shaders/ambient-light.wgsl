@@ -25,9 +25,15 @@ struct Params {
   wandY: f32,
   wandAngle: f32,
   wandDepth: f32,
+  wandHang: f32,
   wandTipStart: f32,
-  wandTipEnd: f32,
   wandTipWidth: f32,
+  wandTipCorner: f32,
+  wandTaperStart: f32,
+  wandRodStart: f32,
+  wandHoleY: f32,
+  wandHoleWidth: f32,
+  wandHoleHeight: f32,
   wandLength: f32,
   wandRadius: f32,
 }
@@ -131,9 +137,10 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let railHit = planeHit(railWall, source - railWall, blindOrigin, blindNormal);
   let railPosition = dot(railHit - blindOrigin, blindAxis);
   let opening = mix(params.opening, params.opening * 0.5, params.night);
-  // The tilt wand hangs from its pivot on a plane parallel to the wall. Its clear acrylic rod
-  // and flat tip pass some light and focus a bright line down the middle of their shadow; the
-  // wire hook above them is opaque.
+  // The tilt wand hangs from its hook on a plane parallel to the wall. Its clear acrylic rod
+  // and flat tip pass some light and focus a bright line down the middle of their shadow. The
+  // tip has rounded top corners, a hole the hook passes through, and a short taper into the rod.
+  // The hook's wire above it is opaque and stays upright as the wand swings.
   let wandOrigin = vec3f((params.wandX - 1.0) * params.aspect, params.wandY, params.wandDepth);
   let wandDown = vec2f(sin(params.wandAngle), cos(params.wandAngle));
   let wandAcross = vec2f(wandDown.y, -wandDown.x);
@@ -162,13 +169,26 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     let wandLocal = planeHit(wall, ray, wandOrigin, planeNormal).xy - wandOrigin.xy;
     let along = dot(wandLocal, wandDown);
     let across = abs(dot(wandLocal, wandAcross));
-    let wandWidth = select(select(params.wandRadius * 0.2, params.wandTipWidth,
-      along >= params.wandTipStart), params.wandRadius, along >= params.wandTipEnd);
-    let wandCoverage = (1.0 - smoothstep(wandWidth - wandPixel, wandWidth + wandPixel, across))
-      * select(0.0, 1.0, along > -0.5 && along < params.wandLength && params.wandRadius > 0.0);
+    let wandPresent = select(0.0, 1.0, params.wandRadius > 0.0);
+    let wandWidth = mix(params.wandTipWidth, params.wandRadius,
+      smoothstep(params.wandTaperStart, params.wandRodStart, along));
+    // A box with rounded top corners, from the top of the tip to the end of the rod.
+    let corner = min(params.wandTipCorner, wandWidth);
+    let cornerOffset = vec2f(across - (wandWidth - corner), params.wandTipStart + corner - along);
+    let bodyDistance = max(length(max(cornerOffset, vec2f(0.0)))
+      + min(max(cornerOffset.x, cornerOffset.y), 0.0) - corner, along - params.wandLength);
+    // The hole is an ellipse that closes to a slit as the flat tip turns edge-on.
+    let holeSize = max(vec2f(params.wandHoleWidth, params.wandHoleHeight), vec2f(0.00001));
+    let holeDistance = (length(vec2f(across, along - params.wandHoleY) / holeSize) - 1.0)
+      * min(holeSize.x, holeSize.y);
+    let bodyCoverage = (1.0 - smoothstep(-wandPixel, wandPixel, max(bodyDistance, -holeDistance)))
+      * wandPresent;
+    let wire = wandLocal - wandDown * params.wandHang;
+    let wireWidth = params.wandRadius * 0.2;
+    let wireCoverage = (1.0 - smoothstep(wireWidth - wandPixel, wireWidth + wandPixel, abs(wire.x)))
+      * select(0.0, 1.0, wire.y < 0.0) * wandPresent;
     let acrylicOpacity = mix(0.18, 0.78, smoothstep(0.1, 0.85, across / max(wandWidth, 0.0001)));
-    let wandTransmission = 1.0 - wandCoverage
-      * select(1.0, acrylicOpacity, along >= params.wandTipStart);
+    let wandTransmission = (1.0 - bodyCoverage * acrylicOpacity) * (1.0 - wireCoverage);
     let foliageRay = source + vec3f(disk * foliageRadius, 0.0) - wall;
     let nearUv = (planeHit(wall, foliageRay, nearOrigin, planeNormal).xy - nearOrigin.xy) / nearSize + nearWind;
     let farUv = (planeHit(wall, foliageRay, farOrigin, planeNormal).xy - farOrigin.xy) / farSize + farWind;
