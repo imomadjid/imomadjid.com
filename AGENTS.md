@@ -11,6 +11,8 @@ Before editing files for a substantial task:
 
 <!-- intent-skills:end -->
 
+Claude Code also loads the `userinterface-wiki` skill from `.claude/skills/`, which covers UI audio, sound synthesis, animation, and typography rules. It is pinned in `skills-lock.json` with the other local skills; treat it as vendored and update it with `bunx skills update userinterface-wiki`.
+
 # Repository Guidelines
 
 ## Project structure

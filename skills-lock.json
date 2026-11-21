@@ -7,6 +7,14 @@
       "sourceType": "github",
       "skillPath": "skills/duotone-icons/SKILL.md",
       "computedHash": "d0458e5458c98cfd2fe277b563467c0a21eb0968e9e5b33199ea617d25c44242"
+    },
+    "userinterface-wiki": {
+      "source": "raphaelsalaja/userinterface-wiki",
+      "commit": "256a954080c8bcf1b1ceb1e2a4079d1f24cf593a",
+      "sourceType": "github",
+      "skillPath": "skills/SKILL.md",
+      "computedHash": "b0101af16d186e0775415bf1d95800f3622630c090ba11d383dc9fdb4be06695",
+      "installMode": "copy"
     }
   }
 }
