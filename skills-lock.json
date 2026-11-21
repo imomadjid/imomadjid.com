@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "skills": {
+    "userinterface-wiki": {
+      "source": "raphaelsalaja/userinterface-wiki",
+      "commit": "256a954080c8bcf1b1ceb1e2a4079d1f24cf593a",
+      "sourceType": "github",
+      "skillPath": "skills/SKILL.md",
+      "computedHash": "b0101af16d186e0775415bf1d95800f3622630c090ba11d383dc9fdb4be06695",
+      "installMode": "copy"
+    }
+  }
+}

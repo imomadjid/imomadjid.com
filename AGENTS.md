@@ -11,6 +11,8 @@ Before editing files for a substantial task:
 
 <!-- intent-skills:end -->
 
+Claude Code also loads the `userinterface-wiki` skill from `.claude/skills/`, which covers UI audio, sound synthesis, animation, and typography rules. It was installed with `npx skills` and is pinned in `skills-lock.json`. Treat it as vendored. Update it with `npx skills update userinterface-wiki`.
+
 # Repository Guidelines
 
 ## Project structure
