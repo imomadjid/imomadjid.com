@@ -6,6 +6,7 @@ import { useResolvedScheme } from '#/lib/theme'
 import { startBlindWand } from './blind-wand-engine'
 import type { WandEngine } from './blind-wand-engine'
 import {
+  HANG_Y,
   HOLE_RADIUS,
   HOLE_Y,
   ROD_RADIUS,
@@ -154,78 +155,83 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
               )),
             )}
           </defs>
-          <g data-wand-swing transform={`translate(0 ${-UNMEASURED_LENGTH})`}>
+          {/* The hook hangs from the headrail and only turns; the wand swings on it. */}
+          <g data-wand-hang transform={`translate(0 ${-UNMEASURED_LENGTH})`}>
             <path data-wand-hook="back" d={hook.back} {...hookStroke} />
-            {(['rod', 'tip'] as const).map((section) => {
-              const tip = section === 'tip'
-              const outline = tip
-                ? tipPath(-ROD_RADIUS * 1.45, ROD_RADIUS * 1.45, -ROD_RADIUS, ROD_RADIUS)
-                : rodPath(-ROD_RADIUS, ROD_RADIUS, UNMEASURED_LENGTH)
-              return (
-                <g key={section} mask={tip ? `url(#${ids.hole})` : undefined}>
-                  <path
-                    data-wand-section={section}
-                    d={outline}
-                    fill={`url(#${ids.gradient(section, 'base')})`}
-                  />
-                  <path data-wand-section={section} d={outline} fill={`url(#${ids.shade})`} />
-                  <path
-                    data-wand-section={section}
-                    d={outline}
-                    fill={`url(#${ids.gradient(section, 'light')})`}
-                    mask={`url(#${ids.lit})`}
-                  />
-                  {/* Light piping round the flat tip's molded edge. */}
-                  {tip && (
+            <g data-wand-swing transform={`rotate(0 0 ${HANG_Y})`}>
+              {(['rod', 'tip'] as const).map((section) => {
+                const tip = section === 'tip'
+                const outline = tip
+                  ? tipPath(-ROD_RADIUS * 1.45, ROD_RADIUS * 1.45, -ROD_RADIUS, ROD_RADIUS)
+                  : rodPath(-ROD_RADIUS, ROD_RADIUS, UNMEASURED_LENGTH)
+                return (
+                  <g key={section} mask={tip ? `url(#${ids.hole})` : undefined}>
                     <path
                       data-wand-section={section}
                       d={outline}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="0.6"
-                      className="text-neutral-500/35 dark:text-neutral-400/30"
+                      fill={`url(#${ids.gradient(section, 'base')})`}
                     />
-                  )}
-                </g>
-              )
-            })}
-            {/* The hole's wall catches the light as a thin ring. */}
-            <ellipse
-              data-wand-hole
-              cx="0"
-              cy={HOLE_Y}
-              rx={HOLE_RADIUS}
-              ry={HOLE_RADIUS}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.6"
-              className="text-neutral-500/50 dark:text-neutral-400/40"
-            />
+                    <path data-wand-section={section} d={outline} fill={`url(#${ids.shade})`} />
+                    <path
+                      data-wand-section={section}
+                      d={outline}
+                      fill={`url(#${ids.gradient(section, 'light')})`}
+                      mask={`url(#${ids.lit})`}
+                    />
+                    {/* Light piping round the flat tip's molded edge. */}
+                    {tip && (
+                      <path
+                        data-wand-section={section}
+                        d={outline}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="0.6"
+                        className="text-neutral-500/35 dark:text-neutral-400/30"
+                      />
+                    )}
+                  </g>
+                )
+              })}
+              {/* The hole's wall catches the light as a thin ring. */}
+              <ellipse
+                data-wand-hole
+                cx="0"
+                cy={HOLE_Y}
+                rx={HOLE_RADIUS}
+                ry={HOLE_RADIUS}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.6"
+                className="text-neutral-500/50 dark:text-neutral-400/40"
+              />
+            </g>
             <path data-wand-hook="front" d={hook.front} {...hookStroke} />
-            <rect
-              data-wand-focus
-              x={-ROD_RADIUS - 4}
-              y={ROD_START}
-              width={ROD_RADIUS * 2 + 8}
-              height={UNMEASURED_LENGTH - ROD_START + 4}
-              rx={ROD_RADIUS + 4}
-              fill="none"
-              stroke="var(--focus-ring)"
-              className="opacity-0 group-focus-visible:opacity-100"
-            />
-            <line
-              ref={hitRef}
-              data-wand-hit
-              x1="0"
-              y1={TIP_START}
-              x2="0"
-              y2={UNMEASURED_LENGTH}
-              stroke="transparent"
-              strokeWidth="24"
-              strokeLinecap="round"
-              pointerEvents="stroke"
-              className="pointer-events-auto cursor-pointer touch-none data-dragging:cursor-grabbing"
-            />
+            <g data-wand-swing transform={`rotate(0 0 ${HANG_Y})`}>
+              <rect
+                data-wand-focus
+                x={-ROD_RADIUS - 4}
+                y={ROD_START}
+                width={ROD_RADIUS * 2 + 8}
+                height={UNMEASURED_LENGTH - ROD_START + 4}
+                rx={ROD_RADIUS + 4}
+                fill="none"
+                stroke="var(--focus-ring)"
+                className="opacity-0 group-focus-visible:opacity-100"
+              />
+              <line
+                ref={hitRef}
+                data-wand-hit
+                x1="0"
+                y1={TIP_START}
+                x2="0"
+                y2={UNMEASURED_LENGTH}
+                stroke="transparent"
+                strokeWidth="24"
+                strokeLinecap="round"
+                pointerEvents="stroke"
+                className="pointer-events-auto cursor-pointer touch-none data-dragging:cursor-grabbing"
+              />
+            </g>
           </g>
         </svg>
       </button>

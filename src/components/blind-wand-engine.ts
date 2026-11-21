@@ -18,6 +18,7 @@ import {
 } from './blind-wand-light'
 import type { Facet, Rgb, WandLight } from './blind-wand-light'
 import {
+  HANG_Y,
   HOLE_RADIUS,
   PIVOT_ABOVE,
   ROD_RADIUS,
@@ -190,7 +191,8 @@ export function startBlindWand(
   const options = { signal: listeners.signal }
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const query = <T extends Element>(selector: string) => [...svg.querySelectorAll<T>(selector)]
-  const swing = svg.querySelector<SVGGElement>('[data-wand-swing]')
+  const hang = svg.querySelector<SVGGElement>('[data-wand-hang]')
+  const swings = query<SVGGElement>('[data-wand-swing]')
   const hit = svg.querySelector<SVGLineElement>('[data-wand-hit]')
   const hooks = query<SVGPathElement>('[data-wand-hook]')
   const holes = query<SVGEllipseElement>('[data-wand-hole]')
@@ -244,7 +246,9 @@ export function startBlindWand(
     const bounds = main.getBoundingClientRect()
     return { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
   }
-  const rodX = (y: number) => pivotX + (y + PIVOT_ABOVE) * Math.tan(angle)
+  // The wand swings from where its hole hangs on the hook, in page pixels.
+  const hangTop = HANG_Y - PIVOT_ABOVE
+  const rodX = (y: number) => pivotX + (y - hangTop) * Math.tan(angle)
 
   function measure() {
     width = Math.max(main.clientWidth, 1)
@@ -287,7 +291,8 @@ export function startBlindWand(
     const last = Math.max(stripeStops.length - 1, 1)
     const points = stripeStops.map((_, index) => {
       const along = TIP_START + ((length - TIP_START) * index) / last
-      return [(pivotX + downX * along) / width, (downY * along - PIVOT_ABOVE) / height] as const
+      const reach = along - HANG_Y
+      return [(pivotX + downX * reach) / width, (hangTop + downY * reach) / height] as const
     })
     const current = getSettings()
     const light = lightWand(current, scene(), points, width / height, current.wand.depth)
@@ -355,10 +360,13 @@ export function startBlindWand(
       hook.setAttribute('stroke', toCss(mixRgb(metal, light.sun, light.direct * 0.4)))
     }
     const degrees = ((-angle * 180) / Math.PI).toFixed(3)
-    swing?.setAttribute('transform', `translate(0 ${-length}) rotate(${degrees})`)
+    hang?.setAttribute('transform', `translate(0 ${-length})`)
+    for (const swing of swings) swing.setAttribute('transform', `rotate(${degrees} 0 ${HANG_Y})`)
+    // The scene measures the wand from its top along its length, so hand it the point the
+    // swinging wand would reach at the hook's height.
     wandPose.set({
-      x: pivotX / width,
-      y: -PIVOT_ABOVE / height,
+      x: (pivotX - downX * HANG_Y) / width,
+      y: (hangTop - downY * HANG_Y) / height,
       angle,
       tipStart: TIP_START / height,
       tipEnd: TIP_END / height,
@@ -458,8 +466,10 @@ export function startBlindWand(
     const after = point.x - rodX(point.y)
     if (Math.sign(before) === Math.sign(after)) return
     const velocity = (point.x - previous.x) / elapsed
-    const leverage = (point.y + PIVOT_ABOVE) / length
-    const push = (velocity / length) * BRUSH_GAIN * leverage
+    const arm = length - HANG_Y
+    // Above the hook the tip can't be pushed round it.
+    const leverage = Math.max(0, point.y - hangTop) / arm
+    const push = (velocity / arm) * BRUSH_GAIN * leverage
     swingVelocity += Math.max(-BRUSH_LIMIT, Math.min(BRUSH_LIMIT, push))
     wake()
   }
@@ -486,7 +496,7 @@ export function startBlindWand(
     if (distance > DRAG_THRESHOLD) moved = true
     if (!moved) return
     const point = pointerIn(event)
-    const target = Math.atan2(point.x - pivotX, point.y + PIVOT_ABOVE)
+    const target = Math.atan2(point.x - pivotX, point.y - hangTop)
     drag.target = Math.max(-SWING_LIMIT, Math.min(SWING_LIMIT, target))
     wake()
   }

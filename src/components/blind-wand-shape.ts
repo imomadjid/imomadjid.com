@@ -9,6 +9,9 @@ export const TIP_START = 30
 export const TIP_END = 54
 export const HOLE_Y = 37
 export const HOLE_RADIUS = 2.4
+// Where the hook's wire crosses the hole: the wand hangs and swings from here, while the hook
+// above it only turns, with the tilter's shaft.
+export const HANG_Y = HOLE_Y - 1
 export const ROD_RADIUS = 4
 // The flat tip narrows into the shaft over a short molded taper.
 const TAPER_START = TIP_END - 5
