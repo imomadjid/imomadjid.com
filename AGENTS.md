@@ -19,7 +19,8 @@ This is the personal portfolio website for imomadjid.com, built with TanStack St
 
 - `src/routes/` contains file-based routes. `index.tsx` defines `/`; `__root.tsx` defines the document shell and stylesheet link.
 - `src/router.tsx` creates the router. Start generates `src/routeTree.gen.ts` during development and builds. Keep it committed; do not edit it manually or run a separate Router CLI against it.
-- `src/styles.css` imports Tailwind and holds global styles and theme extensions.
+- `src/styles.css` imports Tailwind and holds global styles and theme extensions. Its `dark` variant follows `data-scene-tone` inside the Sunlit scene; do not override text colors with unlayered CSS.
+- DialKit and the Sleep Focus particles are development-only. Keep them behind `import.meta.env.DEV` so production bundles exclude them.
 - `wrangler.jsonc` configures the Worker. Build output goes to `dist/`.
 
 ## Development and validation commands
@@ -34,7 +35,7 @@ Use Tailwind utilities for styling. Keep Oxfmt, Oxlint, and anti-slop settings i
 
 ## Testing guidelines
 
-No test suite or coverage threshold is configured. For implementation changes, run `bun run check` and `bun run build` before review. Verify UI changes in a browser. For documentation-only changes, check formatting and verify affected instructions against the repository. A read-only audit does not require a build unless needed to investigate a finding. Use descriptive `*.test.ts` or `*.test.tsx` names for future tests.
+Tests use `bun test` (`bun run test`). CI runs only `src/components` tests because the shader test needs a native WebGPU adapter. No coverage threshold is configured. For implementation changes, run `bun run check`, `bun run test`, and `bun run build` before review. Verify UI changes in a browser. For documentation-only changes, check formatting and verify affected instructions against the repository. A read-only audit does not require a build unless needed to investigate a finding. Use descriptive `*.test.ts` or `*.test.tsx` names for future tests.
 
 Run `bun run doctor` when the task requests a full React audit or a React-related finding needs broader investigation. The full audit blocks errors; staged React Doctor warnings block commits. Review advisory findings before changing code. See `README.md` for hook and advisory tool details.
 

@@ -16,6 +16,7 @@
     "format:check": "vp fmt --check",
     "typecheck": "tsc --noEmit",
     "check": "vp check && tsc --noEmit",
+    "test": "bun test",
     "doctor": "react-doctor --yes --no-telemetry --no-supply-chain --blocking error",
     "doctor:staged": "react-doctor --staged --yes --no-telemetry --no-supply-chain --blocking warning",
     "deadcode": "fallow dead-code --format json --quiet",

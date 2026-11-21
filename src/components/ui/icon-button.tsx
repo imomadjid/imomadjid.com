@@ -10,7 +10,6 @@ export function IconButton({ className, children, ...props }: IconButtonProps) {
   return (
     <ButtonPrimitive
       {...props}
-      data-theme-color
       className={cn(
         'group relative isolate inline-flex size-9 cursor-pointer items-center justify-center rounded-full text-neutral-600 transition-colors duration-80 outline-none hover:text-neutral-950 focus-visible:ring-1 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-50 dark:text-neutral-400 dark:hover:text-neutral-50',
         className,

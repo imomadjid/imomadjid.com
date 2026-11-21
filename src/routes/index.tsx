@@ -5,9 +5,7 @@ import { AmbientLight } from '#/components/ambient-light'
 import { ProfileAvatar } from '#/components/profile-avatar'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { LinkButton } from '#/components/ui/link-button'
-import { ambientControls } from '#/lib/ambient-settings'
-
-import '../sunlit.css'
+import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -23,20 +21,29 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-function Home() {
+const productionTuning = { settings: defaultAmbientSettings, isSleeping: false }
+
+function useDialTuning() {
   const sunlit = useDialKitController('Sunlit', ambientControls, {
     id: 'sunlit-tuning',
-    persist: import.meta.env.DEV,
+    persist: true,
     onAction(action) {
       if (action === 'reset') sunlit.resetValues()
     },
   })
   const profile = useDialKit('Profile', { isSleeping: false })
-  const isSleeping = import.meta.env.DEV && profile.isSleeping
+  return { settings: sunlit.values, isSleeping: profile.isSleeping }
+}
+
+// The build-time constant keeps hook order stable and drops DialKit from production.
+const useTuning = import.meta.env.DEV ? useDialTuning : () => productionTuning
+
+function Home() {
+  const { settings, isSleeping } = useTuning()
 
   return (
-    <main className="sunlit-study relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
-      <AmbientLight settings={sunlit.values} />
+    <main className="relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
+      <AmbientLight settings={settings} />
       <div className="relative z-10 w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
@@ -45,11 +52,8 @@ function Home() {
           <ThemeToggle />
         </div>
 
-        <div
-          data-theme-color
-          className="space-y-8 text-base leading-[1.8] text-neutral-600 dark:text-neutral-400"
-        >
-          <p data-theme-color className="text-neutral-900 dark:text-neutral-100">
+        <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
+          <p className="text-neutral-900 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-100">
             I’m Imo, a design engineer and product designer based in Jakarta. I design and build
             interfaces, from early prototypes to shipped products.
           </p>
@@ -92,7 +96,7 @@ function Home() {
             alt="Imo’s signature"
             width={324}
             height={133}
-            className="h-auto w-28 dark:invert"
+            className="h-auto w-28 transition-[filter] duration-300 motion-reduce:transition-none dark:invert"
           />
           <nav
             aria-label="Contact and social links"
@@ -104,10 +108,9 @@ function Home() {
               { label: 'LinkedIn', href: 'https://www.linkedin.com/in/imomadjid/' },
             ].map(({ label, href }) => (
               <a
-                data-theme-color
                 key={label}
                 href={href}
-                className="inline-flex min-h-11 items-center text-neutral-600 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 dark:text-neutral-400 dark:hover:text-neutral-50"
+                className="inline-flex min-h-11 items-center text-neutral-600 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-50"
               >
                 {label}
               </a>

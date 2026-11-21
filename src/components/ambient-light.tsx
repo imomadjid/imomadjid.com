@@ -17,6 +17,11 @@ export function AmbientLight({ settings }: { settings: AmbientSettings }) {
     const canvas = canvasRef.current
     const host = canvas?.parentElement
     if (!canvas || !host) return
+    // Skip downloading the renderer where WebGPU cannot run.
+    if (!('gpu' in navigator)) {
+      canvas.dataset.renderer = 'fallback'
+      return
+    }
     const abort = new AbortController()
     void import('#/lib/ambient-light')
       .then(({ startAmbient }) => startAmbient(canvas, host, latest.current, abort.signal))
@@ -40,5 +45,12 @@ export function AmbientLight({ settings }: { settings: AmbientSettings }) {
     }
   }, [])
 
-  return <canvas ref={canvasRef} aria-hidden="true" className="sunlit-canvas" />
+  // The canvas paints the surface token so the renderer can read it without a transition.
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 -z-1 size-full bg-surface-1 opacity-0 data-[renderer=webgpu]:opacity-100 motion-safe:transition-opacity motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]"
+    />
+  )
 }

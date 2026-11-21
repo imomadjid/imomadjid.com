@@ -30,6 +30,9 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Check formatting, lint, and types
         run: bun run check
+      # The shader test needs a native WebGPU adapter, which hosted runners lack.
+      - name: Test
+        run: bun test src/components
       - name: Check React
         run: bun run doctor
       - name: Build

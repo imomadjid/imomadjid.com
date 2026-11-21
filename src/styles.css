@@ -72,32 +72,20 @@
   font-display: swap;
 }
 
-@custom-variant dark (&:is(.dark *));
-
-* {
-  box-sizing: border-box;
+/* Inside a lit scene, follow the renderer's foreground crossover instead of the
+   instant theme class, so text flips when the light does. */
+@custom-variant dark {
+  &:where(.dark *:not([data-scene-tone='day'] *)) {
+    @slot;
+  }
+  &:where([data-scene-tone='night'] *) {
+    @slot;
+  }
 }
 
-html,
-body,
-#app {
-  min-height: 100%;
-}
-
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-}
-
-/* Animate color owners, not each descendant that inherits their animated color.
-   Nested currentColor transitions restart as their parent's value changes. */
 @media (prefers-reduced-motion: no-preference) {
   html.theme-transitioning body {
-    transition: background-color 180ms ease-in-out !important;
-  }
-
-  html.theme-transitioning [data-theme-color] {
-    transition: color 180ms ease-in-out !important;
+    transition: background-color 180ms ease-in-out;
   }
 }
 
@@ -235,9 +223,9 @@ body {
 
 @layer base {
   :focus-visible {
-    outline: 1px solid var(--focus-ring, #6b97ff);
+    outline: 1px solid var(--focus-ring);
     outline-offset: 2px;
-    border-radius: var(--shape-input-radius, 8px);
+    border-radius: 8px;
   }
   a:focus-visible {
     border-radius: 2px;

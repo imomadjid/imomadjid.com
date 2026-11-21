@@ -32,9 +32,15 @@ generated file committed. After adding or moving routes, run the dev server or
 `bun run build` before checking types. Do not run a separate Router CLI against
 this file; its output differs from Start's and triggers dev-server reloads.
 
-DialKit is installed with one development-only `DialRoot` and stylesheet in
-`src/routes/__root.tsx`. No controls are registered yet. Add `useDialKit` in
-a component when it has values to tune. The root displays registered panels.
+DialKit tunes the Sunlit background and the Sleep Focus avatar state in
+development only. `src/routes/index.tsx` reads the controls through a hook that
+is chosen at build time, so production uses `defaultAmbientSettings` from
+`src/lib/ambient-settings.ts` and ships no DialKit code. Change the defaults in
+`ambientControls`; tuned values persist only in the development browser.
+
+Inside `main`, the `dark:` variant follows the renderer's `data-scene-tone`
+crossover instead of the instant `.dark` class, so text and inverted marks flip
+with the light. Without WebGPU it falls back to `.dark`.
 
 ## Quality checks
 
@@ -43,6 +49,7 @@ bun run format        # Format files; sort imports and Tailwind classes
 bun run lint          # Oxlint with type-aware checks and anti-slop rules
 bun run lint:fix      # Apply safe lint fixes
 bun run typecheck     # Run TypeScript 7
+bun run test          # Bun tests; the shader test needs a native WebGPU adapter
 bun run check         # Check formatting, lint, and types
 bun run doctor        # React Doctor; errors block
 bun run deadcode      # Fallow unused-code report; findings exit nonzero

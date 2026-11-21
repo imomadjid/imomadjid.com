@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react'
+
 export type Theme = 'system' | 'light' | 'dark'
 
 const STORAGE_KEY = 'imomadjid:theme'
@@ -19,17 +21,15 @@ function readPreference(): Theme {
 
 function applyTheme(theme: Theme, animate = true) {
   const root = document.documentElement
-  let resolved = theme
-  if (resolved === 'system') {
-    resolved = window.matchMedia(MEDIA_QUERY).matches ? 'dark' : 'light'
-  }
+  const resolved =
+    theme === 'system' ? (window.matchMedia(MEDIA_QUERY).matches ? 'dark' : 'light') : theme
 
   if (!root.classList.contains(resolved)) {
     clearTimeout(transitionTimeout)
     root.classList.remove('theme-transitioning')
     if (animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       root.classList.add('theme-transitioning')
-      // Install the color transition before the class swap, as in Lukis/wiki.
+      // Flush styles so the transition applies before the class swap.
       void root.offsetHeight
       transitionTimeout = setTimeout(() => root.classList.remove('theme-transitioning'), 200)
     }
@@ -54,11 +54,15 @@ export function getThemeSnapshot(): Theme {
   return asTheme(document.documentElement.dataset.theme)
 }
 
-export function getServerThemeSnapshot(): Theme {
+function getServerThemeSnapshot(): Theme {
   return 'system'
 }
 
-export function subscribeTheme(notify: () => void) {
+export function useTheme() {
+  return useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot)
+}
+
+function subscribeTheme(notify: () => void) {
   const media = window.matchMedia(MEDIA_QUERY)
   const onSystemChange = () => applyTheme(getThemeSnapshot())
   const onStorage = (event: StorageEvent) => {
@@ -74,8 +78,6 @@ export function subscribeTheme(notify: () => void) {
     media.removeEventListener('change', onSystemChange)
     window.removeEventListener('storage', onStorage)
     window.removeEventListener(CHANGE_EVENT, notify)
-    clearTimeout(transitionTimeout)
-    document.documentElement.classList.remove('theme-transitioning')
   }
 }
 

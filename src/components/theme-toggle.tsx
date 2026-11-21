@@ -1,7 +1,6 @@
 import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react'
-import { useSyncExternalStore } from 'react'
 
-import { getServerThemeSnapshot, getThemeSnapshot, setTheme, subscribeTheme } from '#/lib/theme'
+import { getThemeSnapshot, setTheme, useTheme } from '#/lib/theme'
 import { cn } from '#/lib/utils'
 
 import { IconButton } from './ui/icon-button'
@@ -29,9 +28,9 @@ const themes = {
       'in-data-[theme=dark]:scale-100 in-data-[theme=dark]:opacity-100 in-data-[theme=dark]:blur-none',
   },
 } as const
+
 export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot)
-  const current = themes[theme]
+  const current = themes[useTheme()]
   const label = `Theme: ${current.label}. Switch to ${themes[current.next].label}`
 
   return (

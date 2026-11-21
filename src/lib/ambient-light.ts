@@ -5,6 +5,9 @@ import surfaceSource from '../shaders/ambient-surface.wgsl?raw'
 import type { AmbientSettings } from './ambient-settings'
 import { smoothStep, transitionTiming, transitionValue } from './ambient-transition'
 
+const FOLIAGE_SIZE = 1024
+const FOLIAGE_MIPS = 5
+
 export type AmbientRenderer = {
   update: (settings: AmbientSettings) => void
   dispose: () => void
@@ -16,6 +19,11 @@ export async function startAmbient(
   initialSettings: AmbientSettings,
   signal: AbortSignal,
 ): Promise<AmbientRenderer> {
+  // Fetch and decode the foliage mask while the GPU device initializes.
+  const image = new Image()
+  image.src = '/ambient/foliage.svg'
+  const decoded = image.decode()
+  decoded.catch(() => {})
   const profiling =
     import.meta.env.DEV && new URLSearchParams(location.search).has('ambientProfile')
   const adapter = profiling
@@ -27,7 +35,12 @@ export async function startAmbient(
   })
   let disposed = false
   let frameId = 0
-  const cleanups: (() => void)[] = []
+  const listeners = new AbortController()
+  const cleanups: (() => void)[] = [() => listeners.abort()]
+  const assertLive = () => {
+    if (disposed || signal.aborted)
+      throw new DOMException('Ambient renderer disposed', 'AbortError')
+  }
 
   function dispose() {
     if (disposed) return
@@ -37,16 +50,16 @@ export async function startAmbient(
     gpu.dispose()
   }
 
-  signal.addEventListener('abort', dispose, { once: true })
-  cleanups.push(() => signal.removeEventListener('abort', dispose))
+  signal.addEventListener('abort', dispose, { once: true, signal: listeners.signal })
   try {
-    if (signal.aborted) throw new DOMException('Preview closed', 'AbortError')
+    assertLive()
+    const isDark = () => (document.documentElement.classList.contains('dark') ? 1 : 0)
     let settings = initialSettings
     let ready = false
     let lastTime = 0
     let ambientTime = 0
     let transitionTime = 0
-    let night = document.documentElement.classList.contains('dark') ? 1 : 0
+    let night = isDark()
     let from = night
     let to = night
     let direction = night
@@ -61,9 +74,10 @@ export async function startAmbient(
     let entranceTiming = transitionTiming(
       night ? settings.transition.duskEntrance : settings.transition.dawnEntrance,
     )
-    // Resolve the site's surface token through CSS, only on startup/theme changes.
+    // The canvas paints the surface token without a transition, so this reads the
+    // destination color on theme changes rather than an in-flight value.
     const readSurface = () => {
-      const channels = getComputedStyle(host).backgroundColor.match(/[\d.]+/g)
+      const channels = getComputedStyle(canvas).backgroundColor.match(/[\d.]+/g)
       if (!channels || channels.length < 3) throw new Error('Cannot read surface color')
       return channels.slice(0, 3).map(Number)
     }
@@ -74,7 +88,8 @@ export async function startAmbient(
     let reportTime = 0
     const gpuSamples: number[] = []
     const frameSamples: number[] = []
-    const gpuTimer = profiling && gpu.gpu.features.has('timestamp-query') ? timer(gpu) : undefined
+    // Timestamp queries are only requested while profiling.
+    const gpuTimer = gpu.gpu.features.has('timestamp-query') ? timer(gpu) : undefined
     const lightSpan = gpuTimer?.span('light')
     const materialSpan = gpuTimer?.span('material')
     gpuTimer?.onResults((spans) => {
@@ -103,20 +118,29 @@ export async function startAmbient(
     let width = rect.width
     let height = rect.height
     const dpr = () => Math.min(window.devicePixelRatio || 1, 1.5)
+    const outputSize = (): [number, number] => [
+      Math.max(1, width * dpr()),
+      Math.max(1, height * dpr()),
+    ]
+    const lightSize = (): [number, number] => [
+      Math.max(1, output.size[0] / 2),
+      Math.max(1, output.size[1] / 2),
+    ]
     const output = surface(gpu, canvas, {
       autoResize: false,
-      size: [Math.max(1, width * dpr()), Math.max(1, height * dpr())],
+      size: outputSize(),
       alphaMode: 'opaque',
     })
     const lightTarget = target(gpu, {
-      size: [Math.max(1, output.size[0] / 2), Math.max(1, output.size[1] / 2)],
-      // Preserve irradiance above 1 until the material pass applies exposure.
-      format: 'rgba16float',
+      size: lightSize(),
+      // Visibility and irradiance only; float preserves irradiance above 1 for exposure.
+      format: 'rg16float',
     })
     const texture = gpu.gpu.createTexture({
-      size: [1024, 1024],
-      mipLevelCount: 5,
-      format: 'rgba8unorm',
+      size: [FOLIAGE_SIZE, FOLIAGE_SIZE],
+      mipLevelCount: FOLIAGE_MIPS,
+      // The shader reads coverage from the red channel only.
+      format: 'r8unorm',
       usage:
         GPUTextureUsage.TEXTURE_BINDING |
         GPUTextureUsage.COPY_DST |
@@ -127,11 +151,11 @@ export async function startAmbient(
       magFilter: 'linear',
       mipmapFilter: 'linear',
     })
-    const params = {
-      time: 0,
+    const lightParams = () => ({
+      time: ambientTime,
       night,
       aspect: width / Math.max(height, 1),
-      angle: settings.light.angle,
+      angle: settings.light.angle + entrance * (entranceNight ? -8 : 6),
       softness: settings.light.softness,
       progressiveSoftness: settings.light.progressiveSoftness,
       opening: settings.blinds.opening,
@@ -144,28 +168,28 @@ export async function startAmbient(
       foliageScale: settings.foliage.scale,
       pointerX,
       pointerY,
-      breezeX: 0,
-      breezeY: 0,
+      breezeX: -bendX,
+      breezeY: -bendY,
       aimX,
       aimY,
       beamWidth: settings.light.beamWidth,
-    }
-    const material = {
+    })
+    const materialParams = () => ({
       surfaceColor: surfaceColor.map((channel) => channel / 255),
       night,
       intensity: settings.light.intensity,
       warmth: settings.light.warmth,
       direction,
-      entranceDawn: 0,
-      entranceDusk: 0,
-    }
+      entranceDawn: entrance * (1 - entranceNight),
+      entranceDusk: entrance * entranceNight,
+    })
     const lighting = effect(gpu, lightingSource, {
       label: 'sunlit-light',
-      set: { params, foliage: texture, linearSampler },
+      set: { params: lightParams(), foliage: texture, linearSampler },
     })
     const composite = effect(gpu, surfaceSource, {
       label: 'sunlit-material',
-      set: { params: material, lighting: lightTarget, linearSampler },
+      set: { params: materialParams(), lighting: lightTarget, linearSampler },
     })
 
     function wake() {
@@ -174,7 +198,7 @@ export async function startAmbient(
     }
 
     function readTheme() {
-      const resolved = document.documentElement.classList.contains('dark') ? 1 : 0
+      const resolved = isDark()
       if (resolved === to) return
       // Hand off an unfinished entrance without snapping its tint or geometry.
       entranceFrom = entrance
@@ -196,8 +220,8 @@ export async function startAmbient(
 
     function resize() {
       if (disposed) return
-      output.resize([Math.max(1, width * dpr()), Math.max(1, height * dpr())])
-      lightTarget.resize([Math.max(1, output.size[0] / 2), Math.max(1, output.size[1] / 2)])
+      output.resize(outputSize())
+      lightTarget.resize(lightSize())
       composite.set({ lighting: lightTarget })
       wake()
     }
@@ -214,10 +238,6 @@ export async function startAmbient(
 
     function movePointer(event: PointerEvent) {
       if (reducedMotion.matches || !finePointer.matches || event.pointerType === 'touch') return
-      if (event.target instanceof Element && event.target.closest('[class*="dialkit"]')) {
-        leavePointer()
-        return
-      }
       const bounds = canvas.getBoundingClientRect()
       const x = (event.clientX - bounds.left) / Math.max(bounds.width, 1)
       const y = (event.clientY - bounds.top) / Math.max(bounds.height, 1)
@@ -258,44 +278,37 @@ export async function startAmbient(
       lastTime = now
       transitionTime += delta
       entranceTime += delta
-      entrance = reducedMotion.matches
-        ? 0
-        : transitionValue(
-            entranceFrom,
-            0,
-            entranceTime,
-            entranceTiming.duration,
-            entranceTiming.ease,
-          )
-      if (reducedMotion.matches) entranceFrom = 0
-      night = reducedMotion.matches
-        ? to
-        : transitionValue(from, to, transitionTime, duration, easing)
-      // Settle the dawn/sunset tint ahead of the light level, from its current tint on reversal.
-      direction = reducedMotion.matches
-        ? to
-        : transitionValue(fromDirection, to, transitionTime, duration * 0.25, easing)
-      surfaceColor = toSurface.map((channel, index) =>
-        reducedMotion.matches
-          ? channel
-          : transitionValue(fromSurface[index], channel, transitionTime, duration, easing),
-      )
-      if (!reducedMotion.matches) ambientTime += delta * settings.foliage.speed
+      const still = reducedMotion.matches
+      if (still) {
+        entrance = entranceFrom = 0
+        night = direction = to
+        surfaceColor = toSurface
+        pointerActive = false
+      } else {
+        const { duration: entranceDuration, ease: entranceEase } = entranceTiming
+        entrance = transitionValue(entranceFrom, 0, entranceTime, entranceDuration, entranceEase)
+        night = transitionValue(from, to, transitionTime, duration, easing)
+        // Settle the dawn/sunset tint ahead of the light level, from its current tint on reversal.
+        direction = transitionValue(fromDirection, to, transitionTime, duration * 0.25, easing)
+        surfaceColor = toSurface.map((channel, index) =>
+          transitionValue(fromSurface[index], channel, transitionTime, duration, easing),
+        )
+        ambientTime += delta * settings.foliage.speed
+      }
       const decay = Math.exp((-delta * 4) / settings.breeze.recovery)
       breezeX *= decay
       breezeY *= decay
       const follow = 1 - Math.exp(-delta * 22)
       bendX += (breezeX - bendX) * follow
       bendY += (breezeY - bendY) * follow
-      if (reducedMotion.matches || settings.breeze.strength === 0) {
+      if (still || settings.breeze.strength === 0) {
         breezeX = breezeY = bendX = bendY = 0
         pointerTime = 0
       }
-      if (reducedMotion.matches) pointerActive = false
       const aimInfluence = pointerActive ? settings.light.pointerInfluence : 0
       const targetX = restingAimX + (aimTargetX - restingAimX) * aimInfluence
       const targetY = restingAimY + (aimTargetY - restingAimY) * aimInfluence
-      const aimFollow = reducedMotion.matches ? 1 : 1 - Math.exp(-delta * (pointerActive ? 5 : 2.5))
+      const aimFollow = still ? 1 : 1 - Math.exp(-delta * (pointerActive ? 5 : 2.5))
       aimX += (targetX - aimX) * aimFollow
       aimY += (targetY - aimY) * aimFollow
       const aimMoving = Math.hypot(targetX - aimX, targetY - aimY) > 0.0001
@@ -303,40 +316,8 @@ export async function startAmbient(
         aimX = targetX
         aimY = targetY
       }
-      Object.assign(params, {
-        time: ambientTime,
-        night,
-        aspect: width / Math.max(height, 1),
-        angle: settings.light.angle + entrance * (entranceNight ? -8 : 6),
-        softness: settings.light.softness,
-        progressiveSoftness: settings.light.progressiveSoftness,
-        opening: settings.blinds.opening,
-        spacing: settings.blinds.spacing,
-        railWidth: settings.blinds.railWidth,
-        blindDepth: settings.blinds.distance,
-        movement: settings.foliage.movement,
-        density: settings.foliage.density,
-        casterDepth: settings.foliage.depth,
-        foliageScale: settings.foliage.scale,
-        pointerX,
-        pointerY,
-        breezeX: -bendX,
-        breezeY: -bendY,
-        aimX,
-        aimY,
-        beamWidth: settings.light.beamWidth,
-      })
-      Object.assign(material, {
-        surfaceColor: surfaceColor.map((channel) => channel / 255),
-        night,
-        direction,
-        intensity: settings.light.intensity,
-        warmth: settings.light.warmth,
-        entranceDawn: entrance * (1 - entranceNight),
-        entranceDusk: entrance * entranceNight,
-      })
-      lighting.set({ params })
-      composite.set({ params: material })
+      lighting.set({ params: lightParams() })
+      composite.set({ params: materialParams() })
       try {
         frame(gpu, (current) => {
           current.pass({ target: lightTarget, timer: lightSpan }, (pass) => pass.draw(lighting))
@@ -367,11 +348,7 @@ export async function startAmbient(
       const moving =
         settings.foliage.speed > 0 && settings.foliage.movement > 0 && settings.foliage.density > 0
       const gustMoving = Math.hypot(bendX, bendY, breezeX, breezeY) > 0.00001
-      if (
-        !reducedMotion.matches &&
-        (moving || gustMoving || aimMoving || night !== to || entrance > 0)
-      )
-        wake()
+      if (!still && (moving || gustMoving || aimMoving || night !== to || entrance > 0)) wake()
       else lastTime = 0
     }
 
@@ -389,18 +366,15 @@ export async function startAmbient(
     })
     cleanups.push(() => resizeObserver.disconnect())
     resizeObserver.observe(canvas)
-    document.addEventListener('visibilitychange', pauseWhenHidden)
-    cleanups.push(() => document.removeEventListener('visibilitychange', pauseWhenHidden))
-    window.addEventListener('resize', resize)
-    cleanups.push(() => window.removeEventListener('resize', resize))
-    window.addEventListener('pointermove', movePointer, { passive: true })
-    cleanups.push(() => window.removeEventListener('pointermove', movePointer))
-    document.documentElement.addEventListener('pointerleave', leavePointer)
-    cleanups.push(() => document.documentElement.removeEventListener('pointerleave', leavePointer))
-    window.addEventListener('blur', leavePointer)
-    cleanups.push(() => window.removeEventListener('blur', leavePointer))
-    reducedMotion.addEventListener('change', wake)
-    cleanups.push(() => reducedMotion.removeEventListener('change', wake))
+    const options = { signal: listeners.signal }
+    document.addEventListener('visibilitychange', pauseWhenHidden, options)
+    // Window resize also covers DPR changes from zoom, which ResizeObserver misses.
+    window.addEventListener('resize', resize, options)
+    // Scope pointer input to the scene; portaled overlays such as DialKit fire pointerleave.
+    host.addEventListener('pointermove', movePointer, { ...options, passive: true })
+    host.addEventListener('pointerleave', leavePointer, options)
+    window.addEventListener('blur', leavePointer, options)
+    reducedMotion.addEventListener('change', wake, options)
 
     function fail(message: string) {
       if (disposed) return
@@ -412,19 +386,20 @@ export async function startAmbient(
 
     gpu.onError((error) => fail(error.message))
     void gpu.gpu.lost.then((info) => fail(info.message))
-    const image = new Image()
-    image.src = '/ambient/foliage.svg'
-    await image.decode()
-    if (disposed) throw new DOMException('Preview closed', 'AbortError')
+    const compiled = Promise.all([
+      lighting.compile({ colors: [lightTarget.format] }),
+      composite.compile({ colors: [output.format] }),
+    ])
+    compiled.catch(() => {})
+    await decoded
+    assertLive()
     const mask = document.createElement('canvas')
-    mask.width = 1024
-    mask.height = 1024
     const context = mask.getContext('2d')
     if (!context) throw new Error('Cannot prepare foliage mask')
     // Filter each ray's finite footprint in the opacity mask, rather than add
     // random grain to hide undersampling in broad penumbrae.
-    for (let mipLevel = 0; mipLevel < 5; mipLevel += 1) {
-      const size = 1024 >> mipLevel
+    for (let mipLevel = 0; mipLevel < FOLIAGE_MIPS; mipLevel += 1) {
+      const size = FOLIAGE_SIZE >> mipLevel
       mask.width = size
       mask.height = size
       context.imageSmoothingQuality = 'high'
@@ -434,11 +409,8 @@ export async function startAmbient(
         size,
       ])
     }
-    await Promise.all([
-      lighting.compile({ colors: [lightTarget.format] }),
-      composite.compile({ colors: [output.format] }),
-    ])
-    if (disposed) throw new DOMException('Preview closed', 'AbortError')
+    await compiled
+    assertLive()
     ready = true
     wake()
     return {

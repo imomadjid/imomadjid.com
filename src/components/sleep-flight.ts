@@ -1,4 +1,6 @@
-function randomBetween(min: number, max: number) {
+import { smoothStep } from '#/lib/ambient-transition'
+
+export function randomBetween(min: number, max: number) {
   return min + Math.random() * (max - min)
 }
 
@@ -10,11 +12,6 @@ function bezier(t: number, start: number, first: number, second: number, end: nu
     3 * remaining * t ** 2 * second +
     t ** 3 * end
   )
-}
-
-function smoothstep(value: number) {
-  const t = Math.min(1, Math.max(0, value))
-  return t * t * (3 - 2 * t)
 }
 
 export function createFlight(start: number) {
@@ -44,15 +41,15 @@ export function flightPose(flight: SleepFlight, progress: number) {
     ? bezier(t, startY, startY - 12, crestY - 4, crestY)
     : bezier(t, crestY, crestY + 4 * (0.45 / 0.55), 8, -6)
   const drift = sway * Math.sin(Math.PI * progress) ** 2 * Math.sin(2 * Math.PI * progress)
-  const emerge = smoothstep(progress / 0.24)
-  const retreat = smoothstep((progress - 0.55) / 0.45)
-  const fade = smoothstep((progress - 0.72) / 0.28)
+  const emerge = smoothStep(progress / 0.24)
+  const retreat = smoothStep((progress - 0.55) / 0.45)
+  const fade = smoothStep((progress - 0.72) / 0.28)
   return {
     x: x + drift,
     y,
     scale: (0.25 + 0.75 * emerge) * size * (1 - 0.35 * retreat),
     rotation: tilt + 12 * Math.sin(Math.PI * progress),
-    opacity: smoothstep(progress / 0.16) * (1 - fade),
+    opacity: smoothStep(progress / 0.16) * (1 - fade),
     blur: 4 * (1 - emerge) + 4 * fade,
   }
 }

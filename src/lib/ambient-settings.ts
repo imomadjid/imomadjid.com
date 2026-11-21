@@ -37,3 +37,34 @@ export const ambientControls = {
 } satisfies DialConfig
 
 export type AmbientSettings = ResolvedValues<typeof ambientControls>
+
+const { light, blinds, foliage, breeze, transition } = ambientControls
+
+// Production values; DialKit only tunes these in development.
+export const defaultAmbientSettings: AmbientSettings = {
+  reset: ambientControls.reset,
+  light: {
+    angle: light.angle[0],
+    intensity: light.intensity[0],
+    warmth: light.warmth[0],
+    softness: light.softness[0],
+    progressiveSoftness: light.progressiveSoftness[0],
+    beamWidth: light.beamWidth[0],
+    pointerInfluence: light.pointerInfluence[0],
+  },
+  blinds: {
+    opening: blinds.opening[0],
+    spacing: blinds.spacing[0],
+    railWidth: blinds.railWidth[0],
+    distance: blinds.distance[0],
+  },
+  foliage: {
+    movement: foliage.movement[0],
+    speed: foliage.speed[0],
+    density: foliage.density[0],
+    depth: foliage.depth[0],
+    scale: foliage.scale[0],
+  },
+  breeze: { strength: breeze.strength[0], recovery: breeze.recovery[0] },
+  transition,
+}

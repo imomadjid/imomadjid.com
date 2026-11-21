@@ -1,3 +1,6 @@
+import type { TransitionConfig } from 'dialkit'
+import { cubicBezier, spring } from 'motion'
+
 export function smoothStep(value: number) {
   const progress = Math.min(1, Math.max(0, value))
   return progress * progress * (3 - 2 * progress)
@@ -15,8 +18,6 @@ export function transitionValue(
   if (progress === 1) return to
   return from + (to - from) * Math.min(1, Math.max(0, ease(progress)))
 }
-import type { TransitionConfig } from 'dialkit'
-import { cubicBezier, spring } from 'motion'
 
 export function transitionTiming(config: TransitionConfig) {
   if (config.type === 'easing') {
