@@ -5,6 +5,7 @@ import surfaceSource from '#/shaders/ambient-surface.wgsl'
 
 import type { AmbientSettings } from './ambient-settings'
 import { smoothStep, transitionTiming, transitionValue } from './ambient-transition'
+import { sceneLight, wandPose } from './sunlit-scene'
 
 const FOLIAGE_SIZE = 1024
 const FOLIAGE_MIPS = 5
@@ -49,6 +50,7 @@ export async function startAmbient(
   function dispose() {
     if (disposed) return
     disposed = true
+    sceneLight.set(null)
     cancelAnimationFrame(frameId)
     for (const cleanup of cleanups.reverse()) cleanup()
     gpu.dispose()
@@ -170,7 +172,22 @@ export async function startAmbient(
       magFilter: 'linear',
       mipmapFilter: 'linear',
     })
+    const wandParams = () => {
+      const pose = wandPose.get()
+      return {
+        wandX: pose?.x ?? 0,
+        wandY: pose?.y ?? 0,
+        wandAngle: pose?.angle ?? 0,
+        wandDepth: settings.wand.depth,
+        wandTipStart: pose?.tipStart ?? 0,
+        wandTipEnd: pose?.tipEnd ?? 0,
+        wandTipWidth: pose?.tipWidth ?? 0,
+        wandLength: pose?.length ?? 0,
+        wandRadius: pose?.radius ?? 0,
+      }
+    }
     const lightParams = () => ({
+      ...wandParams(),
       time: ambientTime,
       night,
       aspect: width / Math.max(height, 1),
@@ -348,6 +365,15 @@ export async function startAmbient(
         fail(error instanceof Error ? error.message : String(error))
         return
       }
+      sceneLight.set({
+        night,
+        direction,
+        entrance,
+        entranceNight,
+        aimX,
+        aimY,
+        surface: [surfaceColor[0] / 255, surfaceColor[1] / 255, surfaceColor[2] / 255],
+      })
       // Match the material's dusk curve; update DOM only at a foreground crossover.
       const tone = smoothStep((night - 0.45) / 0.55) > 0.55 ? 'night' : 'day'
       if (host.dataset.sceneTone !== tone) host.dataset.sceneTone = tone
@@ -396,6 +422,8 @@ export async function startAmbient(
     host.addEventListener('pointerleave', leavePointer, options)
     window.addEventListener('blur', leavePointer, options)
     reducedMotion.addEventListener('change', wake, options)
+    // Redraw the wand's shadow as it swings.
+    cleanups.push(wandPose.subscribe(wake))
 
     function fail(message: string) {
       if (disposed) return

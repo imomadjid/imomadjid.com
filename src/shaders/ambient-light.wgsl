@@ -21,6 +21,15 @@ struct Params {
   aimY: f32,
   beamWidth: f32,
   railX: f32,
+  wandX: f32,
+  wandY: f32,
+  wandAngle: f32,
+  wandDepth: f32,
+  wandTipStart: f32,
+  wandTipEnd: f32,
+  wandTipWidth: f32,
+  wandLength: f32,
+  wandRadius: f32,
 }
 @group(0) @binding(0) var<uniform> params: Params;
 @group(0) @binding(1) var foliage: texture_2d<f32>;
@@ -122,6 +131,14 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let railHit = planeHit(railWall, source - railWall, blindOrigin, blindNormal);
   let railPosition = dot(railHit - blindOrigin, blindAxis);
   let opening = mix(params.opening, params.opening * 0.5, params.night);
+  // The tilt wand hangs from its pivot on a plane parallel to the wall. Its clear acrylic rod
+  // and flat tip pass some light and focus a bright line down the middle of their shadow; the
+  // wire hook above them is opaque.
+  let wandOrigin = vec3f((params.wandX - 1.0) * params.aspect, params.wandY, params.wandDepth);
+  let wandDown = vec2f(sin(params.wandAngle), cos(params.wandAngle));
+  let wandAcross = vec2f(wandDown.y, -wandDown.x);
+  let wandCenter = planeHit(wall, centerRay, wandOrigin, planeNormal).xy;
+  let wandPixel = max(fwidth(wandCenter.x), 0.0005);
   var visibleEnergy = 0.0;
   var incidentEnergy = 0.0;
   // Stable disk quadrature: no random grain, temporal noise, or screen-space blur.
@@ -142,10 +159,20 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
       params.railWidth * 0.5 + railPixelWidth, railDistance))
       * select(0.0, 1.0, params.railWidth > 0.0);
     let blindTransmission = select(1.0, throughGap * (1.0 - railCoverage), withinBlinds);
+    let wandLocal = planeHit(wall, ray, wandOrigin, planeNormal).xy - wandOrigin.xy;
+    let along = dot(wandLocal, wandDown);
+    let across = abs(dot(wandLocal, wandAcross));
+    let wandWidth = select(select(params.wandRadius * 0.2, params.wandTipWidth,
+      along >= params.wandTipStart), params.wandRadius, along >= params.wandTipEnd);
+    let wandCoverage = (1.0 - smoothstep(wandWidth - wandPixel, wandWidth + wandPixel, across))
+      * select(0.0, 1.0, along > -0.5 && along < params.wandLength && params.wandRadius > 0.0);
+    let acrylicOpacity = mix(0.18, 0.78, smoothstep(0.1, 0.85, across / max(wandWidth, 0.0001)));
+    let wandTransmission = 1.0 - wandCoverage
+      * select(1.0, acrylicOpacity, along >= params.wandTipStart);
     let foliageRay = source + vec3f(disk * foliageRadius, 0.0) - wall;
     let nearUv = (planeHit(wall, foliageRay, nearOrigin, planeNormal).xy - nearOrigin.xy) / nearSize + nearWind;
     let farUv = (planeHit(wall, foliageRay, farOrigin, planeNormal).xy - farOrigin.xy) / farSize + farWind;
-    let transmission = blindTransmission
+    let transmission = blindTransmission * wandTransmission
       * (1.0 - min(1.0, leafCoverage(nearUv, nearLod) * params.density * 1.12))
       * (1.0 - min(1.0, leafCoverage(farUv, farLod) * params.density * mix(0.75, 1.5, params.night)));
     // Lambert cosine and inverse-square falloff weight the finite emitter.

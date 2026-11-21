@@ -2,8 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useDialKit, useDialKitController } from 'dialkit'
 
 import { AmbientLight } from '#/components/ambient-light'
+import { BlindWand } from '#/components/blind-wand'
 import { ProfileAvatar } from '#/components/profile-avatar'
-import { ThemeToggle } from '#/components/theme-toggle'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
 
@@ -95,9 +95,10 @@ function Home() {
       <div data-sunlit-anchor className="relative z-10 w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
-        <div className="mb-10 flex animate-enter items-center justify-between gap-6">
+        {/* The wand hangs from above the page to the bottom of this row, where a toggle sat. */}
+        <div className="relative mb-10 flex animate-enter items-center justify-between gap-6">
           <ProfileAvatar isSleeping={isSleeping} />
-          <ThemeToggle />
+          <BlindWand settings={settings} />
         </div>
 
         <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">

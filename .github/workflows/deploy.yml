@@ -32,7 +32,7 @@ jobs:
         run: bun run check
       # The shader test needs a native WebGPU adapter, which hosted runners lack.
       - name: Test
-        run: bun test src/components
+        run: bun test src/components src/lib
       - name: Check React
         run: bun run doctor
       - name: Build
