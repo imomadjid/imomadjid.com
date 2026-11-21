@@ -1,5 +1,5 @@
 import { getThemeSnapshot, setTheme, useTheme } from '#/lib/theme'
-import { playThemeSound } from '#/lib/theme-sounds'
+import { playThemeSound, warmThemeSounds } from '#/lib/theme-sounds'
 import { cn } from '#/lib/utils'
 
 import { MonitorDuoIcon, MoonDuoIcon, SunDuoIcon } from './theme-icons'
@@ -37,6 +37,7 @@ export function ThemeToggle() {
     <IconButton
       aria-label={label}
       title={label}
+      onPointerDown={warmThemeSounds}
       onClick={() => {
         const next = themes[getThemeSnapshot()].next
         setTheme(next)
