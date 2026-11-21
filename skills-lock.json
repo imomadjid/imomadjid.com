@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "duotone-icons": {
+      "source": "imomadjid/duotone-icons",
+      "commit": "9a139c1c7a2e5bf9783b8a669b3f4bf0005e651e",
+      "sourceType": "github",
+      "skillPath": "skills/duotone-icons/SKILL.md",
+      "computedHash": "d0458e5458c98cfd2fe277b563467c0a21eb0968e9e5b33199ea617d25c44242"
+    }
+  }
+}

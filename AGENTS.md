@@ -34,6 +34,13 @@ Let Oxfmt enforce formatting. Use PascalCase for React components and camelCase 
 
 Use Tailwind utilities for styling. Keep Oxfmt, Oxlint, and anti-slop settings in `vite.config.ts`. Do not add Biome. Treat `tools/oxlint/anti-slop/` as vendored code.
 
+## Icons
+
+- **Utility icons** (arrows, chevrons, close, external link, copy, menu): use Tabler via `@tabler/icons-react`. It isn't installed right now; add it with `bun add @tabler/icons-react` when the first one is needed.
+- **Decorative or unconventional icons** (theme toggle, feature accents, anything the page features rather than just labels): draw Fill Duo icons with the `duotone-icons` skill in `.agents/skills/duotone-icons` (source: `imomadjid/duotone-icons`). Load the skill before drawing, and run its `lint.mjs` and `preview.mjs` scripts on the result. Put the icons next to their component, following `src/components/theme-icons.tsx`.
+- Don't mix the two styles in one control. Size Tabler icons to match the Fill Duo 18px grid wherever they sit side by side.
+- Restore or update local skills with `bunx skills experimental_install` and `bunx skills update`; `skills-lock.json` pins the source commit.
+
 ## Testing guidelines
 
 Tests use `bun test` (`bun run test`). CI runs only `src/components` tests because the shader test needs a native WebGPU adapter. No coverage threshold is configured. For implementation changes, run `bun run check`, `bun run test`, and `bun run build` before review. Verify UI changes in a browser. For documentation-only changes, check formatting and verify affected instructions against the repository. A read-only audit does not require a build unless needed to investigate a finding. Use descriptive `*.test.ts` or `*.test.tsx` names for future tests.

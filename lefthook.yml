@@ -3,15 +3,15 @@ pre-commit:
   commands:
     format:
       glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,css,md,yml,yaml,html}'
-      exclude: ['tools/oxlint/anti-slop/**', 'src/routeTree.gen.ts']
+      exclude: ['tools/oxlint/anti-slop/**', '.agents/**', 'src/routeTree.gen.ts']
       run: bun run format:check {staged_files}
     lint:
       glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'
-      exclude: ['tools/oxlint/anti-slop/**', 'src/routeTree.gen.ts']
+      exclude: ['tools/oxlint/anti-slop/**', '.agents/**', 'src/routeTree.gen.ts']
       run: PORTFOLIO_STAGED_LINT=1 bun run lint {staged_files}
     react-doctor:
       glob: '*.{js,jsx,ts,tsx}'
-      exclude: ['tools/oxlint/anti-slop/**', 'src/routeTree.gen.ts']
+      exclude: ['tools/oxlint/anti-slop/**', '.agents/**', 'src/routeTree.gen.ts']
       run: bun run doctor:staged
     fallow:
       glob: '*.{js,jsx,ts,tsx,json}'
