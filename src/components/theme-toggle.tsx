@@ -1,27 +1,26 @@
-import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react'
-
 import { getThemeSnapshot, setTheme, useTheme } from '#/lib/theme'
 import { cn } from '#/lib/utils'
 
+import { MonitorDuoIcon, MoonDuoIcon, SunDuoIcon } from './theme-icons'
 import { IconButton } from './ui/icon-button'
 
 const themes = {
   system: {
-    icon: IconDeviceDesktop,
+    icon: MonitorDuoIcon,
     label: 'System',
     next: 'light',
     className:
       'in-data-[theme=system]:scale-100 in-data-[theme=system]:opacity-100 in-data-[theme=system]:blur-none',
   },
   light: {
-    icon: IconSun,
+    icon: SunDuoIcon,
     label: 'Light',
     next: 'dark',
     className:
       'in-data-[theme=light]:scale-100 in-data-[theme=light]:opacity-100 in-data-[theme=light]:blur-none',
   },
   dark: {
-    icon: IconMoon,
+    icon: MoonDuoIcon,
     label: 'Dark',
     next: 'system',
     className:
@@ -39,7 +38,11 @@ export function ThemeToggle() {
       title={label}
       onClick={() => setTheme(themes[getThemeSnapshot()].next)}
     >
-      <span data-theme-icons aria-hidden="true" className="relative grid size-5 place-items-center">
+      <span
+        data-theme-icons
+        aria-hidden="true"
+        className="relative grid size-[18px] place-items-center"
+      >
         {Object.entries(themes).map(([mode, { icon: Icon, className }]) => (
           <span
             key={mode}
