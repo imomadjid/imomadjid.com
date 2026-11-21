@@ -6,7 +6,7 @@ import { barProfile, starProfile } from './blind-wand-light'
 // the page; lengths are CSS pixels along the wand from that pivot.
 export const PIVOT_ABOVE = 14
 export const TIP_START = 30
-export const TIP_END = 54
+const TIP_END = 54
 export const HOLE_Y = 37
 export const HOLE_RADIUS = 2.4
 // Where the hook's wire crosses the hole: the wand hangs and swings from here, while the hook
