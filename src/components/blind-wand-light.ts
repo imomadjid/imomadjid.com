@@ -27,8 +27,9 @@ const DAY_SUN: Rgb = [1, 0.962, 0.865]
 const SUNSET_COOL: Rgb = [0.7, 0.77, 0.85]
 const SUNSET_WARM: Rgb = [0.96, 0.59, 0.29]
 const MOON: Rgb = [0.63, 0.76, 1]
-// Slat edges on the wand stay a few pixels soft, like the wall's near-focus penumbra.
-const STRIPE_SOFTNESS = 0.004
+// Light entering the clear rod scatters along it before it leaves, blurring slat edges on
+// the rod by a few millimetres more than their penumbra alone (in wall heights).
+const ROD_SCATTER = 0.003
 
 const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
@@ -83,25 +84,32 @@ export function lightWand(
   const world = ([u, v]: readonly [number, number]): Vec3 => [(u - 1) * aspect, v, depth]
 
   const blindOrigin: Vec3 = [0, 0, settings.blinds.distance]
+  const aim: Vec3 = [(scene.aimX - 1) * aspect, scene.aimY, 0]
   const spacing = settings.blinds.spacing
   const gap = mix(settings.blinds.opening, settings.blinds.opening * 0.5, night) * spacing * 0.5
   const stripes = points.map((point) => {
     const position = world(point)
-    const local = sub(
-      planeHit(position, sub(source, position), blindOrigin, BLIND_NORMAL),
-      blindOrigin,
-    )
+    const hit = planeHit(position, sub(source, position), blindOrigin, BLIND_NORMAL)
+    const local = sub(hit, blindOrigin)
     const within = Math.abs(dot(local, BLIND_AXIS)) < 2.5 && Math.abs(local[1] - 0.5) < 2
     if (!within) return 1
     const cell = local[1] / spacing
     const distance = Math.abs(cell - Math.floor(cell) - 0.5) * spacing
-    return 1 - smoothstep(gap - STRIPE_SOFTNESS, gap + STRIPE_SOFTNESS, distance)
+    // The same finite emitter as the wall's, widening away from the light's aim, gives a
+    // penumbra in proportion to the slat's distance from the rod.
+    const focus = Math.hypot(position[0] - aim[0], position[1] - aim[1])
+    const sourceRadius =
+      settings.light.softness *
+      0.14 *
+      (1 + settings.light.progressiveSoftness * smoothstep(0.12, 0.9, focus))
+    const reach = Math.hypot(...sub(hit, position)) / Math.hypot(...sub(source, hit))
+    const softness = sourceRadius * reach + ROD_SCATTER
+    return 1 - smoothstep(gap - softness, gap + softness, distance)
   })
 
   // Beam emission and irradiance at the middle of the wand, as the shader weights each sample.
   const middle = points[Math.floor(points.length / 2)] ?? [1, 0.5]
   const position = world(middle)
-  const aim: Vec3 = [(scene.aimX - 1) * aspect, scene.aimY, 0]
   const beamAxis = normalize(sub(aim, source))
   const beamRight = normalize(cross(beamAxis, [0, 1, 0]))
   const beamUp = cross(beamRight, beamAxis)

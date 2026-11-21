@@ -74,7 +74,11 @@ function sectionPaint(section: Section, facet: Facet, light: WandLight) {
   }
 }
 
-function paintStops(stops: SVGStopElement[], facets: Facet[], paints: Paint[]) {
+/**
+ * Writes facet colors into a horizontal gradient. Flat faces keep hard edges; a `smooth`
+ * section blends from one face's center to the next, shading rounded flutes as curves.
+ */
+function paintStops(stops: SVGStopElement[], facets: Facet[], paints: Paint[], smooth: boolean) {
   const first = facets[0]
   const last = facets.at(-1)
   if (!first || !last) return
@@ -87,8 +91,13 @@ function paintStops(stops: SVGStopElement[], facets: Facet[], paints: Paint[]) {
     const paint = paints[index]
     if (!facet || !paint) continue
     const visible = slot < facets.length
-    const start = visible ? Math.max(reached, (facet.left - first.left) / span) : 1
-    const end = visible ? Math.max(start, (facet.right - first.left) / span) : 1
+    const left = (facet.left - first.left) / span
+    const right = (facet.right - first.left) / span
+    const center = (left + right) / 2
+    const from = smooth && slot > 0 ? center : left
+    const to = smooth && slot < facets.length - 1 ? center : right
+    const start = visible ? Math.max(reached, from) : 1
+    const end = visible ? Math.max(start, to) : 1
     reached = end
     const color = toCss(paint.color)
     const opacity = Math.min(1, Math.max(0, paint.opacity)).toFixed(3)
@@ -259,7 +268,8 @@ export function startBlindWand(
       shadeStops[index]?.setAttribute('stop-color', shadeColor)
       shadeStops[index]?.setAttribute(
         'stop-opacity',
-        (light.direct * (1 - through) * 0.8).toFixed(3),
+        // A clear rod mostly shows the wall through it, so the slats darken it less.
+        (light.direct * (1 - through) * 0.55).toFixed(3),
       )
     }
     for (const { section, rects, base, light: lit } of parts) {
@@ -277,11 +287,13 @@ export function startBlindWand(
         base,
         facets,
         paints.map((entry) => entry.base),
+        section === 'rod',
       )
       paintStops(
         lit,
         facets,
         paints.map((entry) => entry.light),
+        section === 'rod',
       )
     }
     // The hole faces the room at rest and closes to a slit as the flat tip turns edge-on.
