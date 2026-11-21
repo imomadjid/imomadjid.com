@@ -2,15 +2,14 @@
 @reference 'tailwindcss/theme';
 @reference '../theme.css';
 
-/* Dev-only stylesheet, linked from __root.tsx under import.meta.env.DEV after src/styles.css:
-   utilities for the /dev playground and the vendored FF components, plus FF runtime CSS.
-   Keep these lists in sync with the @source not lists in src/styles.css.
+/* Dev-only stylesheet, linked from src/routes/dev/route.tsx under import.meta.env.DEV: utilities
+   for the /dev playground and the vendored FF components, plus FF runtime CSS. Keep these lists in
+   sync with the @source not lists in src/styles.css.
 
-   Its utilities share styles.css's utilities layer and load after it, so wherever both
-   sheets emit a class, this sheet's copy wins. Scanning every source, not just the playground,
-   makes this sheet a complete, correctly ordered utility set, so that a plain utility here
-   can never override a variant that only styles.css emits (opacity-0 over
-   group-focus-visible:opacity-100, say). */
+   Its utilities share styles.css's utilities layer and load after it, so wherever both sheets emit
+   a class, this sheet's copy wins. Scanning every source, not just the playground, makes this sheet
+   a complete, correctly ordered utility set, so that a plain utility here can never override a
+   variant that only styles.css emits (opacity-0 over group-focus-visible:opacity-100, say). */
 @source '../';
 @source './';
 @source '../hooks';

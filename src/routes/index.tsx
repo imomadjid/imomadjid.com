@@ -1,11 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDialKit, useDialKitController } from 'dialkit'
+import { useState } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
 import { BlindWand } from '#/components/blind-wand'
 import { ProfileAvatar } from '#/components/profile-avatar'
+import { Signature } from '#/components/signature'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
+import { defaultSignatureTiming, signatureControls } from '#/lib/signature-settings'
+import { textLinkClass } from '#/lib/text-link'
+import { cn } from '#/lib/utils'
 
 const siteUrl = 'https://imomadjid.com/'
 const title = 'Imo’s Portfolio'
@@ -69,7 +74,12 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-const productionTuning = { settings: defaultAmbientSettings, isSleeping: false }
+const productionTuning = {
+  settings: defaultAmbientSettings,
+  isSleeping: false,
+  signatureTiming: defaultSignatureTiming,
+  signatureRun: 0,
+}
 
 function useDialTuning() {
   const sunlit = useDialKitController('Sunlit', ambientControls, {
@@ -80,14 +90,25 @@ function useDialTuning() {
     },
   })
   const profile = useDialKit('Profile', { isSleeping: false })
-  return { settings: sunlit.values, isSleeping: profile.isSleeping }
+  const [signatureRun, setSignatureRun] = useState(0)
+  const signature = useDialKit('Signature', signatureControls, {
+    onAction(action) {
+      if (action === 'replay') setSignatureRun((run) => run + 1)
+    },
+  })
+  return {
+    settings: sunlit.values,
+    isSleeping: profile.isSleeping,
+    signatureTiming: signature,
+    signatureRun,
+  }
 }
 
 // The build-time constant keeps hook order stable and drops DialKit from production.
 const useTuning = import.meta.env.DEV ? useDialTuning : () => productionTuning
 
 function Home() {
-  const { settings, isSleeping } = useTuning()
+  const { settings, isSleeping, signatureTiming, signatureRun } = useTuning()
 
   return (
     <main className="relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
@@ -148,17 +169,15 @@ function Home() {
           </p>
         </div>
 
-        <footer className="mt-12 flex animate-enter flex-wrap items-center justify-between gap-x-10 gap-y-6 [--enter-index:5]">
-          <img
-            src="/images/signature.svg"
-            alt="Imo’s signature"
-            width={324}
-            height={133}
-            className="h-auto w-28 transition-[filter] duration-300 motion-reduce:transition-none dark:invert"
+        <footer className="mt-12 flex flex-wrap items-center justify-between gap-x-10 gap-y-6">
+          <Signature
+            key={signatureRun}
+            timing={signatureTiming}
+            className="h-auto w-28 text-black transition-colors duration-300 [--enter-index:6] motion-reduce:animate-enter motion-reduce:transition-none dark:text-white"
           />
           <nav
             aria-label="Contact and social links"
-            className="flex flex-wrap gap-x-6 gap-y-2 text-sm"
+            className="flex animate-enter flex-wrap gap-x-6 gap-y-2 text-sm [--enter-index:5]"
           >
             {[
               { label: 'Email', href: 'mailto:mhmmadjid@gmail.com' },
@@ -168,7 +187,7 @@ function Home() {
               <a
                 key={label}
                 href={href}
-                className="inline-flex min-h-11 items-center text-neutral-600 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-50"
+                className={cn('inline-flex min-h-11 items-center', textLinkClass)}
               >
                 {label}
               </a>

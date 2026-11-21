@@ -6,9 +6,10 @@ import type { ReactNode } from 'react'
 
 import { ShapeProvider } from '#/lib/shape-context'
 import { SurfaceProvider } from '#/lib/surface-context'
+import { textLinkClass } from '#/lib/text-link'
 import { THEME_SCRIPT, useTheme } from '#/lib/theme'
+import { cn } from '#/lib/utils'
 
-import devCss from '#/dev/dev.css?url'
 import appCss from '#/styles.css?url'
 import dialkitCss from 'dialkit/styles.css?url'
 
@@ -22,8 +23,6 @@ export const Route = createRootRoute({
     links: [
       ...(import.meta.env.DEV ? [{ rel: 'stylesheet', href: dialkitCss }] : []),
       { rel: 'stylesheet', href: appCss },
-      // Playground and FF component utilities; production pages don't render them yet.
-      ...(import.meta.env.DEV ? [{ rel: 'stylesheet', href: devCss }] : []),
       {
         rel: 'preload',
         href: '/fonts/allo/Allo-Regular.woff2',
@@ -44,10 +43,7 @@ function NotFound() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center">
       <h1 className="text-base font-normal">This page doesn’t exist.</h1>
-      <Link
-        to="/"
-        className="text-sm text-neutral-600 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-50"
-      >
+      <Link to="/" className={cn('text-sm', textLinkClass)}>
         Back to the homepage
       </Link>
     </main>
@@ -68,7 +64,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="bg-surface-1 text-neutral-950 dark:text-neutral-50">
-        {/* Site-wide FF corner style; --shape-input-radius in styles.css mirrors it for SSR. */}
+        {/* Site-wide FF corner style. */}
         <ShapeProvider defaultShape="pill">
           <SurfaceProvider value={1}>{children}</SurfaceProvider>
         </ShapeProvider>

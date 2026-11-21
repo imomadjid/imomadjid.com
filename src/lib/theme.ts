@@ -21,6 +21,9 @@ const CHANGE_EVENT = 'portfolio-theme-change'
 const MEDIA_QUERY = '(prefers-color-scheme: dark)'
 let transitionTimeout: ReturnType<typeof setTimeout> | undefined
 
+export const prefersReducedMotion = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 /**
  * Reads the stored preference and drops an override once the system has caught up with it:
  * choosing dark on a light afternoon holds until the system turns dark, then the site follows
@@ -98,7 +101,7 @@ function applyTheme(theme: Theme, animate = true) {
   if (!root.classList.contains(resolved)) {
     clearTimeout(transitionTimeout)
     root.classList.remove('theme-transitioning')
-    if (animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (animate && !prefersReducedMotion()) {
       root.classList.add('theme-transitioning')
       // Flush styles so the transition applies before the class swap.
       void root.offsetHeight

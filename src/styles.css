@@ -1,8 +1,10 @@
-@import 'tailwindcss';
+/* Scan src/ only: agent skills and docs elsewhere in the repo would otherwise emit utilities. */
+@import 'tailwindcss' source('.');
 @import './theme.css';
 
 /* The playground and the vendored FF components get their utilities from the dev-only
-   src/dev/dev.css. Drop a file from these lists once a production page renders it. */
+   src/dev/dev.css. Drop a file from these lists once a production page renders it, and move
+   any FF runtime CSS it needs (spinner keyframes, scroll fades) from dev.css into this file. */
 @source not './dev';
 @source not './hooks';
 @source not './components/fluid-hover-highlight.tsx';
@@ -37,11 +39,15 @@
   font-display: swap;
 }
 
-/* Staged page entrance: chunks 100ms apart, set per element with --enter-index.
+/* Staged page entrance: chunks --enter-step apart, set per element with --enter-index.
    The hidden state lives only in the keyframe, so content stays visible if it never runs. */
+:root {
+  --enter-step: 100ms;
+}
+
 @utility animate-enter {
   animation: enter-fade 300ms ease-out both;
-  animation-delay: calc(var(--enter-index, 0) * 100ms);
+  animation-delay: calc(var(--enter-index, 0) * var(--enter-step));
 
   @media (prefers-reduced-motion: no-preference) {
     animation-name: enter-rise;
@@ -59,6 +65,25 @@
     opacity: 0;
     transform: translateY(12px);
     filter: blur(4px);
+  }
+}
+
+/* The signature's entrance is the pen drawing it from its --enter-index slot; reduced motion
+   fades it in with animate-enter instead. Each segment draws in its own slot, set by
+   --stroke-start and --stroke-duration. Linear within a slot, because the slots already carry
+   the pen's recorded speed. The hidden state lives only in the keyframe. */
+@utility animate-signature-stroke {
+  stroke-dasharray: 1 2;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: signature-stroke var(--stroke-duration) linear both;
+    animation-delay: calc(var(--enter-index, 0) * var(--enter-step) + var(--stroke-start));
+  }
+}
+
+@keyframes signature-stroke {
+  from {
+    stroke-dashoffset: 1;
   }
 }
 
@@ -107,11 +132,8 @@
   --hover: rgb(0 0 0 / 0.04);
   --active: rgb(0 0 0 / 0.07);
   --selected: #d4d4d4;
-  --destructive-light: #fef2f2;
   --overlay: 0 0 0;
   --focus-ring: var(--fluid-accent);
-  /* Pill radius before hydration; ShapeProvider overwrites it inline on <html>. */
-  --shape-input-radius: 20px;
   /* Neutral roles the Fluid Functionalism components read (shadcn naming). */
   --background: var(--surface-1);
   --foreground: #0a0a0a;
@@ -128,7 +150,7 @@
      with height while the edge shine stays in px. Shadow
      layers, top first: hairline rim, side rim light, specular glints, side falloff, drop
      shadow. */
-  --glass-fill: linear-gradient(
+  --glass-fill-light: linear-gradient(
     to bottom,
     rgb(255 255 255 / 1) 1.3px,
     rgb(255 255 255 / 0.5) 3px,
@@ -142,7 +164,7 @@
     rgb(255 255 255 / 0.92) calc(100% - 1.5px),
     rgb(255 255 255 / 1) calc(100% - 0.9px)
   );
-  --glass-shadow:
+  --glass-shadow-light:
     inset 0 0 0 0.667px rgb(0 0 0 / 0.12), inset 1px 0 0 -0.5px rgb(0 0 0 / 0.2),
     inset -1px 0 0 -0.5px rgb(0 0 0 / 0.2), inset 0 2.5px 1px rgb(255 255 255 / 0.9),
     inset 0 -2px 1px rgb(255 255 255 / 0.8), inset 16px 0 8px -8px rgb(0 0 0 / 0.024),
@@ -152,7 +174,6 @@
   --z-sticky: 30;
   --z-overlay: 40;
   --z-modal: 50;
-  --z-popover: 60;
   --z-tooltip: 70;
   --fs-display: 28px;
   --lh-display: 34px;
@@ -178,6 +199,34 @@
   --lh-micro: 14px;
   --fs-micro-compact: 10px;
   --lh-micro-compact: 12px;
+  /* Dark static glass, fitted against iOS 26 captures on #1c1c1e and on black at 3x. iOS adds
+     roughly constant light (out ~ 0.95 * bg + K), which sRGB alpha cannot express, so the fill
+     is white at the least-squares alpha for both backdrops, biased toward #171717. The residual
+     is about 1 level in the body and 4 at the outermost rim pixel. Shadow layers: top and
+     bottom rim light, left and right edge crescents, drop shadow. */
+  --glass-fill-dark: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.18) 1.17px,
+    rgb(255 255 255 / 0.157) 2.17px,
+    rgb(255 255 255 / 0.145) 3.17px,
+    rgb(255 255 255 / 0.139) 4.17px,
+    rgb(255 255 255 / 0.133) 5.17px,
+    rgb(255 255 255 / 0.131) 6.17px,
+    rgb(255 255 255 / 0.127) 7.83px,
+    rgb(255 255 255 / 0.127) 22%,
+    rgb(255 255 255 / 0.131) 32%,
+    rgb(255 255 255 / 0.131) calc(100% - 8.17px),
+    rgb(255 255 255 / 0.133) calc(100% - 6.17px),
+    rgb(255 255 255 / 0.139) calc(100% - 4.5px),
+    rgb(255 255 255 / 0.147) calc(100% - 3.17px),
+    rgb(255 255 255 / 0.164) calc(100% - 1.83px),
+    rgb(255 255 255 / 0.18) calc(100% - 1.17px)
+  );
+  --glass-shadow-dark:
+    inset 0 0.67px 0.6px rgb(255 255 255 / 0.29), inset 0 -0.67px 0.6px rgb(255 255 255 / 0.29),
+    -0.5px 0 0 0 rgb(0 0 0 / 0.85), 0.5px 0 0 0 rgb(0 0 0 / 0.85), 0 5px 6px 0 rgb(0 0 0 / 0.045);
+  --glass-fill: var(--glass-fill-light);
+  --glass-shadow: var(--glass-shadow-light);
 }
 
 .dark {
@@ -230,7 +279,6 @@
   --hover: rgb(255 255 255 / 0.06);
   --active: rgb(255 255 255 / 0.1);
   --selected: #525252;
-  --destructive-light: #450a0a;
   --overlay: 255 255 255;
   --foreground: #fafafa;
   --muted: #262626;
@@ -240,41 +288,25 @@
   --destructive: #f87171;
   --tint: rgb(255 255 255 / 0.25);
   --tint-hover: rgb(255 255 255 / 0.2);
-  /* Dark static glass, fitted against iOS 26 captures on #1c1c1e and on black at 3x. iOS adds
-     roughly constant light (out ~ 0.95 * bg + K), which sRGB alpha cannot express, so the fill
-     is white at the least-squares alpha for both backdrops, biased toward #171717. The residual
-     is about 1 level in the body and 4 at the outermost rim pixel. Shadow layers: top and
-     bottom rim light, left and right edge crescents, drop shadow. */
-  --glass-fill: linear-gradient(
-    to bottom,
-    rgb(255 255 255 / 0.18) 1.17px,
-    rgb(255 255 255 / 0.157) 2.17px,
-    rgb(255 255 255 / 0.145) 3.17px,
-    rgb(255 255 255 / 0.139) 4.17px,
-    rgb(255 255 255 / 0.133) 5.17px,
-    rgb(255 255 255 / 0.131) 6.17px,
-    rgb(255 255 255 / 0.127) 7.83px,
-    rgb(255 255 255 / 0.127) 22%,
-    rgb(255 255 255 / 0.131) 32%,
-    rgb(255 255 255 / 0.131) calc(100% - 8.17px),
-    rgb(255 255 255 / 0.133) calc(100% - 6.17px),
-    rgb(255 255 255 / 0.139) calc(100% - 4.5px),
-    rgb(255 255 255 / 0.147) calc(100% - 3.17px),
-    rgb(255 255 255 / 0.164) calc(100% - 1.83px),
-    rgb(255 255 255 / 0.18) calc(100% - 1.17px)
-  );
-  --glass-shadow:
-    inset 0 0.67px 0.6px rgb(255 255 255 / 0.29), inset 0 -0.67px 0.6px rgb(255 255 255 / 0.29),
-    -0.5px 0 0 0 rgb(0 0 0 / 0.85), 0.5px 0 0 0 rgb(0 0 0 / 0.85), 0 5px 6px 0 rgb(0 0 0 / 0.045);
 }
 
+/* Glass follows the scene's tone the way the dark variant in theme.css does, so it turns
+   with the text at the Sunlit crossover instead of on the instant theme class. */
+.dark,
+[data-scene-tone='night'] {
+  --glass-fill: var(--glass-fill-dark);
+  --glass-shadow: var(--glass-shadow-dark);
+}
+
+.dark [data-scene-tone='day'] {
+  --glass-fill: var(--glass-fill-light);
+  --glass-shadow: var(--glass-shadow-light);
+}
+
+/* The outline follows each element's own corners; a radius here would reshape the element. */
 @layer base {
   :focus-visible {
     outline: 1px solid var(--focus-ring);
     outline-offset: 2px;
-    border-radius: 8px;
-  }
-  a:focus-visible {
-    border-radius: 2px;
   }
 }
