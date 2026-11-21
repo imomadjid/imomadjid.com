@@ -50,7 +50,7 @@
     "@shadscan/cli": "0.17.0",
     "@tanstack/devtools-vite": "^0.8.7",
     "@tanstack/intent": "^0.5.6",
-    "@types/node": "^22.20.5",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
@@ -66,6 +66,9 @@
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8000",
     "vitest": "5.1.0"
+  },
+  "engines": {
+    "node": ">=26"
   },
   "packageManager": "bun@1.4.5",
   "intent": {

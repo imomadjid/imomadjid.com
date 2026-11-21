@@ -28,7 +28,7 @@ This is the personal portfolio website for imomadjid.com, built with TanStack St
 
 ## Development and validation commands
 
-Use Bun and update `bun.lock` with dependency changes. See `README.md` and `package.json` for commands. Run `bun run deploy` only with deployment authorization.
+Use Bun and update `bun.lock` with dependency changes. Node 26 is pinned in `.node-version` (fnm, CI) and `engines`; keep `@types/node` on the same major. See `README.md` and `package.json` for commands. Run `bun run deploy` only with deployment authorization.
 
 ## Coding style and naming
 
