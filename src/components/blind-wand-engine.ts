@@ -3,7 +3,8 @@ import { sceneLight, wandPose } from '#/lib/sunlit-scene'
 import type { SceneLight } from '#/lib/sunlit-scene'
 import { getResolvedScheme, toggleScheme } from '#/lib/theme'
 import type { Scheme } from '#/lib/theme'
-import { playThemeSound, warmThemeSounds } from '#/lib/theme-sounds'
+import { warmThemeSounds } from '#/lib/theme-sounds'
+import { playWandSwitch, playWandTick } from '#/lib/wand-sounds'
 
 import {
   facetLight,
@@ -47,6 +48,10 @@ const DRAG_THRESHOLD = 6
 const HOVER_TWIST = 0.3
 // The theme switches once the twist is this far along, so the page changes with the wand.
 const SWITCH_PROGRESS = 0.4
+// The tilter's gear: eight teeth tick by over a full turn of the wand. Its spin reaches about
+// 24 rad/s, so ticks are loudest near the middle of the turn.
+const TOOTH = TWIST / 8
+const TICK_SPEED = 20
 // Brushing past swings the wand in proportion to the pointer's speed, up to a firm knock.
 const BRUSH_GAIN = 0.15
 const BRUSH_LIMIT = 0.5
@@ -207,6 +212,10 @@ export function startBlindWand(
   // The turn's starting point and the scheme it is turning to, until the theme switches.
   let twistFrom = turn
   let pending: Scheme | null = null
+  // Only turns someone made are heard; the system changing the theme turns the wand silently.
+  let voiced = false
+  // Teeth sit between rest positions, so the hover pre-twist never ticks.
+  let tooth = Math.round(turn / TOOTH)
   let hovering = false
   let fallbackNight = turnTarget > 0 ? 1 : 0
   let fallbackSurface = readSurface(canvas)
@@ -375,6 +384,11 @@ export function startBlindWand(
         turn += turnVelocity * dt
       }
     }
+    const nextTooth = Math.round(turn / TOOTH)
+    if (nextTooth !== tooth) {
+      if (voiced && !still) playWandTick(Math.abs(turnVelocity) / TICK_SPEED)
+      tooth = nextTooth
+    }
     if (pending) {
       const progress = (turn - twistFrom) / (turnTarget - twistFrom || 1)
       if (still || progress >= SWITCH_PROGRESS) switchTheme()
@@ -396,6 +410,7 @@ export function startBlindWand(
         (channel, index) => Math.abs(channel - (surfaceTarget[index] ?? channel)) < 1e-3,
       )
     if (settled) {
+      voiced = false
       angle = swingVelocity = turnVelocity = 0
       turn = aim
       fallbackNight = nightTarget
@@ -472,7 +487,7 @@ export function startBlindWand(
     // turns back to the scheme still on screen.
     const shown = getResolvedScheme()
     const next: Scheme = (pending ?? shown) === 'dark' ? 'light' : 'dark'
-    playThemeSound(next)
+    voiced = true
     pending = next === shown ? null : next
     twistFrom = turn
     turnTarget = next === 'dark' ? TWIST : 0
@@ -482,8 +497,12 @@ export function startBlindWand(
   }
 
   function switchTheme() {
-    if (pending && pending !== getResolvedScheme()) toggleScheme()
+    const scheme = pending
     pending = null
+    if (!scheme || scheme === getResolvedScheme()) return
+    toggleScheme()
+    // The slats close or open as the page changes, so the sound lands with it.
+    playWandSwitch(scheme)
   }
 
   function hover(event: PointerEvent) {
@@ -502,6 +521,7 @@ export function startBlindWand(
       // Already turning there: the wand switched the theme itself.
       if (target === turnTarget) return
       pending = null
+      voiced = false
       turnTarget = target
       twistFrom = turn
       if (!animate) turn = target
