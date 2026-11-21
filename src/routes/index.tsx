@@ -7,18 +7,63 @@ import { ThemeToggle } from '#/components/theme-toggle'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
 
+const siteUrl = 'https://imomadjid.com/'
+const title = 'Imo’s Portfolio'
 const description =
   'I’m Imo, a design engineer and product designer based in Jakarta. I design and build interfaces, from early prototypes to shipped products.'
+const ogImage = {
+  url: `${siteUrl}og.png`,
+  alt: 'Imo Madjid, design engineer and product designer in Jakarta',
+}
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}#website`,
+      url: siteUrl,
+      name: title,
+      inLanguage: 'en',
+      publisher: { '@id': `${siteUrl}#person` },
+    },
+    {
+      '@type': 'Person',
+      '@id': `${siteUrl}#person`,
+      name: 'Imo Madjid',
+      alternateName: 'Imo',
+      url: siteUrl,
+      image: `${siteUrl}images/imo-avatar.webp`,
+      jobTitle: 'Design engineer and product designer',
+      worksFor: { '@type': 'Organization', name: 'DocDraft', url: 'https://docdraft.ai' },
+      homeLocation: { '@type': 'Place', name: 'Jakarta, Indonesia' },
+      sameAs: ['https://github.com/MassiveMassimo', 'https://www.linkedin.com/in/imomadjid/'],
+    },
+  ],
+}
 
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      { title: 'Imo’s Portfolio' },
+      { title },
       { name: 'description', content: description },
       { property: 'og:type', content: 'website' },
-      { property: 'og:title', content: 'Imo’s Portfolio' },
+      { property: 'og:url', content: siteUrl },
+      { property: 'og:site_name', content: 'Imo Madjid' },
+      { property: 'og:locale', content: 'en_US' },
+      { property: 'og:title', content: title },
       { property: 'og:description', content: description },
+      { property: 'og:image', content: ogImage.url },
+      { property: 'og:image:type', content: 'image/png' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:alt', content: ogImage.alt },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:image:alt', content: ogImage.alt },
+      { 'script:ld+json': structuredData },
     ],
+    // The Worker also answers on workers.dev; the canonical keeps search results on the domain.
+    links: [{ rel: 'canonical', href: siteUrl }],
   }),
   component: Home,
 })
