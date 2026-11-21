@@ -2,6 +2,7 @@ import type { AmbientSettings } from '#/lib/ambient-settings'
 import { sceneLight, wandPose } from '#/lib/sunlit-scene'
 import type { SceneLight } from '#/lib/sunlit-scene'
 import { getResolvedScheme, toggleScheme } from '#/lib/theme'
+import type { Scheme } from '#/lib/theme'
 import { playThemeSound, warmThemeSounds } from '#/lib/theme-sounds'
 
 import {
@@ -24,8 +25,10 @@ import {
   TIP_END,
   TIP_START,
   UNMEASURED_LENGTH,
-  hookPath,
+  hookPaths,
   profiles,
+  rodPath,
+  tipPath,
   wandIds,
 } from './blind-wand-shape'
 import type { Section } from './blind-wand-shape'
@@ -35,11 +38,18 @@ const TWIST = Math.PI * 3
 const SWING_LIMIT = 0.35
 // About a 1.3 s period, like a 40 cm wand on a hook, and a few visible swings before it rests.
 const SWING_STIFFNESS = ((2 * Math.PI) / 1.3) ** 2
-const SWING_DAMPING = 1.5
+const SWING_DAMPING = 2.5
 // Turns over about 0.9 s and settles with a slight overshoot, like a wrist letting go.
 const TWIST_STIFFNESS = 38
 const TWIST_DAMPING = 9.5
 const DRAG_THRESHOLD = 6
+// Hovering starts the turn a little, so the hook and hole move before the click.
+const HOVER_TWIST = 0.3
+// The theme switches once the twist is this far along, so the page changes with the wand.
+const SWITCH_PROGRESS = 0.4
+// Brushing past swings the wand in proportion to the pointer's speed, up to a firm knock.
+const BRUSH_GAIN = 0.15
+const BRUSH_LIMIT = 0.5
 const restingAim = { aimX: 1.08, aimY: 0.45 }
 const ROOM_LIGHT_X = -0.45 / Math.hypot(0.45, 0.9)
 const ROOM_LIGHT_Z = 0.9 / Math.hypot(0.45, 0.9)
@@ -50,26 +60,28 @@ function sectionPaint(section: Section, facet: Facet, light: WandLight) {
   const { surface, sun, direct, night } = light
   const reach = direct * mix(1, 0.3, night)
   const { diffuse, specular } = facetLight(facet, light, section === 'tip' ? 14 : 36)
-  // Clear acrylic: the wall shows through faces toward the viewer, while faces seen at a
-  // grazing angle reflect the room: darker than a light wall, brighter than a dark one. The
-  // flutes' valleys sit in their own shade, and the molded tip is slightly frosted.
-  const grazing = (1 - facet.normalZ) ** 1.5
-  const valley = mix(0.7, 1, smoothstep(0.78, 1, facet.ridge)) * mix(1, 1.25, night)
-  const room = mix(0.52, 0.34, night)
-  const frost = section === 'tip' ? mix(0.05, 0.08, night) : 0
+  // Clear acrylic is a window onto the wall behind it. Only toward its silhouette, where the
+  // view refracts and reflects off at a grazing angle, does it show the room instead: darker
+  // than a light wall, brighter than a dark one. The flutes' valleys catch a little of that
+  // too, which keeps the ribs visible, and the molded tip is lightly frosted.
+  const edge = smoothstep(0.05, 0.7, 1 - facet.normalZ)
+  const valley = section === 'rod' ? 1 - smoothstep(0.78, 1, facet.ridge) : 0
+  const lightness = (surface[0] + surface[1] + surface[2]) / 3
+  const room = lightness > 0.5 ? 0.4 : 0.36
+  const roomShare = Math.min(1, edge + valley * 0.35)
+  const clear = section === 'tip' ? 0.2 : 0.1
   // A soft reflection of the room behind the viewer, up and to the left. It runs down one
   // face at a time, so it slides across the wand as it turns.
   const sheen = Math.max(0, facet.normalX * ROOM_LIGHT_X + facet.normalZ * ROOM_LIGHT_Z) ** 20
-  const tint = (value: number) =>
-    mix(mix(value, room, grazing * 0.85) * valley + frost, 1, sheen * 0.45)
+  const tint = (value: number) => mix(mix(value, room, roomShare), 1, sheen * 0.5)
   return {
     base: {
       color: mapRgb(surface, tint),
-      opacity: section === 'tip' ? 0.94 : 0.9,
+      opacity: Math.max(mix(clear, 0.92, roomShare), sheen * 0.55),
     },
     light: {
       color: mixRgb(sun, [1, 1, 1], specular * 0.6),
-      opacity: reach * (0.14 + 0.38 * diffuse + specular) * valley,
+      opacity: reach * (0.1 + 0.3 * diffuse + specular) * (1 - valley * 0.3),
     },
   }
 }
@@ -166,8 +178,8 @@ export function startBlindWand(
   const query = <T extends Element>(selector: string) => [...svg.querySelectorAll<T>(selector)]
   const swing = svg.querySelector<SVGGElement>('[data-wand-swing]')
   const hit = svg.querySelector<SVGLineElement>('[data-wand-hit]')
-  const hook = svg.querySelector<SVGPathElement>('[data-wand-hook]')
-  const hole = svg.querySelector<SVGEllipseElement>('[data-wand-hole]')
+  const hooks = query<SVGPathElement>('[data-wand-hook]')
+  const holes = query<SVGEllipseElement>('[data-wand-hole]')
   const focusRing = svg.querySelector<SVGRectElement>('[data-wand-focus]')
   const stripes = svg.querySelector<SVGLinearGradientElement>(`#${ids.stripes}`)
   const stripeStops = query<SVGStopElement>(`#${ids.stripes} stop`)
@@ -175,7 +187,10 @@ export function startBlindWand(
   const shade = svg.querySelector<SVGLinearGradientElement>(`#${ids.shade}`)
   const parts = SECTIONS.map((section) => ({
     section,
-    rects: query<SVGRectElement>(`[data-wand-section="${section}"]`),
+    layers: query<SVGPathElement>(`[data-wand-section="${section}"]`),
+    gradients: (['base', 'light'] as const).flatMap((layer) =>
+      query<SVGLinearGradientElement>(`#${ids.gradient(section, layer)}`),
+    ),
     base: query<SVGStopElement>(`#${ids.gradient(section, 'base')} stop`),
     light: query<SVGStopElement>(`#${ids.gradient(section, 'light')} stop`),
   }))
@@ -189,6 +204,10 @@ export function startBlindWand(
   let turnTarget = getResolvedScheme() === 'dark' ? TWIST : 0
   let turn = turnTarget
   let turnVelocity = 0
+  // The turn's starting point and the scheme it is turning to, until the theme switches.
+  let twistFrom = turn
+  let pending: Scheme | null = null
+  let hovering = false
   let fallbackNight = turnTarget > 0 ? 1 : 0
   let fallbackSurface = readSurface(canvas)
   let surfaceTarget = fallbackSurface
@@ -222,14 +241,6 @@ export function startBlindWand(
 
   // Geometry along the wand that only changes with its length.
   function layout() {
-    const spans = { tip: [TIP_START, TIP_END - TIP_START], rod: [ROD_START, length - ROD_START] }
-    for (const { section, rects } of parts) {
-      const [y, size] = spans[section]
-      for (const rect of rects) {
-        rect.setAttribute('y', String(y))
-        rect.setAttribute('height', String(Math.max(0, size)))
-      }
-    }
     hit?.setAttribute('y2', String(length))
     focusRing?.setAttribute('height', String(length - ROD_START + 4))
     stripes?.setAttribute('y2', String(length))
@@ -270,19 +281,17 @@ export function startBlindWand(
       shadeStops[index]?.setAttribute(
         'stop-opacity',
         // A clear rod mostly shows the wall through it, so the slats darken it less.
-        (light.direct * (1 - through) * 0.55).toFixed(3),
+        (light.direct * (1 - through) * 0.35).toFixed(3),
       )
     }
-    for (const { section, rects, base, light: lit } of parts) {
+    const edges = { rod: [-ROD_RADIUS, ROD_RADIUS], tip: [-ROD_RADIUS, ROD_RADIUS] }
+    for (const { section, base, light: lit } of parts) {
       const facets = profileFacets(profiles[section], turn)
       const first = facets[0]
       const final = facets.at(-1)
       if (!first || !final) continue
+      edges[section] = [first.left * ROD_RADIUS, final.right * ROD_RADIUS]
       if (section === 'tip') tipWidth = ((final.right - first.left) * ROD_RADIUS) / 2
-      for (const rect of rects) {
-        rect.setAttribute('x', (first.left * ROD_RADIUS).toFixed(3))
-        rect.setAttribute('width', ((final.right - first.left) * ROD_RADIUS).toFixed(3))
-      }
       const paints = facets.map((facet) => sectionPaint(section, facet, light))
       paintStops(
         base,
@@ -297,12 +306,33 @@ export function startBlindWand(
         section === 'rod',
       )
     }
+    const [rodLeft, rodRight] = edges.rod
+    const [tipLeft, tipRight] = edges.tip
+    const outlines = {
+      rod: rodPath(rodLeft, rodRight, length),
+      tip: tipPath(tipLeft, tipRight, rodLeft, rodRight),
+    }
+    for (const { section, layers, gradients } of parts) {
+      const [left, right] = edges[section]
+      for (const layer of layers) layer.setAttribute('d', outlines[section])
+      // Faces map across the section's own width; the taper below the tip reuses its middle.
+      for (const gradient of gradients) {
+        gradient.setAttribute('x1', left.toFixed(3))
+        gradient.setAttribute('x2', right.toFixed(3))
+      }
+    }
     // The hole faces the room at rest and closes to a slit as the flat tip turns edge-on.
     const facing = Math.abs(Math.cos(turn))
-    hole?.setAttribute('rx', (HOLE_RADIUS * smoothstep(0.12, 1, facing)).toFixed(3))
-    hook?.setAttribute('d', hookPath(turn))
+    for (const hole of holes) {
+      hole.setAttribute('rx', (HOLE_RADIUS * smoothstep(0.12, 1, facing)).toFixed(3))
+    }
+    const hookPath = hookPaths(turn)
     const metal = mixRgb(light.surface, [0.55, 0.57, 0.6], 0.6)
-    hook?.setAttribute('stroke', toCss(mixRgb(metal, light.sun, light.direct * 0.4)))
+    for (const hook of hooks) {
+      const front = hook.dataset.wandHook === 'front'
+      hook.setAttribute('d', front ? hookPath.front : hookPath.back)
+      hook.setAttribute('stroke', toCss(mixRgb(metal, light.sun, light.direct * 0.4)))
+    }
     const degrees = ((-angle * 180) / Math.PI).toFixed(3)
     swing?.setAttribute('transform', `translate(0 ${-length}) rotate(${degrees})`)
     wandPose.set({
@@ -326,6 +356,8 @@ export function startBlindWand(
     const delta = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 1 / 60
     lastTime = now
     const still = reducedMotion.matches
+    const preview = hovering && !drag && !still ? (turnTarget > 0 ? -HOVER_TWIST : HOVER_TWIST) : 0
+    const aim = turnTarget + preview
     if (still) {
       angle = swingVelocity = turnVelocity = 0
       turn = turnTarget
@@ -338,10 +370,14 @@ export function startBlindWand(
         if (drag) swingForce += 140 * (drag.target - angle) - 14 * swingVelocity
         swingVelocity += swingForce * dt
         angle = Math.max(-SWING_LIMIT, Math.min(SWING_LIMIT, angle + swingVelocity * dt))
-        const twistForce = TWIST_STIFFNESS * (turnTarget - turn) - TWIST_DAMPING * turnVelocity
+        const twistForce = TWIST_STIFFNESS * (aim - turn) - TWIST_DAMPING * turnVelocity
         turnVelocity += twistForce * dt
         turn += turnVelocity * dt
       }
+    }
+    if (pending) {
+      const progress = (turn - twistFrom) / (turnTarget - twistFrom || 1)
+      if (still || progress >= SWITCH_PROGRESS) switchTheme()
     }
     const nightTarget = turnTarget > 0 ? 1 : 0
     fallbackNight = still
@@ -352,15 +388,16 @@ export function startBlindWand(
     fallbackSurface = mixRgb(fallbackSurface, surfaceTarget, fade)
     const settled =
       !drag &&
-      Math.abs(angle) + Math.abs(swingVelocity) < 1e-4 &&
-      Math.abs(turnTarget - turn) + Math.abs(turnVelocity) < 1e-4 &&
+      !pending &&
+      Math.abs(angle) + Math.abs(swingVelocity) < 5e-4 &&
+      Math.abs(aim - turn) + Math.abs(turnVelocity) < 1e-4 &&
       Math.abs(nightTarget - fallbackNight) < 1e-3 &&
       fallbackSurface.every(
         (channel, index) => Math.abs(channel - (surfaceTarget[index] ?? channel)) < 1e-3,
       )
     if (settled) {
       angle = swingVelocity = turnVelocity = 0
-      turn = turnTarget
+      turn = aim
       fallbackNight = nightTarget
       fallbackSurface = surfaceTarget
       lastTime = 0
@@ -384,8 +421,8 @@ export function startBlindWand(
     if (Math.sign(before) === Math.sign(after)) return
     const velocity = (point.x - previous.x) / elapsed
     const leverage = (point.y + PIVOT_ABOVE) / length
-    const push = (velocity / length) * 0.5 * leverage
-    swingVelocity += Math.max(-0.35, Math.min(0.35, push))
+    const push = (velocity / length) * BRUSH_GAIN * leverage
+    swingVelocity += Math.max(-BRUSH_LIMIT, Math.min(BRUSH_LIMIT, push))
     wake()
   }
 
@@ -431,7 +468,28 @@ export function startBlindWand(
       return
     }
     onInteract()
-    playThemeSound(toggleScheme())
+    // Turns first; the page follows partway through the turn. Turning again before then
+    // turns back to the scheme still on screen.
+    const shown = getResolvedScheme()
+    const next: Scheme = (pending ?? shown) === 'dark' ? 'light' : 'dark'
+    playThemeSound(next)
+    pending = next === shown ? null : next
+    twistFrom = turn
+    turnTarget = next === 'dark' ? TWIST : 0
+    // A twist of the wrist jostles the wand on its hook.
+    if (!reducedMotion.matches) swingVelocity += next === 'dark' ? 0.18 : -0.18
+    wake()
+  }
+
+  function switchTheme() {
+    if (pending && pending !== getResolvedScheme()) toggleScheme()
+    pending = null
+  }
+
+  function hover(event: PointerEvent) {
+    if (event.pointerType !== 'mouse') return
+    hovering = event.type === 'pointerenter'
+    wake()
   }
 
   const engine: Omit<WandEngine, 'dispose'> = {
@@ -439,9 +497,13 @@ export function startBlindWand(
     sync(animate) {
       const next = getResolvedScheme()
       const target = next === 'dark' ? TWIST : 0
-      if (target === turnTarget) return
-      turnTarget = target
       surfaceTarget = readSurface(canvas)
+      wake()
+      // Already turning there: the wand switched the theme itself.
+      if (target === turnTarget) return
+      pending = null
+      turnTarget = target
+      twistFrom = turn
       if (!animate) turn = target
       // A twist of the wrist jostles the wand on its hook.
       else if (!reducedMotion.matches) swingVelocity += next === 'dark' ? 0.18 : -0.18
@@ -457,6 +519,8 @@ export function startBlindWand(
     },
     options,
   )
+  hit?.addEventListener('pointerenter', hover, options)
+  hit?.addEventListener('pointerleave', hover, options)
   hit?.addEventListener('pointerdown', grab, options)
   hit?.addEventListener('pointermove', pull, options)
   hit?.addEventListener('pointerup', release, options)

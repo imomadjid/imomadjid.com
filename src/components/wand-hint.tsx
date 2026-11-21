@@ -185,7 +185,7 @@ export function WandHint({
         id="left"
         label={label}
         mirrored
-        className="absolute right-[26px] bottom-0 min-[1000px]:hidden"
+        className="absolute -right-0.5 bottom-0 min-[1000px]:hidden"
       />
     </div>
   )

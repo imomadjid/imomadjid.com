@@ -12,11 +12,12 @@ import {
   ROD_START,
   SECTIONS,
   STRIPE_SAMPLES,
-  TIP_END,
   TIP_START,
   UNMEASURED_LENGTH,
-  hookPath,
+  hookPaths,
   profiles,
+  rodPath,
+  tipPath,
   wandIds,
 } from './blind-wand-shape'
 import { WandHint, useWandHint } from './wand-hint'
@@ -70,13 +71,24 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
       ? 'Turn the blinds open, switch to light theme'
       : 'Turn the blinds closed, switch to dark theme'
 
+  const hook = hookPaths(0)
+  const hookStroke = {
+    fill: 'none',
+    stroke: '#a3a3a3',
+    strokeWidth: 1.3,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  } as const
+
   return (
     <>
+      {/* Written on the wall, so the wand hangs in front of it. */}
+      {hint.phase && <WandHint scheme={scheme} phase={hint.phase} onErased={hint.erased} />}
       <button
         ref={buttonRef}
         type="button"
         aria-label={label}
-        className="group pointer-events-none absolute right-0 bottom-0 h-svh w-9 outline-none"
+        className="group pointer-events-none absolute right-0 bottom-0 h-svh w-2 outline-none"
       >
         <svg
           aria-hidden="true"
@@ -124,7 +136,15 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
             </mask>
             {SECTIONS.flatMap((section) =>
               (['base', 'light'] as const).map((layer) => (
-                <linearGradient key={`${section}-${layer}`} id={ids.gradient(section, layer)}>
+                <linearGradient
+                  key={`${section}-${layer}`}
+                  id={ids.gradient(section, layer)}
+                  gradientUnits="userSpaceOnUse"
+                  x1={-ROD_RADIUS}
+                  x2={ROD_RADIUS}
+                  y1="0"
+                  y2="0"
+                >
                   {Array.from({ length: profiles[section].length * 2 }, (_, index) => (
                     <stop key={index} offset={0} stopColor="#fff" stopOpacity={0} />
                   ))}
@@ -133,41 +153,53 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
             )}
           </defs>
           <g data-wand-swing transform={`translate(0 ${-UNMEASURED_LENGTH})`}>
-            <path
-              data-wand-hook
-              d={hookPath(0)}
-              fill="none"
-              stroke="#a3a3a3"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-            />
+            <path data-wand-hook="back" d={hook.back} {...hookStroke} />
             {(['rod', 'tip'] as const).map((section) => {
               const tip = section === 'tip'
-              const geometry = {
-                x: -ROD_RADIUS * (tip ? 1.45 : 1),
-                width: ROD_RADIUS * (tip ? 2.9 : 2),
-                y: tip ? TIP_START : ROD_START,
-                height: tip ? TIP_END - TIP_START : UNMEASURED_LENGTH - ROD_START,
-                // The tip's corners are rounded; the shaft ends in a small bevel.
-                rx: tip ? 3 : 2,
-              }
+              const outline = tip
+                ? tipPath(-ROD_RADIUS * 1.45, ROD_RADIUS * 1.45, -ROD_RADIUS, ROD_RADIUS)
+                : rodPath(-ROD_RADIUS, ROD_RADIUS, UNMEASURED_LENGTH)
               return (
                 <g key={section} mask={tip ? `url(#${ids.hole})` : undefined}>
-                  <rect
+                  <path
                     data-wand-section={section}
-                    {...geometry}
+                    d={outline}
                     fill={`url(#${ids.gradient(section, 'base')})`}
                   />
-                  <rect data-wand-section={section} {...geometry} fill={`url(#${ids.shade})`} />
-                  <rect
+                  <path data-wand-section={section} d={outline} fill={`url(#${ids.shade})`} />
+                  <path
                     data-wand-section={section}
-                    {...geometry}
+                    d={outline}
                     fill={`url(#${ids.gradient(section, 'light')})`}
                     mask={`url(#${ids.lit})`}
                   />
+                  {/* Light piping round the flat tip's molded edge. */}
+                  {tip && (
+                    <path
+                      data-wand-section={section}
+                      d={outline}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="0.6"
+                      className="text-neutral-500/35 dark:text-neutral-400/30"
+                    />
+                  )}
                 </g>
               )
             })}
+            {/* The hole's wall catches the light as a thin ring. */}
+            <ellipse
+              data-wand-hole
+              cx="0"
+              cy={HOLE_Y}
+              rx={HOLE_RADIUS}
+              ry={HOLE_RADIUS}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="0.6"
+              className="text-neutral-500/50 dark:text-neutral-400/40"
+            />
+            <path data-wand-hook="front" d={hook.front} {...hookStroke} />
             <rect
               data-wand-focus
               x={-ROD_RADIUS - 4}
@@ -189,12 +221,13 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
               strokeWidth="24"
               strokeLinecap="round"
               pointerEvents="stroke"
-              className="pointer-events-auto cursor-grab touch-none data-dragging:cursor-grabbing"
-            />
+              className="pointer-events-auto cursor-pointer touch-none data-dragging:cursor-grabbing"
+            >
+              <title>Turn the blinds</title>
+            </line>
           </g>
         </svg>
       </button>
-      {hint.phase && <WandHint scheme={scheme} phase={hint.phase} onErased={hint.erased} />}
     </>
   )
 }
