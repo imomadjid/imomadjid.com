@@ -51,6 +51,23 @@
   }
 }
 
+/* Signature pen: each segment draws in its own slot, set by --stroke-delay and --stroke-duration.
+   Linear within a slot, because the slots already carry the pen's recorded speed. The hidden
+   state lives only in the keyframe, so the signature stays drawn if it never runs. */
+@utility animate-signature-stroke {
+  stroke-dasharray: 1 2;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: signature-stroke var(--stroke-duration) linear var(--stroke-delay) both;
+  }
+}
+
+@keyframes signature-stroke {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html.theme-transitioning body {
     transition: background-color 180ms ease-in-out;

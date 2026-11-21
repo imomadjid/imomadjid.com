@@ -1,8 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDialKit, useDialKitController } from 'dialkit'
+import type { DialConfig } from 'dialkit'
+import { useState } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
 import { ProfileAvatar } from '#/components/profile-avatar'
+import { defaultSignatureTiming, Signature } from '#/components/signature'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
@@ -69,7 +72,19 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-const productionTuning = { settings: defaultAmbientSettings, isSleeping: false }
+const productionTuning = {
+  settings: defaultAmbientSettings,
+  isSleeping: false,
+  signatureTiming: defaultSignatureTiming,
+  signatureRun: 0,
+}
+
+const signatureControls = {
+  replay: { type: 'action', label: 'Replay signature' },
+  delay: [defaultSignatureTiming.delay, 0, 2, 0.05],
+  duration: [defaultSignatureTiming.duration, 0.3, 3, 0.05],
+  lengthWeight: [defaultSignatureTiming.lengthWeight, 0, 1, 0.05],
+} satisfies DialConfig
 
 function useDialTuning() {
   const sunlit = useDialKitController('Sunlit', ambientControls, {
@@ -80,14 +95,25 @@ function useDialTuning() {
     },
   })
   const profile = useDialKit('Profile', { isSleeping: false })
-  return { settings: sunlit.values, isSleeping: profile.isSleeping }
+  const [signatureRun, setSignatureRun] = useState(0)
+  const signature = useDialKit('Signature', signatureControls, {
+    onAction(action) {
+      if (action === 'replay') setSignatureRun((run) => run + 1)
+    },
+  })
+  return {
+    settings: sunlit.values,
+    isSleeping: profile.isSleeping,
+    signatureTiming: signature,
+    signatureRun,
+  }
 }
 
 // The build-time constant keeps hook order stable and drops DialKit from production.
 const useTuning = import.meta.env.DEV ? useDialTuning : () => productionTuning
 
 function Home() {
-  const { settings, isSleeping } = useTuning()
+  const { settings, isSleeping, signatureTiming, signatureRun } = useTuning()
 
   return (
     <main className="relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
@@ -148,12 +174,10 @@ function Home() {
         </div>
 
         <footer className="mt-12 flex animate-enter flex-wrap items-center justify-between gap-x-10 gap-y-6 [--enter-index:5]">
-          <img
-            src="/images/signature.svg"
-            alt="Imo’s signature"
-            width={324}
-            height={133}
-            className="h-auto w-28 transition-[filter] duration-300 motion-reduce:transition-none dark:invert"
+          <Signature
+            key={signatureRun}
+            timing={signatureTiming}
+            className="h-auto w-28 text-black transition-colors duration-300 motion-reduce:transition-none dark:text-white"
           />
           <nav
             aria-label="Contact and social links"
