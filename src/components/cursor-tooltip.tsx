@@ -2,12 +2,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import { createPortal } from 'react-dom'
 
-import { normalizeSurfaceLevel, surfaceClasses } from '#/lib/surface-classes'
-import { SurfaceProvider, useSurface } from '#/lib/surface-context'
+import { glassSurface } from '#/lib/glass'
 
-// A card that trails the mouse while it rests on a target, as the Krillion Bench chart's
-// tooltips do. It sits below and to the right of the pointer, and flips to the other side of
-// it wherever that would run past the window's edge.
+// A static-glass label that trails the mouse while it rests on a target. It sits below and to
+// the right of the pointer, and flips to the other side of it wherever that would run past the
+// window's edge.
 const OPEN_DELAY = 350
 const GAP_X = 14
 const GAP_Y = 18
@@ -38,7 +37,6 @@ export function CursorTooltip({
   const [mounted, setMounted] = useState(false)
   const card = useRef<HTMLDivElement>(null)
   const pointer = useRef<Point>({ x: 0, y: 0 })
-  const level = normalizeSurfaceLevel(useSurface() + 2)
   const blocked = useRef(disabled)
 
   useEffect(() => {
@@ -157,9 +155,13 @@ export function CursorTooltip({
       ref={card}
       aria-hidden="true"
       data-open={open ? '' : undefined}
-      className={`pointer-events-none fixed top-0 left-0 z-(--z-tooltip) w-max max-w-64 scale-96 rounded-[20px] border border-border px-4 py-3.5 opacity-0 transition-[opacity,scale] duration-150 ease-out select-none data-open:scale-100 data-open:opacity-100 motion-reduce:transition-none starting:data-open:scale-96 starting:data-open:opacity-0 ${surfaceClasses(level)}`}
+      className="pointer-events-none fixed top-0 left-0 isolate z-(--z-tooltip) h-7 scale-96 rounded-full px-2.5 py-1.5 leading-none whitespace-nowrap text-neutral-800 opacity-0 transition-[opacity,scale] duration-150 ease-out select-none data-open:scale-100 data-open:opacity-100 motion-reduce:transition-none dark:text-neutral-200 starting:data-open:scale-96 starting:data-open:opacity-0"
     >
-      <SurfaceProvider value={level}>{children}</SurfaceProvider>
+      <span
+        aria-hidden="true"
+        className={`absolute -z-10 rounded-[inherit] motion-reduce:transition-none ${glassSurface.loading}`}
+      />
+      {children}
     </div>,
     document.body,
   )

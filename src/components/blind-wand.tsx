@@ -231,18 +231,7 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
       </button>
       {/* The note already says what the wand does; the card takes over once it is erased. */}
       <CursorTooltip target={hitRef} disabled={!hint.gone}>
-        <p className="text-body font-medium text-foreground">Tilt wand</p>
-        <p className="text-body text-muted-foreground">
-          {scheme === 'dark' ? 'Opens the blinds' : 'Closes the blinds'}
-        </p>
-        <p className="mt-2.5 flex justify-between gap-6 text-body text-foreground">
-          <span>Theme</span>
-          <span>
-            {scheme === 'dark' ? 'Dark' : 'Light'}
-            <span className="text-muted-foreground"> → {scheme === 'dark' ? 'light' : 'dark'}</span>
-          </span>
-        </p>
-        <p className="mt-2.5 text-body text-muted-foreground">Drag to swing it</p>
+        Switch to {scheme === 'dark' ? 'light' : 'dark'} mode
       </CursorTooltip>
     </>
   )
