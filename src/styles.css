@@ -51,14 +51,24 @@
   }
 }
 
-/* Signature pen: each segment draws in its own slot, set by --stroke-delay and --stroke-duration.
-   Linear within a slot, because the slots already carry the pen's recorded speed. The hidden
-   state lives only in the keyframe, so the signature stays drawn if it never runs. */
+/* The signature's entrance is the pen drawing it, starting at its --enter-index slot.
+   Reduced motion fades it in like the other chunks instead. */
+@utility animate-signature {
+  @media (prefers-reduced-motion: reduce) {
+    animation: enter-fade 300ms ease-out both;
+    animation-delay: calc(var(--enter-index, 0) * 100ms);
+  }
+}
+
+/* Each segment draws in its own slot, set by --stroke-start and --stroke-duration. Linear
+   within a slot, because the slots already carry the pen's recorded speed. The hidden state
+   lives only in the keyframe, so the signature stays drawn if it never runs. */
 @utility animate-signature-stroke {
   stroke-dasharray: 1 2;
 
   @media (prefers-reduced-motion: no-preference) {
-    animation: signature-stroke var(--stroke-duration) linear var(--stroke-delay) both;
+    animation: signature-stroke var(--stroke-duration) linear both;
+    animation-delay: calc(var(--enter-index, 0) * 100ms + var(--stroke-start));
   }
 }
 

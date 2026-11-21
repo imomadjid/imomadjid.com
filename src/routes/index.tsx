@@ -81,7 +81,6 @@ const productionTuning = {
 
 const signatureControls = {
   replay: { type: 'action', label: 'Replay signature' },
-  delay: [defaultSignatureTiming.delay, 0, 2, 0.05],
   duration: [defaultSignatureTiming.duration, 0.3, 3, 0.05],
   lengthWeight: [defaultSignatureTiming.lengthWeight, 0, 1, 0.05],
   returnTime: [defaultSignatureTiming.returnTime, 0.3, 2.5, 0.05],
@@ -175,15 +174,15 @@ function Home() {
           </p>
         </div>
 
-        <footer className="mt-12 flex animate-enter flex-wrap items-center justify-between gap-x-10 gap-y-6 [--enter-index:5]">
+        <footer className="mt-12 flex flex-wrap items-center justify-between gap-x-10 gap-y-6">
           <Signature
             key={signatureRun}
             timing={signatureTiming}
-            className="h-auto w-28 text-black transition-colors duration-300 motion-reduce:transition-none dark:text-white"
+            className="h-auto w-28 text-black transition-colors duration-300 [--enter-index:6] motion-reduce:transition-none dark:text-white"
           />
           <nav
             aria-label="Contact and social links"
-            className="flex flex-wrap gap-x-6 gap-y-2 text-sm"
+            className="flex animate-enter flex-wrap gap-x-6 gap-y-2 text-sm [--enter-index:5]"
           >
             {[
               { label: 'Email', href: 'mailto:mhmmadjid@gmail.com' },
