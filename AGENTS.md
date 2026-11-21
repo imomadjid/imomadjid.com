@@ -21,6 +21,8 @@ This is the personal portfolio website for imomadjid.com, built with TanStack St
 - `src/router.tsx` creates the router. Start generates `src/routeTree.gen.ts` during development and builds. Keep it committed; do not edit it manually or run a separate Router CLI against it.
 - `src/styles.css` imports Tailwind and holds global styles and theme extensions. Its `dark` variant follows `data-scene-tone` inside the Sunlit scene; do not override text colors with unlayered CSS.
 - DialKit and the Sleep Focus particles are development-only. Keep them behind `import.meta.env.DEV` so production bundles exclude them.
+- `/dev` is a local playground: route files in `src/routes/dev/` gate `head` and `component` on `import.meta.env.DEV` and lazy-load pages from `src/dev/`; production throws `notFound()` and the prerender filter skips `/dev`. Add test pages to `src/dev/pages.ts`.
+- Static glass (Button's `glass="static"`, the homepage `LinkButton`) shares the surface classes in `src/lib/glass.ts` and draws from `--glass-fill` and `--glass-shadow` in `src/styles.css`. The light values are fitted to two iOS 26 captures at 3x, on white and on `#f2f1f6` (`/dev/glass` holds both reference frames); a single white backdrop cannot separate fill color from opacity, so refit against both. The dark values are unverified.
 - `wrangler.jsonc` configures the Worker. Build output goes to `dist/`. Start prerenders `/` into a static asset; the Worker handles other URLs, including the 404. `public/_headers` sets asset caching.
 - Shaders are `.wgsl` modules loaded by vgpu's `wgslVitePlugin`; `bunfig.toml` preloads `tools/bun-wgsl-loader.js` so Bun tests can import them. vgpu render targets need whole-pixel sizes.
 
@@ -58,6 +60,14 @@ PRs should describe the change, link relevant issues, and report validation resu
 ## Fluid Functionalism surfaces
 
 FF is a copy-in registry configured in `components.json`. Add components only when needed: `bunx shadcn@latest add @fluid/base/button --yes`. Prefer the Base UI variants (`@fluid/base/<name>`). Review source and dependencies before installation; do not overwrite local adaptations blindly.
+
+- Keep the local `src/lib/utils.ts`, `surface-classes.ts`, and `surface-context.tsx`; restore them after `--overwrite`.
+- The shadcn CLI mangles `src/styles.css` (self-referencing vars, keyframes inside `@theme`) and may rewrite `src/lib/utils.ts` or re-add `clsx`/`tailwind-merge`. Review the diff, merge tokens by hand, and keep `cn` re-exported from the `cn` package.
+- FF's `src/lib/icon-context.tsx` and the `/dev` fixtures use `lucide-react`. Keep it to those files; production UI follows the icon rules above.
+- FF components read neutral shadcn roles (`foreground`, `muted-foreground`, `border`, ...) defined in `src/styles.css`.
+- The site uses FF's `pill` shape, set once by `<ShapeProvider defaultShape="pill">` in `__root.tsx`; `--shape-input-radius: 20px` in `src/styles.css` mirrors it for prerendered HTML. Change both together. The `/dev/components` shape switcher previews other shapes at runtime only.
+- Add new FF registry files to `fluidRegistryFiles` in `vite.config.ts` (anti-slop rules are relaxed there only) and to the matching `@source` lists in `src/styles.css` (excluded) and `src/dev/dev.css` (scanned). Production CSS skips the playground and FF components; remove a file from the `@source not` list once a production page renders it.
+- `src/theme.css` holds the shared dark variant and `@theme` mappings. `src/dev/dev.css` references it; it must not reference `src/styles.css`, or that sheet's `@source not` rules apply to the dev scan.
 
 The root provides level 1 and paints `bg-surface-1`. Surface colors and shadows live in `src/styles.css`; light mode uses shadows above white surfaces, while dark mode also increases background brightness. Activate dark tokens with `.dark` on `<html>`.
 

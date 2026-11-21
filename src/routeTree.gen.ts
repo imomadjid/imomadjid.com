@@ -10,33 +10,86 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DevRouteRouteImport } from './routes/dev/route'
+import { Route as DevIndexRouteImport } from './routes/dev/index'
+import { Route as DevComponentsRouteImport } from './routes/dev/components'
+import { Route as DevGlassRouteImport } from './routes/dev/glass'
+import { Route as DevSurfacesRouteImport } from './routes/dev/surfaces'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevRouteRoute = DevRouteRouteImport.update({
+  id: '/dev',
+  path: '/dev',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevIndexRoute = DevIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevComponentsRoute = DevComponentsRouteImport.update({
+  id: '/components',
+  path: '/components',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevGlassRoute = DevGlassRouteImport.update({
+  id: '/glass',
+  path: '/glass',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevSurfacesRoute = DevSurfacesRouteImport.update({
+  id: '/surfaces',
+  path: '/surfaces',
+  getParentRoute: () => DevRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dev': typeof DevRouteRouteWithChildren
+  '/dev/components': typeof DevComponentsRoute
+  '/dev/glass': typeof DevGlassRoute
+  '/dev/surfaces': typeof DevSurfacesRoute
+  '/dev/': typeof DevIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev/components': typeof DevComponentsRoute
+  '/dev/glass': typeof DevGlassRoute
+  '/dev/surfaces': typeof DevSurfacesRoute
+  '/dev': typeof DevIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dev': typeof DevRouteRouteWithChildren
+  '/dev/components': typeof DevComponentsRoute
+  '/dev/glass': typeof DevGlassRoute
+  '/dev/surfaces': typeof DevSurfacesRoute
+  '/dev/': typeof DevIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/dev' | '/dev/components' | '/dev/glass' | '/dev/surfaces' | '/dev/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/dev/components' | '/dev/glass' | '/dev/surfaces' | '/dev'
+  id:
+    | '__root__'
+    | '/'
+    | '/dev'
+    | '/dev/components'
+    | '/dev/glass'
+    | '/dev/surfaces'
+    | '/dev/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DevRouteRoute: typeof DevRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +101,65 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev': {
+      id: '/dev'
+      path: '/dev'
+      fullPath: '/dev'
+      preLoaderRoute: typeof DevRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/': {
+      id: '/dev/'
+      path: '/'
+      fullPath: '/dev/'
+      preLoaderRoute: typeof DevIndexRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/components': {
+      id: '/dev/components'
+      path: '/components'
+      fullPath: '/dev/components'
+      preLoaderRoute: typeof DevComponentsRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/glass': {
+      id: '/dev/glass'
+      path: '/glass'
+      fullPath: '/dev/glass'
+      preLoaderRoute: typeof DevGlassRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/surfaces': {
+      id: '/dev/surfaces'
+      path: '/surfaces'
+      fullPath: '/dev/surfaces'
+      preLoaderRoute: typeof DevSurfacesRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
   }
 }
 
+interface DevRouteRouteChildren {
+  DevComponentsRoute: typeof DevComponentsRoute
+  DevGlassRoute: typeof DevGlassRoute
+  DevSurfacesRoute: typeof DevSurfacesRoute
+  DevIndexRoute: typeof DevIndexRoute
+}
+
+const DevRouteRouteChildren: DevRouteRouteChildren = {
+  DevComponentsRoute: DevComponentsRoute,
+  DevGlassRoute: DevGlassRoute,
+  DevSurfacesRoute: DevSurfacesRoute,
+  DevIndexRoute: DevIndexRoute,
+}
+
+const DevRouteRouteWithChildren = DevRouteRoute._addFileChildren(
+  DevRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DevRouteRoute: DevRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

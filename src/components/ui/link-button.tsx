@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react'
 
+import { glassSurface } from '#/lib/glass'
 import { cn } from '#/lib/utils'
 
+// Compact (28px) static-glass pill inside running text. An inline-block, not inline-flex, so its
+// baseline is the label's and the name sits on the sentence's baseline; a flex box would take
+// the logo's bottom edge instead. h-7 pins the height; the inline logo would add half a pixel.
 export function LinkButton({
   href,
   logoSrc,
@@ -16,20 +20,28 @@ export function LinkButton({
   return (
     <a
       href={href}
-      className="inline-flex h-7 items-center justify-center gap-1.5 rounded-full px-2.5 align-middle leading-none text-neutral-800 shadow-surface-1 transition-colors duration-180 hover:bg-hover hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring active:bg-active motion-reduce:transition-none dark:text-neutral-200 dark:hover:text-neutral-50"
+      className="group relative isolate inline-block h-7 rounded-full px-2.5 py-1.5 leading-none whitespace-nowrap text-neutral-800 transition-colors duration-180 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none dark:text-neutral-200 dark:hover:text-neutral-50"
     >
+      <span
+        aria-hidden="true"
+        className={cn(
+          'absolute -z-10 rounded-[inherit] [transition-duration:180ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease] group-active:[transition-duration:80ms,80ms] motion-reduce:transition-none',
+          glassSurface.rest,
+        )}
+      />
+      {/* A 1em logo at -0.125em centers on the cap height, the usual inline-icon offset. */}
       <img
         src={logoSrc}
         alt=""
         width={16}
         height={16}
         className={cn(
-          'size-4 shrink-0 object-contain',
+          'mr-1.5 inline-block size-4 object-contain align-[-0.125em]',
           invertLogo &&
             'transition-[filter] duration-300 motion-reduce:transition-none dark:invert',
         )}
       />
-      <span>{children}</span>
+      {children}
     </a>
   )
 }

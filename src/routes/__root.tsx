@@ -4,9 +4,11 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { DialRoot } from 'dialkit'
 import type { ReactNode } from 'react'
 
+import { ShapeProvider } from '#/lib/shape-context'
 import { SurfaceProvider } from '#/lib/surface-context'
 import { THEME_SCRIPT, useTheme } from '#/lib/theme'
 
+import devCss from '#/dev/dev.css?url'
 import appCss from '#/styles.css?url'
 import dialkitCss from 'dialkit/styles.css?url'
 
@@ -20,6 +22,8 @@ export const Route = createRootRoute({
     links: [
       ...(import.meta.env.DEV ? [{ rel: 'stylesheet', href: dialkitCss }] : []),
       { rel: 'stylesheet', href: appCss },
+      // Playground and FF component utilities; production pages don't render them yet.
+      ...(import.meta.env.DEV ? [{ rel: 'stylesheet', href: devCss }] : []),
       {
         rel: 'preload',
         href: '/fonts/allo/Allo-Regular.woff2',
@@ -62,7 +66,10 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="bg-surface-1 text-neutral-950 dark:text-neutral-50">
-        <SurfaceProvider value={1}>{children}</SurfaceProvider>
+        {/* Site-wide FF corner style; --shape-input-radius in styles.css mirrors it for SSR. */}
+        <ShapeProvider defaultShape="pill">
+          <SurfaceProvider value={1}>{children}</SurfaceProvider>
+        </ShapeProvider>
         {import.meta.env.DEV && <ThemedDialKit />}
         <TanStackDevtools
           config={{ position: 'bottom-right' }}
