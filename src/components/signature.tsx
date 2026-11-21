@@ -9,18 +9,32 @@ export type SignatureTiming = {
   duration: number
   /** 0 gives every pen sample equal time; 1 draws at constant speed. */
   lengthWeight: number
+  /** Time multiplier for the long stroke back to the left. */
+  returnTime: number
+  /** Time multiplier for the final flick to the right. */
+  flickTime: number
 }
 
 export const defaultSignatureTiming: SignatureTiming = {
   delay: 0.6,
   duration: 1.1,
   lengthWeight: 0.2,
+  returnTime: 1.3,
+  flickTime: 0.5,
 }
+
+const startX = signatureStrokes.map(({ d }) => Number.parseFloat(d.slice(1)))
+// The flick starts at the leftmost point; the return stroke starts at the turnaround before it.
+const flickStart = startX.indexOf(Math.min(...startX))
+const returnStart = startX.indexOf(Math.max(...startX.slice(0, flickStart)))
 
 type StrokeStyle = CSSProperties & { '--stroke-delay': string; '--stroke-duration': string }
 
-function strokeSchedule({ delay, duration, lengthWeight }: SignatureTiming) {
-  const weights = signatureStrokes.map(({ length }) => length ** lengthWeight)
+function strokeSchedule({ delay, duration, lengthWeight, returnTime, flickTime }: SignatureTiming) {
+  const weights = signatureStrokes.map(({ length }, index) => {
+    const pace = index >= flickStart ? flickTime : index >= returnStart ? returnTime : 1
+    return length ** lengthWeight * pace
+  })
   const total = weights.reduce((sum, weight) => sum + weight, 0)
   let elapsed = 0
   return weights.map((weight): StrokeStyle => {

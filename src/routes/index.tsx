@@ -84,6 +84,8 @@ const signatureControls = {
   delay: [defaultSignatureTiming.delay, 0, 2, 0.05],
   duration: [defaultSignatureTiming.duration, 0.3, 3, 0.05],
   lengthWeight: [defaultSignatureTiming.lengthWeight, 0, 1, 0.05],
+  returnTime: [defaultSignatureTiming.returnTime, 0.3, 2.5, 0.05],
+  flickTime: [defaultSignatureTiming.flickTime, 0.2, 2, 0.05],
 } satisfies DialConfig
 
 function useDialTuning() {
