@@ -1,36 +1,19 @@
 import type { CSSProperties } from 'react'
 
-import { signatureStrokes, signatureViewBox } from '#/components/signature-strokes'
-import { cn } from '#/lib/utils'
-
-export type SignatureTiming = {
-  /** Seconds from the first segment to the last. */
-  duration: number
-  /** 0 gives every pen sample equal time; 1 draws at constant speed. */
-  lengthWeight: number
-  /** Time multiplier for the long stroke back to the left. */
-  returnTime: number
-  /** Time multiplier for the final flick to the right. */
-  flickTime: number
-}
-
-export const defaultSignatureTiming: SignatureTiming = {
-  duration: 1.1,
-  lengthWeight: 0.2,
-  returnTime: 1.3,
-  flickTime: 0.5,
-}
-
-const startX = signatureStrokes.map(({ d }) => Number.parseFloat(d.slice(1)))
-// The flick starts at the leftmost point; the return stroke starts at the turnaround before it.
-const flickStart = startX.indexOf(Math.min(...startX))
-const returnStart = startX.indexOf(Math.max(...startX.slice(0, flickStart)))
+import {
+  signatureFlickStart,
+  signatureReturnStart,
+  signatureStrokes,
+  signatureViewBox,
+} from '#/components/signature-strokes'
+import type { SignatureTiming } from '#/lib/signature-settings'
 
 type StrokeStyle = CSSProperties & { '--stroke-start': string; '--stroke-duration': string }
 
 function strokeSchedule({ duration, lengthWeight, returnTime, flickTime }: SignatureTiming) {
   const weights = signatureStrokes.map(({ length }, index) => {
-    const pace = index >= flickStart ? flickTime : index >= returnStart ? returnTime : 1
+    const pace =
+      index >= signatureFlickStart ? flickTime : index >= signatureReturnStart ? returnTime : 1
     return length ** lengthWeight * pace
   })
   const total = weights.reduce((sum, weight) => sum + weight, 0)
@@ -45,10 +28,8 @@ function strokeSchedule({ duration, lengthWeight, returnTime, flickTime }: Signa
   })
 }
 
-const defaultSchedule = strokeSchedule(defaultSignatureTiming)
-
-export function Signature({ timing, className }: { timing?: SignatureTiming; className?: string }) {
-  const schedule = timing ? strokeSchedule(timing) : defaultSchedule
+export function Signature({ timing, className }: { timing: SignatureTiming; className?: string }) {
+  const schedule = strokeSchedule(timing)
 
   return (
     <>
@@ -61,7 +42,7 @@ export function Signature({ timing, className }: { timing?: SignatureTiming; cla
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
-        className={cn('animate-signature', className)}
+        className={className}
       >
         {signatureStrokes.map(({ d, width }, index) => (
           <path

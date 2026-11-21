@@ -1,14 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDialKit, useDialKitController } from 'dialkit'
-import type { DialConfig } from 'dialkit'
 import { useState } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
 import { ProfileAvatar } from '#/components/profile-avatar'
-import { defaultSignatureTiming, Signature } from '#/components/signature'
+import { Signature } from '#/components/signature'
 import { ThemeToggle } from '#/components/theme-toggle'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
+import { defaultSignatureTiming, signatureControls } from '#/lib/signature-settings'
 
 const siteUrl = 'https://imomadjid.com/'
 const title = 'Imo’s Portfolio'
@@ -78,14 +78,6 @@ const productionTuning = {
   signatureTiming: defaultSignatureTiming,
   signatureRun: 0,
 }
-
-const signatureControls = {
-  replay: { type: 'action', label: 'Replay signature' },
-  duration: [defaultSignatureTiming.duration, 0.3, 3, 0.05],
-  lengthWeight: [defaultSignatureTiming.lengthWeight, 0, 1, 0.05],
-  returnTime: [defaultSignatureTiming.returnTime, 0.3, 2.5, 0.05],
-  flickTime: [defaultSignatureTiming.flickTime, 0.2, 2, 0.05],
-} satisfies DialConfig
 
 function useDialTuning() {
   const sunlit = useDialKitController('Sunlit', ambientControls, {
@@ -178,7 +170,7 @@ function Home() {
           <Signature
             key={signatureRun}
             timing={signatureTiming}
-            className="h-auto w-28 text-black transition-colors duration-300 [--enter-index:6] motion-reduce:transition-none dark:text-white"
+            className="h-auto w-28 text-black transition-colors duration-300 [--enter-index:6] motion-reduce:animate-enter motion-reduce:transition-none dark:text-white"
           />
           <nav
             aria-label="Contact and social links"

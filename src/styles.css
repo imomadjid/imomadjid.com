@@ -26,11 +26,15 @@
   font-display: swap;
 }
 
-/* Staged page entrance: chunks 100ms apart, set per element with --enter-index.
+/* Staged page entrance: chunks --enter-step apart, set per element with --enter-index.
    The hidden state lives only in the keyframe, so content stays visible if it never runs. */
+:root {
+  --enter-step: 100ms;
+}
+
 @utility animate-enter {
   animation: enter-fade 300ms ease-out both;
-  animation-delay: calc(var(--enter-index, 0) * 100ms);
+  animation-delay: calc(var(--enter-index, 0) * var(--enter-step));
 
   @media (prefers-reduced-motion: no-preference) {
     animation-name: enter-rise;
@@ -51,24 +55,16 @@
   }
 }
 
-/* The signature's entrance is the pen drawing it, starting at its --enter-index slot.
-   Reduced motion fades it in like the other chunks instead. */
-@utility animate-signature {
-  @media (prefers-reduced-motion: reduce) {
-    animation: enter-fade 300ms ease-out both;
-    animation-delay: calc(var(--enter-index, 0) * 100ms);
-  }
-}
-
-/* Each segment draws in its own slot, set by --stroke-start and --stroke-duration. Linear
-   within a slot, because the slots already carry the pen's recorded speed. The hidden state
-   lives only in the keyframe, so the signature stays drawn if it never runs. */
+/* The signature's entrance is the pen drawing it from its --enter-index slot; reduced motion
+   fades it in with animate-enter instead. Each segment draws in its own slot, set by
+   --stroke-start and --stroke-duration. Linear within a slot, because the slots already carry
+   the pen's recorded speed. The hidden state lives only in the keyframe. */
 @utility animate-signature-stroke {
   stroke-dasharray: 1 2;
 
   @media (prefers-reduced-motion: no-preference) {
     animation: signature-stroke var(--stroke-duration) linear both;
-    animation-delay: calc(var(--enter-index, 0) * 100ms + var(--stroke-start));
+    animation-delay: calc(var(--enter-index, 0) * var(--enter-step) + var(--stroke-start));
   }
 }
 

@@ -1,5 +1,5 @@
-// Generated from public/images/signature.svg: one pen stroke in drawing order.
-// Long segments are thin and short ones thick, so each reads as one evenly timed pen sample.
+// One pen stroke in drawing order. Long segments are thin and short ones thick, so each reads
+// as one evenly timed pen sample. Lengths are arc lengths in viewBox units.
 export const signatureViewBox = '57.14 45.24 323.64 132.94'
 
 export const signatureStrokes = [
@@ -53,3 +53,7 @@ export const signatureStrokes = [
   { d: 'M311.71,103.47 C336.7,99.33 336.66,99.25 361.79,96.06', width: 1.45, length: 50.6 },
   { d: 'M361.79,96.06 C368.77,95.37 368.74,95.16 375.78,95.13', width: 2.3, length: 14 },
 ] as const
+
+// Segment indexes where the pen turns back left for the long return stroke, then flicks right.
+export const signatureReturnStart = 33
+export const signatureFlickStart = 41
