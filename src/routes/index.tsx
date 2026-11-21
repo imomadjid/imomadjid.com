@@ -121,7 +121,16 @@ function Home() {
 
           <p className="animate-enter [--enter-index:3]">
             I work across user research, design systems, and frontend engineering. I like working
-            through interaction details in code, trying them out and refining how they feel.
+            through interaction details in code, trying them out and refining how they feel. I also
+            made{' '}
+            <LinkButton
+              href="https://lukis.imomadjid.com"
+              logoSrc="/images/projects/lukis.svg"
+              invertLogo
+            >
+              Lukis
+            </LinkButton>
+            , which turns an image into a painting right in the browser.
           </p>
 
           <p className="animate-enter [--enter-index:4]">
