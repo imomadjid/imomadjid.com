@@ -72,7 +72,7 @@
    fades it in with animate-enter instead. Each segment draws in its own slot, set by
    --stroke-start and --stroke-duration. Linear within a slot, because the slots already carry
    the pen's recorded speed. The hidden state lives only in the keyframe. A replay erases along
-   the path at an even speed (--exit-start, --exit-duration), then redraws without the
+   the path, easing through its turns (--exit-start, --exit-duration), then redraws without the
    entrance slot. */
 @utility animate-signature-stroke {
   stroke-dasharray: 1 2;

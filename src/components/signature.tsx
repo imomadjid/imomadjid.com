@@ -32,9 +32,10 @@ function strokeSchedule({
   returnTime,
   flickTime,
   exitDuration,
+  exitLengthWeight,
 }: SignatureTiming) {
-  // The draw follows the pen's rhythm. The exit erases at an even speed, so the fast flick
-  // still reads as erasing instead of vanishing.
+  // The draw follows the pen's rhythm. The exit keeps half of it: it still eases through the
+  // turns into the flick, without the flick's speed-up that made it vanish.
   const draw = slots(
     signatureStrokes.map(({ length }, index) => {
       const pace =
@@ -44,7 +45,7 @@ function strokeSchedule({
     duration,
   )
   const exit = slots(
-    signatureStrokes.map(({ length }) => length),
+    signatureStrokes.map(({ length }) => length ** exitLengthWeight),
     exitDuration,
   )
   return draw.map((slot, index): StrokeStyle => ({
