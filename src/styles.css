@@ -26,6 +26,17 @@
   font-display: swap;
 }
 
+/* Caveat, SIL Open Font License 1.1: https://github.com/googlefonts/caveat
+   Pinned at weight 500 and cut to lowercase and basic punctuation for the wand's note.
+   Only fetched when the note shows. */
+@font-face {
+  font-family: 'Caveat';
+  src: url('/fonts/caveat/Caveat-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Staged page entrance: chunks 100ms apart, set per element with --enter-index.
    The hidden state lives only in the keyframe, so content stays visible if it never runs. */
 @utility animate-enter {

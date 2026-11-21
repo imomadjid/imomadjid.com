@@ -151,6 +151,7 @@ export function startBlindWand(
   button: HTMLButtonElement,
   id: string,
   getSettings: () => AmbientSettings,
+  onInteract: () => void,
 ): WandEngine | null {
   const host = button.closest('main')
   const svg = button.querySelector('svg')
@@ -391,6 +392,7 @@ export function startBlindWand(
   function grab(event: PointerEvent) {
     if (event.button !== 0 || !hit) return
     warmThemeSounds()
+    onInteract()
     hit.setPointerCapture(event.pointerId)
     drag = {
       pointerId: event.pointerId,
@@ -428,6 +430,7 @@ export function startBlindWand(
       suppressClick = false
       return
     }
+    onInteract()
     playThemeSound(toggleScheme())
   }
 
