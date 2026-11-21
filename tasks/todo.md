@@ -6,9 +6,9 @@ This record describes the current shader. Earlier caustic, grain/grid, inverse-t
 
 ## Current implementation
 
-- One decorative WebGPU canvas behind the homepage HTML, managed by pinned `vgpu@0.4.1`.
+- One decorative WebGPU canvas behind the homepage HTML, managed by pinned `vgpu@0.6.0`.
 - A half-resolution lighting pass uses 32 disk samples through a tilted blind plane and two foliage masks. The full-resolution material pass combines visibility, irradiance, and the current surface color. Canvas DPR is capped at 1.5.
-- The lighting target uses `rgba16float`, so irradiance above 1 reaches the material pass. The foliage mask remains `rgba8unorm` with five populated mip levels.
+- The lighting target uses `rg16float` (visibility and irradiance only), so irradiance above 1 reaches the material pass. The foliage mask is `r8unorm` with five populated mip levels.
 - The theme-transition sunset tint now follows the light intensity control. Zero intensity preserves the supplied surface color throughout that transition. The independent entrance grading is unchanged.
 - Receiver-dependent softness and reduced foliage defocus are deliberate art direction. This is not a physically exact sunlight simulation.
 - Motion stays outside React state. Theme reversal preserves the current transition values. Reduced motion, visibility suspension, resize, cancellation, and device-loss fallback have explicit handling.

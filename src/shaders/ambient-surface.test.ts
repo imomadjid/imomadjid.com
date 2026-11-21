@@ -1,8 +1,9 @@
 import { strict as assert } from 'node:assert'
-import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
 import { effect, frame, init, sampler, target } from 'vgpu/node'
+
+import surfaceSource from './ambient-surface.wgsl'
 
 void test('zero light intensity preserves the surface throughout theme transitions', async () => {
   const gpu = await init()
@@ -27,17 +28,13 @@ void test('zero light intensity preserves the surface throughout theme transitio
       entranceDawn: 0,
       entranceDusk: 0,
     }
-    const shader = effect(
-      gpu,
-      readFileSync(new URL('./ambient-surface.wgsl', import.meta.url), 'utf8'),
-      {
-        set: {
-          params,
-          lighting,
-          linearSampler: sampler(gpu, { minFilter: 'linear', magFilter: 'linear' }),
-        },
+    const shader = effect(gpu, surfaceSource, {
+      set: {
+        params,
+        lighting,
+        linearSampler: sampler(gpu, { minFilter: 'linear', magFilter: 'linear' }),
       },
-    )
+    })
     const output = target(gpu, { size: [1, 1], format: 'rgba16float' })
     await shader.compile({ colors: [output.format] })
     for (const channel of [23 / 255, 0.5, 250 / 255]) {
@@ -48,7 +45,7 @@ void test('zero light intensity preserves the surface throughout theme transitio
           frame(gpu, (current) => {
             current.pass({ target: output }, (pass) => pass.draw(shader))
           })
-          const pixels = await output.readFloats()
+          const pixels = await output.color.readFloats({ mipLevel: 0, region: 'all' })
           for (const actual of pixels.slice(0, 3)) {
             assert.ok(
               Math.abs(actual - channel) < 0.001,

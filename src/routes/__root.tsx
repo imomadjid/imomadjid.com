@@ -1,5 +1,5 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { DialRoot } from 'dialkit'
 import type { ReactNode } from 'react'
@@ -32,7 +32,22 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: NotFound,
 })
+
+function NotFound() {
+  return (
+    <main className="flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center">
+      <h1 className="text-base font-normal">This page doesn’t exist.</h1>
+      <Link
+        to="/"
+        className="text-sm text-neutral-600 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-50"
+      >
+        Back to the homepage
+      </Link>
+    </main>
+  )
+}
 
 function ThemedDialKit() {
   return <DialRoot theme={useTheme()} defaultOpen={false} />

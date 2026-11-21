@@ -1,7 +1,8 @@
 import { effect, frame, init, sampler, surface, target, timer } from 'vgpu'
 
-import lightingSource from '../shaders/ambient-light.wgsl?raw'
-import surfaceSource from '../shaders/ambient-surface.wgsl?raw'
+import lightingSource from '#/shaders/ambient-light.wgsl'
+import surfaceSource from '#/shaders/ambient-surface.wgsl'
+
 import type { AmbientSettings } from './ambient-settings'
 import { smoothStep, transitionTiming, transitionValue } from './ambient-transition'
 
@@ -88,8 +89,8 @@ export async function startAmbient(
     let reportTime = 0
     const gpuSamples: number[] = []
     const frameSamples: number[] = []
-    // Timestamp queries are only requested while profiling.
-    const gpuTimer = gpu.gpu.features.has('timestamp-query') ? timer(gpu) : undefined
+    // The build-time profiling constant lets production drop the timer code.
+    const gpuTimer = profiling && gpu.gpu.features.has('timestamp-query') ? timer(gpu) : undefined
     const lightSpan = gpuTimer?.span('light')
     const materialSpan = gpuTimer?.span('material')
     gpuTimer?.onResults((spans) => {
@@ -118,13 +119,12 @@ export async function startAmbient(
     let width = rect.width
     let height = rect.height
     const dpr = () => Math.min(window.devicePixelRatio || 1, 1.5)
-    const outputSize = (): [number, number] => [
-      Math.max(1, width * dpr()),
-      Math.max(1, height * dpr()),
-    ]
+    // vgpu requires whole-pixel target sizes.
+    const pixels = (value: number) => Math.max(1, Math.round(value))
+    const outputSize = (): [number, number] => [pixels(width * dpr()), pixels(height * dpr())]
     const lightSize = (): [number, number] => [
-      Math.max(1, output.size[0] / 2),
-      Math.max(1, output.size[1] / 2),
+      pixels(output.size[0] / 2),
+      pixels(output.size[1] / 2),
     ]
     const output = surface(gpu, canvas, {
       autoResize: false,

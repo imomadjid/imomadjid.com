@@ -21,7 +21,8 @@ This is the personal portfolio website for imomadjid.com, built with TanStack St
 - `src/router.tsx` creates the router. Start generates `src/routeTree.gen.ts` during development and builds. Keep it committed; do not edit it manually or run a separate Router CLI against it.
 - `src/styles.css` imports Tailwind and holds global styles and theme extensions. Its `dark` variant follows `data-scene-tone` inside the Sunlit scene; do not override text colors with unlayered CSS.
 - DialKit and the Sleep Focus particles are development-only. Keep them behind `import.meta.env.DEV` so production bundles exclude them.
-- `wrangler.jsonc` configures the Worker. Build output goes to `dist/`.
+- `wrangler.jsonc` configures the Worker. Build output goes to `dist/`. Start prerenders `/` into a static asset; the Worker handles other URLs, including the 404. `public/_headers` sets asset caching.
+- Shaders are `.wgsl` modules loaded by vgpu's `wgslVitePlugin`; `bunfig.toml` preloads `tools/bun-wgsl-loader.js` so Bun tests can import them. vgpu render targets need whole-pixel sizes.
 
 ## Development and validation commands
 

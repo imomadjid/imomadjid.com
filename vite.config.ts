@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
+import { wgslVitePlugin } from 'vgpu/client'
 import { defineConfig } from 'vite-plus'
 
 const toolingIgnores = [
@@ -75,7 +76,9 @@ const config = defineConfig({
     devtools(),
     cloudflare({ viteEnvironment: { name: 'ssr' } }),
     tailwindcss(),
-    tanstackStart(),
+    wgslVitePlugin(),
+    // Serve the static homepage as an asset; the Worker still handles unknown URLs.
+    tanstackStart({ prerender: { enabled: true } }),
     viteReact(),
   ],
 })
