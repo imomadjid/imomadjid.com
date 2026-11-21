@@ -44,6 +44,8 @@ Run `bun run doctor` when the task requests a full React audit or a React-relate
 
 Use concise imperative messages with `feat:`, `fix:`, or `chore:` prefixes. Keep changes focused.
 
+Commit to `master` directly. Pushing `master` runs `.github/workflows/deploy.yml`, which deploys production, so push only with deployment authorization.
+
 PRs should describe the change, link relevant issues, and report validation results. Include screenshots for visible UI changes. Never commit credentials, environment files, or generated build output.
 
 ## Fluid Functionalism surfaces
