@@ -20,12 +20,14 @@ import {
   tipPath,
   wandIds,
 } from './blind-wand-shape'
+import { CursorTooltip } from './cursor-tooltip'
 import { WandHint, useWandHint } from './wand-hint'
 
 /** A blind's tilt wand hanging into the header row. Turning it switches the theme. */
 export function BlindWand({ settings }: { settings: AmbientSettings }) {
   const scheme = useResolvedScheme()
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const hitRef = useRef<SVGLineElement>(null)
   const settingsRef = useRef(settings)
   const engine = useRef<WandEngine | null>(null)
   const mounted = useRef(false)
@@ -212,6 +214,7 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
               className="opacity-0 group-focus-visible:opacity-100"
             />
             <line
+              ref={hitRef}
               data-wand-hit
               x1="0"
               y1={TIP_START}
@@ -222,12 +225,25 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
               strokeLinecap="round"
               pointerEvents="stroke"
               className="pointer-events-auto cursor-pointer touch-none data-dragging:cursor-grabbing"
-            >
-              <title>Turn the blinds</title>
-            </line>
+            />
           </g>
         </svg>
       </button>
+      {/* The note already says what the wand does; the card takes over once it is erased. */}
+      <CursorTooltip target={hitRef} disabled={!hint.gone}>
+        <p className="text-body font-medium text-foreground">Tilt wand</p>
+        <p className="text-body text-muted-foreground">
+          {scheme === 'dark' ? 'Opens the blinds' : 'Closes the blinds'}
+        </p>
+        <p className="mt-2.5 flex justify-between gap-6 text-body text-foreground">
+          <span>Theme</span>
+          <span>
+            {scheme === 'dark' ? 'Dark' : 'Light'}
+            <span className="text-muted-foreground"> → {scheme === 'dark' ? 'light' : 'dark'}</span>
+          </span>
+        </p>
+        <p className="mt-2.5 text-body text-muted-foreground">Drag to swing it</p>
+      </CursorTooltip>
     </>
   )
 }
