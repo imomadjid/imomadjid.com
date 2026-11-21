@@ -40,18 +40,27 @@ const SWING_LIMIT = 0.35
 // About a 1.3 s period, like a 40 cm wand on a hook, and a few visible swings before it rests.
 const SWING_STIFFNESS = ((2 * Math.PI) / 1.3) ** 2
 const SWING_DAMPING = 2.5
-// Turns over about 0.9 s and settles with a slight overshoot, like a wrist letting go.
-const TWIST_STIFFNESS = 38
-const TWIST_DAMPING = 9.5
+// Opening turns over about 0.9 s and settles with a slight overshoot, like a wrist letting go;
+// most of it is seen within 0.5 s, just ahead of the sunrise, whose change reads mostly in its
+// first 0.4 s. The sunset is felt over about 0.8 s, from a quarter second in, so closing runs
+// the same spring at half speed: the wand still leads the room by about 0.15 s.
+// Each spring's top spin, about 24 and 12 rad/s, sets how loud its gear ticks get; the slower
+// closing turn ticks a little softer.
+const OPENING = { stiffness: 38, damping: 9.5, tickSpeed: 20 }
+const CLOSING = { stiffness: 38 / 4, damping: 9.5 / 2, tickSpeed: 12 }
 const DRAG_THRESHOLD = 6
 // Hovering starts the turn a little, so the hook and hole move before the click.
 const HOVER_TWIST = 0.3
-// The theme switches once the twist is this far along, so the page changes with the wand.
+// Opening switches the theme once the twist is this far along, so the page changes with the
+// wand. Closing switches soon after the press instead, so the sunset's slow start overlaps the
+// turn rather than following it.
 const SWITCH_PROGRESS = 0.4
-// The tilter's gear: eight teeth tick by over a full turn of the wand. Its spin reaches about
-// 24 rad/s, so ticks are loudest near the middle of the turn.
+const CLOSING_SWITCH_DELAY = 0.1
+// Closed slats meet with a clack near the end of the turn.
+const SHUT_PROGRESS = 0.9
+// The tilter's gear: eight teeth tick by over a full turn of the wand, loudest near the middle
+// of the turn, where it spins fastest.
 const TOOTH = TWIST / 8
-const TICK_SPEED = 20
 // Brushing past swings the wand in proportion to the pointer's speed, up to a firm knock.
 const BRUSH_GAIN = 0.15
 const BRUSH_LIMIT = 0.5
@@ -211,6 +220,9 @@ export function startBlindWand(
   let turnVelocity = 0
   // The turn's starting point and the scheme it is turning to, until the theme switches.
   let twistFrom = turn
+  let twistStartedAt = 0
+  // A closing turn the slats have yet to shut on.
+  let shutting = false
   let pending: Scheme | null = null
   // Only turns someone made are heard; the system changing the theme turns the wand silently.
   let voiced = false
@@ -367,6 +379,7 @@ export function startBlindWand(
     const still = reducedMotion.matches
     const preview = hovering && !drag && !still ? (turnTarget > 0 ? -HOVER_TWIST : HOVER_TWIST) : 0
     const aim = turnTarget + preview
+    const spring = turnTarget > 0 ? CLOSING : OPENING
     if (still) {
       angle = swingVelocity = turnVelocity = 0
       turn = turnTarget
@@ -379,19 +392,27 @@ export function startBlindWand(
         if (drag) swingForce += 140 * (drag.target - angle) - 14 * swingVelocity
         swingVelocity += swingForce * dt
         angle = Math.max(-SWING_LIMIT, Math.min(SWING_LIMIT, angle + swingVelocity * dt))
-        const twistForce = TWIST_STIFFNESS * (aim - turn) - TWIST_DAMPING * turnVelocity
+        const twistForce = spring.stiffness * (aim - turn) - spring.damping * turnVelocity
         turnVelocity += twistForce * dt
         turn += turnVelocity * dt
       }
     }
     const nextTooth = Math.round(turn / TOOTH)
     if (nextTooth !== tooth) {
-      if (voiced && !still) playWandTick(Math.abs(turnVelocity) / TICK_SPEED)
+      if (voiced && !still) playWandTick(Math.abs(turnVelocity) / spring.tickSpeed)
       tooth = nextTooth
     }
+    const progress = (turn - twistFrom) / (turnTarget - twistFrom || 1)
     if (pending) {
-      const progress = (turn - twistFrom) / (turnTarget - twistFrom || 1)
-      if (still || progress >= SWITCH_PROGRESS) switchTheme()
+      const due =
+        pending === 'dark'
+          ? (now - twistStartedAt) / 1000 >= CLOSING_SWITCH_DELAY
+          : progress >= SWITCH_PROGRESS
+      if (still || due) switchTheme()
+    }
+    if (shutting && !pending && (still || progress >= SHUT_PROGRESS)) {
+      shutting = false
+      playWandSwitch('dark')
     }
     const nightTarget = turnTarget > 0 ? 1 : 0
     fallbackNight = still
@@ -404,7 +425,9 @@ export function startBlindWand(
       !drag &&
       !pending &&
       Math.abs(angle) + Math.abs(swingVelocity) < 5e-4 &&
-      Math.abs(aim - turn) + Math.abs(turnVelocity) < 1e-4 &&
+      // A few thousandths of a radian is far below a pixel on the rod, and the slower closing
+      // spring would otherwise keep redrawing the scene for seconds.
+      Math.abs(aim - turn) + Math.abs(turnVelocity) < 5e-3 &&
       Math.abs(nightTarget - fallbackNight) < 1e-3 &&
       fallbackSurface.every(
         (channel, index) => Math.abs(channel - (surfaceTarget[index] ?? channel)) < 1e-3,
@@ -489,7 +512,9 @@ export function startBlindWand(
     const next: Scheme = (pending ?? shown) === 'dark' ? 'light' : 'dark'
     voiced = true
     pending = next === shown ? null : next
+    shutting = pending === 'dark'
     twistFrom = turn
+    twistStartedAt = performance.now()
     turnTarget = next === 'dark' ? TWIST : 0
     // A twist of the wrist jostles the wand on its hook.
     if (!reducedMotion.matches) swingVelocity += next === 'dark' ? 0.18 : -0.18
@@ -501,8 +526,8 @@ export function startBlindWand(
     pending = null
     if (!scheme || scheme === getResolvedScheme()) return
     toggleScheme()
-    // The slats close or open as the page changes, so the sound lands with it.
-    playWandSwitch(scheme)
+    // Opening slats rock apart as the light comes in; closing ones clack shut later.
+    if (scheme === 'light') playWandSwitch(scheme)
   }
 
   function hover(event: PointerEvent) {
@@ -521,6 +546,7 @@ export function startBlindWand(
       // Already turning there: the wand switched the theme itself.
       if (target === turnTarget) return
       pending = null
+      shutting = false
       voiced = false
       turnTarget = target
       twistFrom = turn

@@ -6,8 +6,9 @@ import type { Scheme } from './theme'
 import { GLASS, HISS_CUT, LEVEL, WOOD, note } from './theme-sounds'
 
 // The blind wand's sounds. Turning the wand drives the tilter's small plastic gear in the
-// headrail, which ticks once per tooth, faster as the wand spins; when the page changes, the
-// slats rock against one another down the blind and the theme's note sounds under them.
+// headrail, which ticks once per tooth, faster as the wand spins. Opening, the slats rock apart
+// down the blind as the light comes in; closing, they clack shut near the end of the turn. The
+// theme's note sounds under them.
 // Built from the Mechanical patch's noise clicks (web-kits): band-passed noise, a few ms
 // long, nothing centred above 5 kHz. Levels are relative to the theme toggle's LEVEL.
 
@@ -42,12 +43,14 @@ const SLAT_TIMES = [0, 0.012, 0.025, 0.036, 0.05, 0.061] as const
 const mix = (from: number, to: number, t: number) => from + (to - from) * t
 
 /**
- * The slats rocking against each other down the blind. Closing falls in pitch and settles
- * with a soft thud as they meet; opening rises and stays light.
+ * The slats rocking against each other down the blind. Closing runs a little slower, falls in
+ * pitch and settles with a soft thud as they meet; opening rises and stays light.
  */
 function slatLayers(closing: boolean): Layer[] {
   const last = SLAT_TIMES.length - 1
-  const taps = SLAT_TIMES.flatMap((delay, index): Layer[] => {
+  const spacing = closing ? 1.4 : 1
+  const taps = SLAT_TIMES.flatMap((time, index): Layer[] => {
+    const delay = time * spacing
     const t = index / last
     const center = closing ? mix(2300, 1500, t) : mix(1500, 2500, t)
     const level = closing ? mix(1.05, 0.72, t) : mix(0.85, 1.15, t)
@@ -68,7 +71,7 @@ function slatLayers(closing: boolean): Layer[] {
     ]
   })
   if (!closing) return taps
-  const settle = (SLAT_TIMES[last] ?? 0) + 0.008
+  const settle = (SLAT_TIMES[last] ?? 0) * spacing + 0.008
   return [
     ...taps,
     {
@@ -80,7 +83,7 @@ function slatLayers(closing: boolean): Layer[] {
   ]
 }
 
-/** The page changing: the slats, with the theme's note under them, a little softer than the toggle's. */
+/** The slats opening or shutting, with the theme's note under them, a little softer than the toggle's. */
 export const switchLayers = {
   light: [...slatLayers(false), ...note(784, 0.05, 0.07, GLASS)],
   dark: [...slatLayers(true), ...note(523, 0.056, 0.08, WOOD)],
@@ -103,7 +106,7 @@ export function playWandTick(speed: number) {
   }
 }
 
-/** The page switching to `scheme`. */
+/** The slats opening for light or shutting for dark. */
 export function playWandSwitch(scheme: Scheme) {
   if (prefersReducedMotion()) return
   try {
