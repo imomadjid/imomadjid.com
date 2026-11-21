@@ -229,18 +229,32 @@
   --destructive: #f87171;
   --tint: rgb(255 255 255 / 0.25);
   --tint-hover: rgb(255 255 255 / 0.2);
-  /* TODO: Fit against an iOS 26 dark-mode capture; these mirror the light layers by eye. */
+  /* Dark static glass, fitted against iOS 26 captures on #1c1c1e and on black at 3x. iOS adds
+     roughly constant light (out ~ 0.95 * bg + K), which sRGB alpha cannot express, so the fill
+     is white at the least-squares alpha for both backdrops, biased toward #171717. The residual
+     is about 1 level in the body and 4 at the outermost rim pixel. Shadow layers: top and
+     bottom rim light, left and right edge crescents, drop shadow. */
   --glass-fill: linear-gradient(
     to bottom,
-    rgb(255 255 255 / 0.1) 0,
-    rgb(255 255 255 / 0.06) 12px,
-    rgb(255 255 255 / 0.05) 23px,
-    rgb(255 255 255 / 0.05) 100%
+    rgb(255 255 255 / 0.18) 1.17px,
+    rgb(255 255 255 / 0.157) 2.17px,
+    rgb(255 255 255 / 0.145) 3.17px,
+    rgb(255 255 255 / 0.139) 4.17px,
+    rgb(255 255 255 / 0.133) 5.17px,
+    rgb(255 255 255 / 0.131) 6.17px,
+    rgb(255 255 255 / 0.127) 7.83px,
+    rgb(255 255 255 / 0.127) 22%,
+    rgb(255 255 255 / 0.131) 32%,
+    rgb(255 255 255 / 0.131) calc(100% - 8.17px),
+    rgb(255 255 255 / 0.133) calc(100% - 6.17px),
+    rgb(255 255 255 / 0.139) calc(100% - 4.5px),
+    rgb(255 255 255 / 0.147) calc(100% - 3.17px),
+    rgb(255 255 255 / 0.164) calc(100% - 1.83px),
+    rgb(255 255 255 / 0.18) calc(100% - 1.17px)
   );
   --glass-shadow:
-    inset 0 0 0 0.5px rgb(255 255 255 / 0.12), inset 1px 0 0 -0.5px rgb(255 255 255 / 0.14),
-    inset -1px 0 0 -0.5px rgb(255 255 255 / 0.14), inset 0 2.5px 1px rgb(255 255 255 / 0.08),
-    inset 0 -2px 1px rgb(255 255 255 / 0.04), 0 9px 12px -2px rgb(0 0 0 / 0.3);
+    inset 0 0.67px 0.6px rgb(255 255 255 / 0.29), inset 0 -0.67px 0.6px rgb(255 255 255 / 0.29),
+    -0.5px 0 0 0 rgb(0 0 0 / 0.85), 0.5px 0 0 0 rgb(0 0 0 / 0.85), 0 5px 6px 0 rgb(0 0 0 / 0.045);
 }
 
 @layer base {

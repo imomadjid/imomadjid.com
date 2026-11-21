@@ -38,6 +38,32 @@ export function GlassFixture() {
             className="absolute top-[9.95px] left-[20.483px] h-[63.1px] w-[352.033px] rounded-full p-0"
           />
         </div>
+        <p className="text-body text-muted-foreground">
+          Dark mode: #1c1c1e (393 × 96.67) and black (393 × 98.67), surface at 351 × 62. The
+          <code> dark</code> class on each frame applies the dark glass tokens.
+        </p>
+        <div
+          data-glass-capture="dark"
+          inert
+          className="dark relative h-[96.667px] w-[393px] bg-[rgb(28_28_30)]"
+        >
+          <Button
+            glass="static"
+            aria-label="Glass reference surface"
+            className="absolute top-[13.667px] left-[21px] h-[62px] w-[351px] rounded-full p-0"
+          />
+        </div>
+        <div
+          data-glass-capture="black"
+          inert
+          className="dark relative h-[98.667px] w-[393px] bg-black"
+        >
+          <Button
+            glass="static"
+            aria-label="Glass reference surface"
+            className="absolute top-[15.667px] left-[21px] h-[62px] w-[351px] rounded-full p-0"
+          />
+        </div>
       </section>
 
       <section className="space-y-5">
