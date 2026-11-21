@@ -6,6 +6,8 @@ import { BlindWand } from '#/components/blind-wand'
 import { ProfileAvatar } from '#/components/profile-avatar'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
+import { textLinkClass } from '#/lib/text-link'
+import { cn } from '#/lib/utils'
 
 const siteUrl = 'https://imomadjid.com/'
 const title = 'Imo’s Portfolio'
@@ -168,7 +170,7 @@ function Home() {
               <a
                 key={label}
                 href={href}
-                className="inline-flex min-h-11 items-center text-neutral-600 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 dark:text-neutral-400 dark:decoration-neutral-600 dark:hover:text-neutral-50"
+                className={cn('inline-flex min-h-11 items-center', textLinkClass)}
               >
                 {label}
               </a>

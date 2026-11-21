@@ -1,6 +1,6 @@
 // Fluid Functionalism registry copies (`bunx shadcn add @fluid/...`). vite.config.ts relaxes lint
-// rules for them. The CSS @source lists and doctor.config.json can't import this, so
-// fluid-registry-files.test.ts checks that they name the same files.
+// rules for them. The CSS @source lists, doctor.config.json and .fallowrc.json can't import
+// this, so fluid-registry-files.test.ts checks that they name the same files.
 export const fluidRegistryFiles = [
   'src/components/fluid-hover-highlight.tsx',
   'src/components/ui/badge.tsx',
