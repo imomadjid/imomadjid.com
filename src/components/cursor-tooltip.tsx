@@ -155,7 +155,7 @@ export function CursorTooltip({
       ref={card}
       aria-hidden="true"
       data-open={open ? '' : undefined}
-      className="pointer-events-none fixed top-0 left-0 isolate z-(--z-tooltip) h-7 scale-96 rounded-full px-2.5 py-1.5 leading-none whitespace-nowrap text-neutral-800 opacity-0 transition-[opacity,scale] duration-150 ease-out select-none data-open:scale-100 data-open:opacity-100 motion-reduce:transition-none dark:text-neutral-200 starting:data-open:scale-96 starting:data-open:opacity-0"
+      className="pointer-events-none fixed top-0 left-0 isolate z-(--z-tooltip) h-6 scale-96 rounded-full px-2 py-1.5 text-micro leading-none whitespace-nowrap text-neutral-800 opacity-0 transition-[opacity,scale] duration-150 ease-out select-none data-open:scale-100 data-open:opacity-100 motion-reduce:transition-none dark:text-neutral-200 starting:data-open:scale-96 starting:data-open:opacity-0"
     >
       <span
         aria-hidden="true"
