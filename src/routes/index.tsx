@@ -45,7 +45,8 @@ const structuredData = {
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      { title },
+      // The full name stays in the document title for search; shares use the shorter title.
+      { title: 'Imo Madjid’s Portfolio' },
       { name: 'description', content: description },
       { property: 'og:type', content: 'website' },
       { property: 'og:url', content: siteUrl },
