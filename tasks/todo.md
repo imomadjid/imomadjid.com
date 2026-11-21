@@ -16,6 +16,15 @@ This record describes the current shader. Earlier caustic, grain/grid, inverse-t
 - DialKit values persist only in development. Saved browser values can differ from `src/lib/ambient-settings.ts`; use a clean origin to check production defaults without resetting saved tuning.
 - The user accepts temporary contrast loss during theme transitions. This change retains that decision and the existing foreground crossover.
 
+## Changes after the 21 November 2026 review
+
+- Lit areas take a warm tint (gain 2 on `warmth`) and shaded areas a cool skylight fill, so sun and shade differ in hue. Unlit areas still equal the surface token, and the zero-intensity test passes.
+- The theme-change sunset adds warm light to lit patches instead of mixing toward a sunset color, so no channel drops below the fill. It peaks near 30% of the change.
+- Wind strength follows slow, incommensurate gust cycles with lulls, and its phase travels across the canopy, replacing the single 6-second loop.
+- The blind rail's shadow is placed 56 CSS px right of the text column (`data-sunlit-anchor`) and is omitted when the wall has no room, such as on phones.
+- The light target is capped near 960 x 540 pixels instead of half the output. The review measured at most 2-4 of 255 difference and roughly half the light-pass cost on a 14-inch MacBook Pro output.
+- Not yet applied: night opening and density tuning, dark-mode dither, an earlier foreground crossover, portrait slat spacing, loop hoisting in the light shader, and device-loss recovery.
+
 ## Correctness verification
 
 - `bun test src/shaders/ambient-surface.test.ts` runs the actual material shader on a native GPU. It checks zero intensity across three surface values, five transition phases, and three direction values: 45 states. The test requires a working native WebGPU backend; it does not substitute a mock or silently skip.

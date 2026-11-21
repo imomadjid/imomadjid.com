@@ -44,7 +44,7 @@ function Home() {
   return (
     <main className="relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
       <AmbientLight settings={settings} />
-      <div className="relative z-10 w-full max-w-[34rem]">
+      <div data-sunlit-anchor className="relative z-10 w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
         <div className="mb-10 flex items-center justify-between gap-6">

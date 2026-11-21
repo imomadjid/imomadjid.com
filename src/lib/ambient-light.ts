@@ -8,6 +8,9 @@ import { smoothStep, transitionTiming, transitionValue } from './ambient-transit
 
 const FOLIAGE_SIZE = 1024
 const FOLIAGE_MIPS = 5
+const MAX_LIGHT_PIXELS = 960 * 540
+// Distance in CSS pixels between the text column and the blind rail's shadow.
+const RAIL_MARGIN = 56
 
 export type AmbientRenderer = {
   update: (settings: AmbientSettings) => void
@@ -119,13 +122,29 @@ export async function startAmbient(
     let width = rect.width
     let height = rect.height
     const dpr = () => Math.min(window.devicePixelRatio || 1, 1.5)
+    // Keep the rail shadow clear of the text column; omit it when the wall has no room.
+    const anchor = host.querySelector('[data-sunlit-anchor]')
+    let railX = 0
+    const placeRail = () => {
+      if (!anchor || width <= 0) {
+        railX = 0
+        return
+      }
+      const left = canvas.getBoundingClientRect().left
+      const shadow = anchor.getBoundingClientRect().right - left + RAIL_MARGIN
+      railX = shadow <= width - RAIL_MARGIN ? shadow / width : 0
+    }
+    placeRail()
     // vgpu requires whole-pixel target sizes.
     const pixels = (value: number) => Math.max(1, Math.round(value))
     const outputSize = (): [number, number] => [pixels(width * dpr()), pixels(height * dpr())]
-    const lightSize = (): [number, number] => [
-      pixels(output.size[0] / 2),
-      pixels(output.size[1] / 2),
-    ]
+    // Light is smooth, so cap its target near 960x540; larger targets cost GPU time for
+    // differences of a few 8-bit levels.
+    const lightSize = (): [number, number] => {
+      const [outputWidth, outputHeight] = output.size
+      const scale = Math.min(0.5, Math.sqrt(MAX_LIGHT_PIXELS / (outputWidth * outputHeight)))
+      return [pixels(outputWidth * scale), pixels(outputHeight * scale)]
+    }
     const output = surface(gpu, canvas, {
       autoResize: false,
       size: outputSize(),
@@ -160,7 +179,8 @@ export async function startAmbient(
       progressiveSoftness: settings.light.progressiveSoftness,
       opening: settings.blinds.opening,
       spacing: settings.blinds.spacing,
-      railWidth: settings.blinds.railWidth,
+      railWidth: railX > 0 ? settings.blinds.railWidth : 0,
+      railX,
       blindDepth: settings.blinds.distance,
       movement: settings.foliage.movement,
       density: settings.foliage.density,
@@ -220,6 +240,7 @@ export async function startAmbient(
 
     function resize() {
       if (disposed) return
+      placeRail()
       output.resize(outputSize())
       lightTarget.resize(lightSize())
       composite.set({ lighting: lightTarget })
