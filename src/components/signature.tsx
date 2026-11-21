@@ -9,24 +9,50 @@ import {
 } from '#/components/signature-strokes'
 import type { SignatureTiming } from '#/lib/signature-settings'
 
-type StrokeStyle = CSSProperties & { '--stroke-start': string; '--stroke-duration': string }
+type StrokeStyle = CSSProperties &
+  Record<'--stroke-start' | '--stroke-duration' | '--exit-start' | '--exit-duration', string>
 
-function strokeSchedule({ duration, lengthWeight, returnTime, flickTime }: SignatureTiming) {
-  const weights = signatureStrokes.map(({ length }, index) => {
-    const pace =
-      index >= signatureFlickStart ? flickTime : index >= signatureReturnStart ? returnTime : 1
-    return length ** lengthWeight * pace
-  })
+// Splits `seconds` into back-to-back slots sized by `weights`, as CSS times.
+function slots(weights: number[], seconds: number) {
   const total = weights.reduce((sum, weight) => sum + weight, 0)
   let elapsed = 0
-  return weights.map((weight): StrokeStyle => {
+  return weights.map((weight) => {
     const start = elapsed
     elapsed += weight
     return {
-      '--stroke-start': `${((duration * start) / total).toFixed(4)}s`,
-      '--stroke-duration': `${((duration * weight) / total).toFixed(4)}s`,
+      start: `${((seconds * start) / total).toFixed(4)}s`,
+      duration: `${((seconds * weight) / total).toFixed(4)}s`,
     }
   })
+}
+
+function strokeSchedule({
+  duration,
+  lengthWeight,
+  returnTime,
+  flickTime,
+  exitDuration,
+}: SignatureTiming) {
+  // The draw follows the pen's rhythm. The exit erases at an even speed, so the fast flick
+  // still reads as erasing instead of vanishing.
+  const draw = slots(
+    signatureStrokes.map(({ length }, index) => {
+      const pace =
+        index >= signatureFlickStart ? flickTime : index >= signatureReturnStart ? returnTime : 1
+      return length ** lengthWeight * pace
+    }),
+    duration,
+  )
+  const exit = slots(
+    signatureStrokes.map(({ length }) => length),
+    exitDuration,
+  )
+  return draw.map((slot, index): StrokeStyle => ({
+    '--stroke-start': slot.start,
+    '--stroke-duration': slot.duration,
+    '--exit-start': exit[index].start,
+    '--exit-duration': exit[index].duration,
+  }))
 }
 
 // Exit erases along the path in drawing order, then the pen draws it again without the entrance delay.
@@ -36,9 +62,6 @@ export function Signature({ timing, className }: { timing: SignatureTiming; clas
   const [phase, setPhase] = useState<Phase>('enter')
   const svgRef = useRef<SVGSVGElement>(null)
   const schedule = strokeSchedule(timing)
-  const svgStyle: CSSProperties & { '--exit-scale': number } = {
-    '--exit-scale': timing.exitDuration / timing.duration,
-  }
 
   function replay() {
     const svg = svgRef.current
@@ -76,7 +99,6 @@ export function Signature({ timing, className }: { timing: SignatureTiming; clas
         stroke="currentColor"
         strokeLinecap="round"
         className={className}
-        style={svgStyle}
         onAnimationEnd={handleAnimationEnd}
       >
         {signatureStrokes.map(({ d, width }, index) => (
