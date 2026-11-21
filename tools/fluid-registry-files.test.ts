@@ -60,3 +60,9 @@ void test('every registry file exists', () => {
     [],
   )
 })
+
+void test('fallow hides findings for every registry file', () => {
+  const config = JSON.parse(readFileSync(join(root, '.fallowrc.json'), 'utf8'))
+  const hidden: string[] = config.ignoreFindings
+  deepStrictEqual([...hidden].sort(), registry)
+})
