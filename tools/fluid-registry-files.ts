@@ -1,0 +1,30 @@
+// Fluid Functionalism registry copies (`bunx shadcn add @fluid/...`). vite.config.ts relaxes lint
+// rules for them. The CSS @source lists and doctor.config.json can't import this, so
+// fluid-registry-files.test.ts checks that they name the same files.
+export const fluidRegistryFiles = [
+  'src/components/fluid-hover-highlight.tsx',
+  'src/components/ui/badge.tsx',
+  'src/components/ui/button.tsx',
+  'src/components/ui/checkbox.tsx',
+  'src/components/ui/field.tsx',
+  'src/components/ui/input.tsx',
+  'src/components/ui/radio-group.tsx',
+  'src/components/ui/scroll-area.tsx',
+  'src/components/ui/sidebar.tsx',
+  'src/components/ui/sidebar-core.tsx',
+  'src/components/ui/sidebar-menu.tsx',
+  'src/components/ui/slider.tsx',
+  'src/components/ui/switch.tsx',
+  'src/components/ui/textarea.tsx',
+  'src/components/ui/tooltip.tsx',
+  'src/hooks/use-fluid-hover.ts',
+  'src/hooks/use-touch-primary.tsx',
+  'src/lib/font-weight.ts',
+  'src/lib/icon-context.tsx',
+  'src/lib/key-cap.tsx',
+  'src/lib/omit.ts',
+  'src/lib/shape-context.tsx',
+  'src/lib/size-context.tsx',
+  'src/lib/springs.ts',
+  'src/lib/type-scale.ts',
+]

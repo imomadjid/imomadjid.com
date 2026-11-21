@@ -47,7 +47,7 @@ Use Tailwind utilities for styling. Keep Oxfmt, Oxlint, and anti-slop settings i
 
 ## Testing guidelines
 
-Tests use `bun test` (`bun run test`). CI runs only `src/components` tests because the shader test needs a native WebGPU adapter. No coverage threshold is configured. For implementation changes, run `bun run check`, `bun run test`, and `bun run build` before review. Verify UI changes in a browser. For documentation-only changes, check formatting and verify affected instructions against the repository. A read-only audit does not require a build unless needed to investigate a finding. Use descriptive `*.test.ts` or `*.test.tsx` names for future tests.
+Tests use `bun test` (`bun run test`). CI runs only `src/components` tests and `tools/fluid-registry-files.test.ts` because the shader test needs a native WebGPU adapter. No coverage threshold is configured. For implementation changes, run `bun run check`, `bun run test`, and `bun run build` before review. Verify UI changes in a browser. For documentation-only changes, check formatting and verify affected instructions against the repository. A read-only audit does not require a build unless needed to investigate a finding. Use descriptive `*.test.ts` or `*.test.tsx` names for future tests.
 
 Run `bun run doctor` when the task requests a full React audit or a React-related finding needs broader investigation. The full audit blocks errors; staged React Doctor warnings block commits. Review advisory findings before changing code. See `README.md` for hook and advisory tool details.
 
@@ -68,7 +68,7 @@ FF is a copy-in registry configured in `components.json`. Add components only wh
 - FF's `src/lib/icon-context.tsx` and the `/dev` fixtures use `lucide-react`. Keep it to those files; production UI follows the icon rules above.
 - FF components read neutral shadcn roles (`foreground`, `muted-foreground`, `border`, ...) defined in `src/styles.css`.
 - The site uses FF's `pill` shape, set once by `<ShapeProvider defaultShape="pill">` in `__root.tsx`; `--shape-input-radius: 20px` in `src/styles.css` mirrors it for prerendered HTML. Change both together. The `/dev/components` shape switcher previews other shapes at runtime only.
-- Add new FF registry files to `fluidRegistryFiles` in `vite.config.ts` (anti-slop rules are relaxed there only) and to the matching `@source` lists in `src/styles.css` (excluded) and `src/dev/dev.css` (scanned). Production CSS skips the playground and FF components; remove a file from the `@source not` list once a production page renders it.
+- Add new FF registry files to `fluidRegistryFiles` in `tools/fluid-registry-files.ts` (`vite.config.ts` relaxes anti-slop rules there only), to `ignore.files` in `doctor.config.json`, and to the matching `@source` lists in `src/styles.css` (excluded) and `src/dev/dev.css` (scanned). `tools/fluid-registry-files.test.ts` fails if those lists drift. `dev.css` links only under `/dev`, so site pages in dev show production CSS. Production CSS skips the playground and FF components; remove a file from the `@source not` list once a production page renders it.
 - `src/theme.css` holds the shared dark variant and `@theme` mappings. `src/dev/dev.css` references it; it must not reference `src/styles.css`, or that sheet's `@source not` rules apply to the dev scan.
 
 The root provides level 1 and paints `bg-surface-1`. Surface colors and shadows live in `src/styles.css`; light mode uses shadows above white surfaces, while dark mode also increases background brightness. Activate dark tokens with `.dark` on `<html>`.

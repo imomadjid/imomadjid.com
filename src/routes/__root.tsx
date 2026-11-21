@@ -8,7 +8,6 @@ import { ShapeProvider } from '#/lib/shape-context'
 import { SurfaceProvider } from '#/lib/surface-context'
 import { THEME_SCRIPT, useTheme } from '#/lib/theme'
 
-import devCss from '#/dev/dev.css?url'
 import appCss from '#/styles.css?url'
 import dialkitCss from 'dialkit/styles.css?url'
 
@@ -22,8 +21,6 @@ export const Route = createRootRoute({
     links: [
       ...(import.meta.env.DEV ? [{ rel: 'stylesheet', href: dialkitCss }] : []),
       { rel: 'stylesheet', href: appCss },
-      // Playground and FF component utilities; production pages don't render them yet.
-      ...(import.meta.env.DEV ? [{ rel: 'stylesheet', href: devCss }] : []),
       {
         rel: 'preload',
         href: '/fonts/allo/Allo-Regular.woff2',
