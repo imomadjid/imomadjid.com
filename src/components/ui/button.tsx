@@ -34,7 +34,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'text-background',
+        primary: 'text-primary-label',
         secondary: 'text-foreground',
         tertiary: 'text-foreground',
         ghost: 'text-muted-foreground hover:text-foreground',
@@ -116,8 +116,10 @@ interface ButtonProps
   active?: boolean
   /** Liquid-glass material instead of the variant fill. `static` is the
    *  material without refraction: rim light, inner highlights and a soft
-   *  drop shadow, drawn from the --glass-* tokens. The label takes the
-   *  foreground color in place of the variant's. */
+   *  drop shadow, drawn from the --glass-* tokens. A tint-* class lays a
+   *  color over it, as SwiftUI's .glassEffect(.regular.tint()) does. The
+   *  label takes the foreground color in place of the variant's, or the
+   *  tint's label color (white on darker tints). */
   glass?: ButtonGlass
 }
 
@@ -135,13 +137,13 @@ const glassClasses: Record<ButtonGlass, typeof glassSurface> = {
    same-color box-shadow spread fills it back out to the full bounds.
    Pressing collapses the spread, shrinking the surface by exactly 1px per
    side at any width — a scale would warp (2% of a 400px button is 8px
-   sideways but under 1px vertically). Primary's fills are opaque
-   color-mix()es. Secondary's are see-through (--tint), so it takes on the
+   sideways but under 1px vertically). Primary fills with --btn-solid: the
+   foreground or a tint-* color, both opaque. Secondary's are see-through (--tint), so it takes on the
    surface or tinted banner under it; its fill and spread ring still never
    double up, since an outer shadow renders only outside the surface box. */
 const bgVariants: Record<string, string> = {
   primary:
-    '[--btn-bg:var(--foreground)] group-hover:[--btn-bg:color-mix(in_oklab,var(--foreground)_90%,var(--background))] group-active:[--btn-bg:color-mix(in_oklab,var(--foreground)_80%,var(--background))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]',
+    '[--btn-solid:var(--btn-tint,var(--foreground))] [--btn-bg:var(--btn-solid)] group-hover:[--btn-bg:color-mix(in_oklab,var(--btn-solid)_90%,var(--background))] group-active:[--btn-bg:color-mix(in_oklab,var(--btn-solid)_80%,var(--background))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]',
   secondary:
     '[--btn-bg:var(--tint)] group-hover:[--btn-bg:var(--tint-hover)] group-active:[--btn-bg:var(--tint)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]',
   // The border ring is an outer 1px shadow at rest that hands off to an
@@ -178,7 +180,7 @@ const loadingBgVariants: Record<string, string> = Object.fromEntries(
    geometric press-collapse still reacts on top. */
 const activeBgVariants: Record<string, string> = {
   primary:
-    '[--btn-bg:color-mix(in_oklab,var(--foreground)_80%,var(--background))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]',
+    '[--btn-solid:var(--btn-tint,var(--foreground))] [--btn-bg:color-mix(in_oklab,var(--btn-solid)_80%,var(--background))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]',
   secondary:
     '[--btn-bg:var(--tint)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]',
   tertiary:
@@ -248,15 +250,16 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const isCompact = resolvedSize === 'compact' || resolvedSize === 'icon-compact'
     const iconSize = isCompact ? 14 : 16
     const hasShortcut = !isIconOnly && shortcut != null && shortcut.length > 0
-    // The caps sit on the button's own fill: light on a primary button,
-    // the usual tint on the others.
+    // The caps sit on the button's own fill. Primary and glass labels take
+    // their color from CSS (white on a strong tint), so their caps follow
+    // the label; the other variants use the usual tint.
     const shortcutCaps = hasShortcut ? (
       // Hidden from assistive tech, so the button's name stays its label:
       // the shortcut reaches it as aria-keyshortcuts instead.
       <KeyCaps
         aria-hidden
         keys={shortcut}
-        tone={(variant ?? 'primary') === 'primary' ? 'inverted' : 'default'}
+        tone={glass || (variant ?? 'primary') === 'primary' ? 'current' : 'default'}
       />
     ) : null
     const shape = useShape()
@@ -278,7 +281,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         <span
           aria-hidden
           className={cn(
-            'absolute inset-px rounded-[inherit] transition-[box-shadow,background-color] [transition-duration:180ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease] group-active:[transition-duration:80ms,80ms]',
+            'absolute inset-px rounded-[inherit] transition-[box-shadow,background-color] [transition-duration:180ms,80ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease,ease] group-active:[transition-duration:80ms,80ms,80ms]',
             glass ? glassClasses[glass][held ? 'held' : loading ? 'loading' : 'rest'] : bgClass,
           )}
         />
@@ -358,7 +361,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         iconRight: !isIconOnly && (!!TrailingIcon || hasShortcut),
       }),
       shape.button,
-      glass && 'text-foreground',
+      glass && 'text-glass-label',
       className,
     )
 

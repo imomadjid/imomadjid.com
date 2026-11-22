@@ -2,7 +2,7 @@ import { ArrowRight, Plus, Settings, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { Badge, badgeColors, type BadgeColor } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
+import { Button, type ButtonProps } from '#/components/ui/button'
 import { Checkbox } from '#/components/ui/checkbox'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
@@ -130,11 +130,20 @@ const buttonColumns = [
   'Disabled',
 ]
 
+// Variant rows, then static glass: plain, with a strong tint, and with a light one.
+const buttonRows: { name: string; props: Pick<ButtonProps, 'variant' | 'glass' | 'className'> }[] =
+  [
+    ...buttonVariants.map((variant) => ({ name: variant, props: { variant } })),
+    { name: 'glass', props: { glass: 'static' } },
+    { name: 'glass tint', props: { glass: 'static', className: 'tint-blue-600' } },
+    { name: 'glass tint light', props: { glass: 'static', className: 'tint-blue-100' } },
+  ]
+
 function ButtonMatrix() {
   return (
     <Section
       title="Button"
-      description="Rows are variants; columns are content and states. Hover and press each cell."
+      description="Rows are variants, then static glass plain and tinted; columns are content and states. Hover and press each cell."
     >
       <div className="overflow-x-auto pb-2">
         <table className="border-separate border-spacing-x-4 border-spacing-y-3">
@@ -155,54 +164,54 @@ function ButtonMatrix() {
             </tr>
           </thead>
           <tbody>
-            {buttonVariants.map((variant) => (
-              <tr key={variant}>
+            {buttonRows.map(({ name, props }) => (
+              <tr key={name}>
                 <th
                   scope="row"
                   className="pr-2 text-left text-caption font-normal text-muted-foreground"
                 >
-                  {variant}
+                  {name}
                 </th>
                 <td>
-                  <Button variant={variant}>Save changes</Button>
+                  <Button {...props}>Save changes</Button>
                 </td>
                 <td>
-                  <Button variant={variant} leadingIcon={Plus}>
+                  <Button {...props} leadingIcon={Plus}>
                     New page
                   </Button>
                 </td>
                 <td>
-                  <Button variant={variant} trailingIcon={ArrowRight}>
+                  <Button {...props} trailingIcon={ArrowRight}>
                     Continue
                   </Button>
                 </td>
                 <td>
-                  <Button variant={variant} shortcut="⌘↵">
+                  <Button {...props} shortcut="⌘↵">
                     Send
                   </Button>
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    <Button variant={variant} size="icon" aria-label="Settings">
+                    <Button {...props} size="icon" aria-label="Settings">
                       <Settings />
                     </Button>
-                    <Button variant={variant} size="icon-compact" aria-label="Delete">
+                    <Button {...props} size="icon-compact" aria-label="Delete">
                       <Trash2 />
                     </Button>
                   </div>
                 </td>
                 <td>
-                  <Button variant={variant} active>
+                  <Button {...props} active>
                     Menu open
                   </Button>
                 </td>
                 <td>
-                  <Button variant={variant} loading>
+                  <Button {...props} loading>
                     Saving
                   </Button>
                 </td>
                 <td>
-                  <Button variant={variant} disabled>
+                  <Button {...props} disabled>
                     Unavailable
                   </Button>
                 </td>

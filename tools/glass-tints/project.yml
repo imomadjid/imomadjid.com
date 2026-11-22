@@ -1,0 +1,19 @@
+name: GlassTints
+options:
+  bundleIdPrefix: com.imomadjid.dev
+  deploymentTarget:
+    iOS: '26.0'
+    macOS: '26.0'
+targets:
+  GlassTints:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources: [Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.imomadjid.dev.GlassTints
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        CODE_SIGN_IDENTITY: '-'
+        CODE_SIGN_STYLE: Manual
+        SWIFT_VERSION: '6.0'
