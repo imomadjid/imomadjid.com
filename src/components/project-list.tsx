@@ -32,11 +32,14 @@ type Preview = {
 const titleGap = 12
 // The preview keeps this far from the viewport's right edge, in px.
 const viewportMargin = 16
+// Delay between neighbouring rows in the mute ripple, in ms.
+const rippleStep = 35
 
 function ProjectRow({
   project,
   index,
   muted,
+  muteDelay,
   titleRef,
   onEnter,
   onBlur,
@@ -44,10 +47,13 @@ function ProjectRow({
   project: Project
   index: number
   muted: boolean
+  /** How long this row waits before muting or unmuting, in ms, for the ripple. */
+  muteDelay: number
   titleRef: (element: HTMLSpanElement | null) => void
   onEnter: (index: number) => void
   onBlur: (next: EventTarget | null) => void
 }) {
+  const delay = { transitionDelay: `${muteDelay}ms` }
   return (
     <li>
       <a
@@ -62,6 +68,7 @@ function ProjectRow({
       >
         <span className="flex items-baseline justify-between gap-6">
           <span
+            style={delay}
             className={cn(
               'font-medium transition-colors duration-200 motion-reduce:transition-none',
               muted
@@ -77,6 +84,7 @@ function ProjectRow({
           </span>
           {/* Allo's open figures (ss03), slashed zero, and tabular figures. */}
           <span
+            style={delay}
             className={cn(
               "[font-feature-settings:'ss03'] text-sm slashed-zero tabular-nums transition-colors duration-200 motion-reduce:transition-none",
               muted ? 'text-neutral-300 dark:text-neutral-700' : 'text-neutral-500',
@@ -86,6 +94,7 @@ function ProjectRow({
           </span>
         </span>
         <span
+          style={delay}
           className={cn(
             'mt-0.5 block text-sm leading-relaxed transition-colors duration-200 motion-reduce:transition-none',
             muted
@@ -155,6 +164,10 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const leave = () => setPreview((current) => current && { ...current, shown: false })
 
   const active = preview?.shown ? preview.index : null
+  // Entering the list mutes the other rows in a ripple outward from the hovered row, and leaving
+  // unmutes them the same way from the last one. Moving between rows during a visit stays
+  // immediate, so only the two rows that swap change.
+  const ripple = preview !== null && (preview.fresh || !preview.shown)
 
   return (
     <div ref={listRef} onPointerLeave={leave} className="relative">
@@ -165,6 +178,7 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
             project={project}
             index={index}
             muted={active !== null && active !== index}
+            muteDelay={ripple ? Math.abs(index - preview.index) * rippleStep : 0}
             titleRef={(element) => {
               titleRefs.current[index] = element
             }}
