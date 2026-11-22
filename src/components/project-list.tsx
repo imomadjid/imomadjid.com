@@ -36,6 +36,7 @@ function ProjectRow({
   index,
   muted,
   titleRef,
+  descriptionRef,
   onEnter,
   onBlur,
 }: {
@@ -43,6 +44,7 @@ function ProjectRow({
   index: number
   muted: boolean
   titleRef: (element: HTMLSpanElement | null) => void
+  descriptionRef: (element: HTMLSpanElement | null) => void
   onEnter: (index: number) => void
   onBlur: (next: EventTarget | null) => void
 }) {
@@ -83,7 +85,9 @@ function ProjectRow({
             {project.year}
           </span>
         </span>
+        {/* Measured for the preview, which hangs below it when the reader moves up. */}
         <span
+          ref={descriptionRef}
           className={cn(
             'mt-0.5 block text-sm leading-relaxed transition-colors duration-200 motion-reduce:transition-none',
             muted
@@ -101,7 +105,8 @@ function ProjectRow({
 /**
  * Projects with one shared 16:9 preview that flies to the row being read and sits just after its
  * title. Moving down the list, the box rises from the title's text bottom so the rows below stay
- * readable; moving up, it hangs from the title's text top so the rows above do. The first row
+ * readable; moving up, it hangs below the description so the rows above do. Either way the
+ * active row's description stays readable. The first row
  * always takes it above and the last row below, where there are no rows to hide. The other rows
  * mute while one is active. Keyboard focus drives it the same way.
  */
@@ -109,13 +114,15 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const listRef = useRef<HTMLDivElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const titleRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const descriptionRefs = useRef<(HTMLSpanElement | null)[]>([])
   const [preview, setPreview] = useState<Preview | null>(null)
 
   const enter = (index: number) => {
     const list = listRef.current?.getBoundingClientRect()
     const title = titleRefs.current[index]?.getBoundingClientRect()
+    const description = descriptionRefs.current[index]?.getBoundingClientRect()
     const box = boxRef.current
-    if (!list || !title || !box) return
+    if (!list || !title || !description || !box) return
 
     const width = box.offsetWidth
     const height = box.offsetHeight
@@ -131,7 +138,8 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
 
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
-    const y = direction === 'down' ? title.bottom - list.top - height : title.top - list.top
+    const y =
+      direction === 'down' ? title.bottom - list.top - height : description.bottom - list.top
     setPreview({ index, direction, x, y, shown: true, fresh: !visiting })
   }
 
@@ -150,6 +158,9 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
             muted={active !== null && active !== index}
             titleRef={(element) => {
               titleRefs.current[index] = element
+            }}
+            descriptionRef={(element) => {
+              descriptionRefs.current[index] = element
             }}
             onEnter={enter}
             onBlur={(next) => {
