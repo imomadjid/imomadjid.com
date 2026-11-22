@@ -29,6 +29,7 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
   const scheme = useResolvedScheme()
   const buttonRef = useRef<HTMLButtonElement>(null)
   const hitRef = useRef<SVGLineElement>(null)
+  const focusRingRef = useRef<SVGRectElement>(null)
   const settingsRef = useRef(settings)
   const engine = useRef<WandEngine | null>(null)
   const mounted = useRef(false)
@@ -208,6 +209,7 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
             <path data-wand-hook="front" d={hook.front} {...hookStroke} />
             <g data-wand-swing transform={`rotate(0 0 ${HANG_Y})`}>
               <rect
+                ref={focusRingRef}
                 data-wand-focus
                 x={-ROD_RADIUS - 4}
                 y={ROD_START}
@@ -236,7 +238,12 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
         </svg>
       </button>
       {/* The note already says what the wand does; the card takes over once it is erased. */}
-      <CursorTooltip target={hitRef} disabled={!hint.gone}>
+      <CursorTooltip
+        target={hitRef}
+        focusTarget={buttonRef}
+        focusAnchor={focusRingRef}
+        disabled={!hint.gone}
+      >
         Switch to {scheme === 'dark' ? 'light' : 'dark'} mode
       </CursorTooltip>
     </>
