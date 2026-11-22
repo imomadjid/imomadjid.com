@@ -94,7 +94,7 @@ export function TableOfContents({ sections }: { sections: readonly PageSection[]
             <a
               href={`#${id}`}
               aria-current={active === id ? 'true' : undefined}
-              className="group inline-flex min-h-8 items-center text-neutral-500 transition-[color,font-weight] duration-300 hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 aria-[current=true]:font-semibold aria-[current=true]:text-neutral-950 motion-reduce:transition-none dark:text-neutral-500 dark:hover:text-neutral-50 dark:aria-[current=true]:text-neutral-50"
+              className="group inline-flex min-h-8 items-center text-neutral-400 transition-[color,font-weight] duration-300 hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 aria-[current=true]:font-semibold aria-[current=true]:text-neutral-950 motion-reduce:transition-none dark:text-neutral-600 dark:hover:text-neutral-50 dark:aria-[current=true]:text-neutral-50"
             >
               {Mark ? (
                 <>
