@@ -88,9 +88,7 @@ const placeholders = [
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
   { id: 'about', label: 'About' },
-  { id: 'work', label: 'Work' },
   ...(import.meta.env.DEV_TOOLS ? placeholders : []),
-  { id: 'contact', label: 'Contact' },
 ] as const satisfies readonly PageSection[]
 
 type SectionId = (typeof sections)[number]['id']
@@ -168,14 +166,12 @@ function Home() {
             <BlindWand settings={settings} />
           </div>
 
-          <p className="animate-enter text-base leading-[1.8] text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
-            I’m Imo, a design engineer and product designer based in Jakarta. I design and build
-            interfaces, from early prototypes to shipped products.
-          </p>
-        </Section>
+          <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
+            <p className="animate-enter text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
+              I’m Imo, a design engineer and product designer based in Jakarta. I design and build
+              interfaces, from early prototypes to shipped products.
+            </p>
 
-        <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
-          <Section id="work" className="space-y-8">
             <p className="animate-enter [--enter-index:2]">
               I’m a software engineer at{' '}
               <LinkButton href="https://docdraft.ai" logoSrc="/images/companies/docdraft.svg">
@@ -215,8 +211,34 @@ function Home() {
               . I’m happy to talk about design, a product you’re building, or an idea you’d like to
               explore.
             </p>
-          </Section>
-        </div>
+          </div>
+
+          <div className="mt-12 flex flex-wrap items-center justify-between gap-x-10 gap-y-6">
+            <Signature
+              key={signatureRun}
+              timing={signatureTiming}
+              className="h-auto w-28 text-black transition-colors duration-300 [--enter-index:6] motion-reduce:animate-enter motion-reduce:transition-none dark:text-white"
+            />
+            <nav
+              aria-label="Contact and social links"
+              className="flex animate-enter flex-wrap gap-x-6 gap-y-2 text-sm [--enter-index:5]"
+            >
+              {[
+                { label: 'Email', href: 'mailto:mhmmadjid@gmail.com' },
+                { label: 'GitHub', href: 'https://github.com/MassiveMassimo' },
+                { label: 'LinkedIn', href: 'https://www.linkedin.com/in/imomadjid/' },
+              ].map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className={cn('inline-flex min-h-11 items-center', textLinkClass)}
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </Section>
 
         {import.meta.env.DEV_TOOLS &&
           placeholders.map(({ id, label }) => (
@@ -226,35 +248,6 @@ function Home() {
               </div>
             </Section>
           ))}
-
-        <Section
-          id="contact"
-          className="mt-12 flex flex-wrap items-center justify-between gap-x-10 gap-y-6"
-        >
-          <Signature
-            key={signatureRun}
-            timing={signatureTiming}
-            className="h-auto w-28 text-black transition-colors duration-300 [--enter-index:6] motion-reduce:animate-enter motion-reduce:transition-none dark:text-white"
-          />
-          <nav
-            aria-label="Contact and social links"
-            className="flex animate-enter flex-wrap gap-x-6 gap-y-2 text-sm [--enter-index:5]"
-          >
-            {[
-              { label: 'Email', href: 'mailto:mhmmadjid@gmail.com' },
-              { label: 'GitHub', href: 'https://github.com/MassiveMassimo' },
-              { label: 'LinkedIn', href: 'https://www.linkedin.com/in/imomadjid/' },
-            ].map(({ label, href }) => (
-              <a
-                key={label}
-                href={href}
-                className={cn('inline-flex min-h-11 items-center', textLinkClass)}
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-        </Section>
       </div>
     </main>
   )

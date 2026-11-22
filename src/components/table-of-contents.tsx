@@ -63,6 +63,8 @@ function useActiveSection(sections: readonly PageSection[]) {
  */
 export function TableOfContents({ sections }: { sections: readonly PageSection[] }) {
   const active = useActiveSection(sections)
+  // One section is the whole page, with nowhere to go.
+  if (sections.length < 2) return null
 
   return (
     <nav
