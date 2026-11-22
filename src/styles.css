@@ -188,6 +188,38 @@
     inset -1px 0 0 -0.5px rgb(0 0 0 / 0.2), inset 0 2.5px 1px rgb(255 255 255 / 0.9),
     inset 0 -2px 1px rgb(255 255 255 / 0.8), inset 16px 0 8px -8px rgb(0 0 0 / 0.024),
     inset -16px 0 8px -8px rgb(0 0 0 / 0.024), 0 9px 12px -2px rgb(0 0 0 / 0.018);
+  /* Tinted glass, fitted to iOS 27 simulator captures at 3x (tools/glass-tints): an opaque
+     tint under a soft-light edge shine, the same in both themes (see the glass-surface
+     utility). Over a tint iOS drops the white glints and, in
+     light mode only, draws the hairline outside the shape: a grey ring here, with the tint
+     ring that tint-* adds above it (--glass-tint-ring gates that one per theme). */
+  --glass-tint-shine: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.7) 0.167px,
+    rgb(255 255 255 / 0.5) 0.5px,
+    rgb(255 255 255 / 0.33) 0.833px,
+    rgb(255 255 255 / 0.13) 1.167px,
+    rgb(255 255 255 / 0.11) 1.5px,
+    rgb(255 255 255 / 0.07) 2.167px,
+    rgb(255 255 255 / 0.055) 2.833px,
+    rgb(255 255 255 / 0.04) 3.5px,
+    rgb(255 255 255 / 0) 4.833px,
+    rgb(255 255 255 / 0) calc(100% - 4.833px),
+    rgb(255 255 255 / 0.04) calc(100% - 3.5px),
+    rgb(255 255 255 / 0.055) calc(100% - 2.833px),
+    rgb(255 255 255 / 0.07) calc(100% - 2.167px),
+    rgb(255 255 255 / 0.11) calc(100% - 1.5px),
+    rgb(255 255 255 / 0.13) calc(100% - 1.167px),
+    rgb(255 255 255 / 0.33) calc(100% - 0.833px),
+    rgb(255 255 255 / 0.5) calc(100% - 0.5px),
+    rgb(255 255 255 / 0.7) calc(100% - 0.167px)
+  );
+  --glass-tint-ring-light: 1;
+  --glass-tint-shadow-light:
+    0 0 0 0.5px rgb(0 0 0 / 0.094), inset 1px 0 0 -0.5px rgb(0 0 0 / 0.2),
+    inset -1px 0 0 -0.5px rgb(0 0 0 / 0.2), inset 16px 0 8px -8px rgb(0 0 0 / 0.024),
+    inset -16px 0 8px -8px rgb(0 0 0 / 0.024), 0 9px 12px -2px rgb(0 0 0 / 0.018);
+  --glass-tint-lift-light: 0%;
   --tint: rgb(0 0 0 / 0.08);
   --tint-hover: rgb(0 0 0 / 0.065);
   --z-sticky: 30;
@@ -244,8 +276,18 @@
   --glass-shadow-dark:
     inset 0 0.67px 0.6px rgb(255 255 255 / 0.29), inset 0 -0.67px 0.6px rgb(255 255 255 / 0.29),
     -0.5px 0 0 0 rgb(0 0 0 / 0.85), 0.5px 0 0 0 rgb(0 0 0 / 0.85), 0 5px 6px 0 rgb(0 0 0 / 0.045);
+  /* Dark tinted glass drops the rim light and the outer ring. The tint takes 1% white, the
+     share of the dark glass's added light that shows through an opaque tint (+5 levels on
+     #1c1c1e, none on black). */
+  --glass-tint-ring-dark: 0;
+  --glass-tint-shadow-dark:
+    -0.5px 0 0 0 rgb(0 0 0 / 0.85), 0.5px 0 0 0 rgb(0 0 0 / 0.85), 0 5px 6px 0 rgb(0 0 0 / 0.045);
+  --glass-tint-lift-dark: 1%;
   --glass-fill: var(--glass-fill-light);
   --glass-shadow: var(--glass-shadow-light);
+  --glass-tint-ring: var(--glass-tint-ring-light);
+  --glass-tint-shadow: var(--glass-tint-shadow-light);
+  --glass-tint-lift: var(--glass-tint-lift-light);
 }
 
 .dark {
@@ -315,11 +357,17 @@
 [data-scene-tone='night'] {
   --glass-fill: var(--glass-fill-dark);
   --glass-shadow: var(--glass-shadow-dark);
+  --glass-tint-ring: var(--glass-tint-ring-dark);
+  --glass-tint-shadow: var(--glass-tint-shadow-dark);
+  --glass-tint-lift: var(--glass-tint-lift-dark);
 }
 
 .dark [data-scene-tone='day'] {
   --glass-fill: var(--glass-fill-light);
   --glass-shadow: var(--glass-shadow-light);
+  --glass-tint-ring: var(--glass-tint-ring-light);
+  --glass-tint-shadow: var(--glass-tint-shadow-light);
+  --glass-tint-lift: var(--glass-tint-lift-light);
 }
 
 /* The outline follows each element's own corners; a radius here would reshape the element. */

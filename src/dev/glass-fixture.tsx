@@ -1,6 +1,7 @@
 import { ArrowRight, Plus, Settings } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
+import { cn } from '#/lib/utils'
 
 export function GlassFixture() {
   return (
@@ -67,6 +68,69 @@ export function GlassFixture() {
       </section>
 
       <section className="space-y-5">
+        <h2 className="border-b border-border pb-2 text-title font-medium">Tinted reference</h2>
+        <p className="text-body text-muted-foreground">
+          tint-* over static glass, in the geometry of the iOS 27 simulator captures from
+          tools/glass-tints (capture.sh, effect style). Each frame's top-left pixel is a magenta
+          marker for locating it in 3x headless captures.
+        </p>
+        <div className="flex flex-wrap gap-6">
+          {tintBackdrops.map((backdrop) => (
+            <div key={backdrop.name} className="space-y-1">
+              <p className="text-caption text-muted-foreground">{backdrop.name}</p>
+              {tintSwatches.map((swatch) => (
+                <div
+                  key={swatch.name}
+                  data-tint-capture={`${backdrop.name}-${swatch.name}`}
+                  inert
+                  className={cn('relative h-[108px] w-[393px]', backdrop.className)}
+                >
+                  <span className="absolute top-0 left-0 size-px bg-[rgb(255_0_255)]" />
+                  <Button
+                    glass="static"
+                    aria-label={`${swatch.name} tinted glass`}
+                    className={cn(
+                      'absolute top-[23.85px] left-[20.483px] h-[63.1px] w-[352.033px] rounded-full p-0',
+                      swatch.full,
+                    )}
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-5">
+        <h2 className="border-b border-border pb-2 text-title font-medium">Tinted buttons</h2>
+        <p className="text-body text-muted-foreground">
+          The same tint-* class with glass on and off, at a strong and a light palette step.
+        </p>
+        <div className="grid gap-6 md:grid-cols-2">
+          {[
+            'bg-white',
+            'bg-surface-1',
+            'bg-[linear-gradient(120deg,#f97316,#ec4899_45%,#6366f1)]',
+          ].map((backdrop) => (
+            <div key={backdrop} className={cn('space-y-3 rounded-xl p-6', backdrop)}>
+              {tintSwatches.map((swatch) => (
+                <div key={swatch.name} className="flex flex-wrap items-center gap-3">
+                  <Button glass="static" className={cn('rounded-full', swatch.full)}>
+                    Glass
+                  </Button>
+                  <Button glass="static" className={cn('rounded-full', swatch.light)}>
+                    Glass light
+                  </Button>
+                  <Button className={cn('rounded-full', swatch.full)}>Solid</Button>
+                  <Button className={cn('rounded-full', swatch.light)}>Solid light</Button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-5">
         <h2 className="border-b border-border pb-2 text-title font-medium">Static glass buttons</h2>
         <div className="grid gap-6 md:grid-cols-2">
           <GlassRow backdrop="bg-white" label="On white" />
@@ -103,3 +167,18 @@ function GlassRow({ backdrop, label }: { backdrop: string; label: string }) {
     </figure>
   )
 }
+
+// Literal classes so Tailwind emits them; order matches the simulator capture order.
+const tintSwatches = [
+  { name: 'red-500', full: 'tint-red-500', light: 'tint-red-100' },
+  { name: 'amber-500', full: 'tint-amber-500', light: 'tint-amber-100' },
+  { name: 'green-500', full: 'tint-green-500', light: 'tint-green-100' },
+  { name: 'blue-600', full: 'tint-blue-600', light: 'tint-blue-100' },
+]
+
+const tintBackdrops = [
+  { name: 'white', className: 'bg-white' },
+  { name: 'grey', className: 'bg-[rgb(242_241_246)]' },
+  { name: 'dark', className: 'dark bg-[rgb(28_28_30)]' },
+  { name: 'black', className: 'dark bg-black' },
+]

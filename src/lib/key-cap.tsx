@@ -3,13 +3,16 @@ import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
 import { cn } from '#/lib/utils.ts'
 
 // One look for every keystroke: an 18px filled cap, no outline. `inverted`
-// is the same cap on a dark surface (a tooltip, a toast, a primary button).
+// is the same cap on a dark surface (a tooltip, a toast). `current` follows
+// the surrounding text color, for fills whose label color is set in CSS
+// (primary, glass, tint-*).
 const cap =
   'inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-[2px] px-1 font-mono text-[length:var(--fs-micro,11px)] leading-none'
 
 const tones = {
   default: 'bg-foreground/[0.08] text-muted-foreground',
   inverted: 'bg-background/15 text-background',
+  current: 'bg-current/15 text-current',
 }
 
 // The mono face draws ⌘ and the arrows smaller than its letters; the sans

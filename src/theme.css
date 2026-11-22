@@ -44,6 +44,7 @@
   --color-card: var(--card);
   --color-accent: var(--accent);
   --color-destructive: var(--destructive);
+  --shadow-glass: var(--glass-tinted-shadow, var(--glass-shadow));
   --text-display: var(--fs-display);
   --text-display--line-height: var(--lh-display);
   --text-title: var(--fs-title);
@@ -56,4 +57,67 @@
   --text-caption--line-height: var(--lh-caption);
   --text-micro: var(--fs-micro);
   --text-micro--line-height: var(--lh-micro);
+}
+
+/* Button tint, after SwiftUI's .tint(): tint-red-500, tint-blue-100, tint-[#hex]. No opacity
+   modifier: a translucent tint reads as disabled, so lighter tints come from lighter palette
+   steps. Sets variables only, so it cascades to every Button inside the element. Solid
+   variants fill with the color; glass lays it over the glass fill. The label is white on tints
+   darker than oklch L 0.75 and near-black above it, in both themes. --btn-tinted gates the
+   tint-only glass layers, and the tinted glass shadow resolves here so it follows the theme
+   around the tinted element. */
+@utility tint-* {
+  --btn-tint: --value(--color-*, [color], [*]);
+  --btn-tint-label: oklch(
+    from var(--btn-tint) calc(0.145 + 0.855 * clamp(0, (0.75 - l) * 1000, 1)) 0 0
+  );
+  --btn-tinted: 1;
+  --glass-shine-blend: soft-light;
+  --glass-tinted-shadow:
+    0 0 0 0.5px
+      color-mix(
+        in oklab,
+        color-mix(in srgb, var(--btn-tint), black 5%) calc(var(--glass-tint-ring, 0) * 100%),
+        transparent
+      ),
+    var(--glass-tint-shadow);
+}
+
+/* Static glass layers, top first: hover/press overlay and shine (tinted only, gated to zero
+   width by --btn-tinted), the tint color, then the fitted --glass-fill. iOS keeps its edge
+   shine above the tint and brightens mid-tones while leaving 0 and 255 channels alone, which
+   soft-light white reproduces: per device row, strongest at the edge, fading over 1.3px with a
+   tail to 4.8px, fitted to iOS 27 simulator captures at 3x and the same in both themes. The
+   blend mode is set only on tinted glass: any blend mode moves Chrome to a slower raster path
+   that can seam, even under a zero-size layer. Every var() needs a fallback: one invalid layer
+   drops the list. */
+@utility glass-surface {
+  --glass-tint: color-mix(in srgb, var(--btn-tint, transparent), white var(--glass-tint-lift, 0%));
+  background-image:
+    linear-gradient(var(--glass-press), var(--glass-press)), var(--glass-tint-shine),
+    linear-gradient(var(--glass-tint), var(--glass-tint)), var(--glass-fill);
+  background-blend-mode: normal, var(--glass-shine-blend, normal), normal, normal;
+  background-repeat: no-repeat;
+  background-size:
+    calc(var(--btn-tinted, 0) * 100%) 100%,
+    calc(var(--btn-tinted, 0) * 100%) 100%,
+    100% 100%,
+    100% 100%;
+}
+
+/* Labels: the tint's label color when tinted, else the foreground on glass and the background
+   on primary's foreground fill. text-* on the Button overrides them. */
+@utility text-glass-label {
+  color: var(--btn-tint-label, var(--foreground));
+}
+
+@utility text-primary-label {
+  color: var(--btn-tint-label, var(--background));
+}
+
+/* Hover and press overlay on tinted glass; registered so the color transitions. */
+@property --glass-press {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
 }
