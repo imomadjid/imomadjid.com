@@ -27,18 +27,23 @@ function themed<T>(light: T, dark: T | undefined) {
 
 /**
  * Every project's media, stacked in the preview box. The `shown` project's layer is opaque and
- * the rest fade out, so moving between rows crossfades. Only the `playing` project's video plays,
- * from the start each time its row is entered, and only the copy for the current theme; with
- * reduced motion the poster stays still.
+ * the rest fade out, so moving between rows crossfades. The layers also sit a little above or
+ * below by row order, as if the media were stacked in the card like the rows: moving down, the
+ * old media drifts up and out while the next rises into place. A fresh visit (`instant`) places
+ * the layers without moving them, as the box fades in where it lands. Only the `playing`
+ * project's video plays, from the start each time its row is entered, and only the copy for the
+ * current theme; with reduced motion the poster stays still.
  */
 export function PreviewMedia({
   previews,
   shown,
   playing,
+  instant,
 }: {
   previews: readonly (ProjectPreview | undefined)[]
   shown: number | null
   playing: number | null
+  instant: boolean
 }) {
   const videos = useRef(new Map<HTMLVideoElement, number>())
 
@@ -59,9 +64,15 @@ export function PreviewMedia({
         // oxlint-disable-next-line react/no-array-index-key -- the list is static; its order is its identity
         key={index}
         className={cn(
-          'absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none',
+          'absolute inset-0 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          instant
+            ? 'transition-none'
+            : 'transition-[opacity,translate] duration-300 motion-reduce:transition-opacity',
           preview.kind === 'image' && preview.className,
           index === shown ? 'opacity-100' : 'opacity-0',
+          // Rows above the shown one sit higher, rows below lower. Reduced motion keeps them put.
+          shown !== null && index < shown && '-translate-y-[12%] motion-reduce:translate-y-0',
+          shown !== null && index > shown && 'translate-y-[12%] motion-reduce:translate-y-0',
         )}
       >
         {preview.kind === 'video'

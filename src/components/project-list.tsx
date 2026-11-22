@@ -199,6 +199,7 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
             previews={projects.map((project) => project.preview)}
             shown={preview?.index ?? null}
             playing={active}
+            instant={preview?.fresh ?? true}
           />
         )}
       </div>
