@@ -77,10 +77,19 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
+// Stand-ins that make the page tall enough to try the contents and the fixed light while scrolling.
+// They show only with the dev tools, so merging dev into master never puts them on imomadjid.com.
+const placeholders = [
+  { id: 'placeholder-1', label: 'Placeholder 1' },
+  { id: 'placeholder-2', label: 'Placeholder 2' },
+  { id: 'placeholder-3', label: 'Placeholder 3' },
+] as const satisfies readonly PageSection[]
+
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
   { id: 'about', label: 'About' },
   { id: 'work', label: 'Work' },
+  ...(import.meta.env.DEV_TOOLS ? placeholders : []),
   { id: 'contact', label: 'Contact' },
 ] as const satisfies readonly PageSection[]
 
@@ -206,6 +215,15 @@ function Home() {
             </p>
           </Section>
         </div>
+
+        {import.meta.env.DEV_TOOLS &&
+          placeholders.map(({ id, label }) => (
+            <Section key={id} id={id} className="mt-12">
+              <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
+                {label}
+              </div>
+            </Section>
+          ))}
 
         <Section
           id="contact"

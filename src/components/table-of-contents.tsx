@@ -7,18 +7,22 @@ export type PageSection = { id: string; label: string }
 const READING_LINE = 0.35
 
 /**
- * The section being read. On a page that scrolls, it is the last one whose top has passed the
- * reading line, or the last one once the page is scrolled to its end. On a page that fits the
- * viewport, every section is in view, so it is the one the address names.
+ * The section being read: the last one whose top has passed the reading line. At either end of
+ * the page the line can't reach every section, so there the section last linked to wins while
+ * it is on screen, or else the first one at the top and the last one at the bottom. A page that
+ * fits the viewport is at both ends at once.
  */
 function readActive(sections: readonly PageSection[]) {
-  const first = sections[0]?.id
   const root = document.documentElement
-  if (root.scrollHeight <= window.innerHeight + 1) {
-    return sections.find(({ id }) => location.hash === `#${id}`)?.id ?? first
+  const atTop = window.scrollY <= 0
+  const atBottom = window.scrollY + window.innerHeight >= root.scrollHeight - 2
+  if (atTop || atBottom) {
+    const linked = sections.find(({ id }) => location.hash === `#${id}`)?.id
+    const box = linked && document.getElementById(linked)?.getBoundingClientRect()
+    if (linked && box && box.bottom > 0 && box.top < window.innerHeight) return linked
+    return atTop ? sections[0]?.id : sections.at(-1)?.id
   }
-  if (window.scrollY + window.innerHeight >= root.scrollHeight - 2) return sections.at(-1)?.id
-  let active = first
+  let active = sections[0]?.id
   for (const { id } of sections) {
     const top = document.getElementById(id)?.getBoundingClientRect().top
     if (top !== undefined && top <= window.innerHeight * READING_LINE) active = id
