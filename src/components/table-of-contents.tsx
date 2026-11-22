@@ -11,29 +11,38 @@ export type PageSection = {
   mark?: ComponentType<SVGProps<SVGSVGElement>>
 }
 
-// Below this fraction of the viewport's height, a section's top counts as reached.
-const READING_LINE = 0.35
+/**
+ * Where the reading line sits in the viewport. It holds the middle, where a section that has
+ * crossed it fills most of the screen, but within half a screen of either end of the page it
+ * slides to that edge with the scroll: the top of the page always reads the first section and
+ * the bottom the last, even one too short to scroll up to the middle. A page that scrolls less
+ * than a screen sweeps it evenly from edge to edge.
+ */
+function readingLine(scrolled: number, scrollable: number, height: number) {
+  const half = height / 2
+  const remaining = scrollable - scrolled
+  if (scrollable < height) return (height * scrolled) / scrollable
+  if (scrolled < half) return scrolled
+  if (remaining < half) return height - remaining
+  return half
+}
 
 /**
- * The section being read: the last one whose top has passed the reading line. At either end of
- * the page the line can't reach every section, so there the section last linked to wins while
- * it is on screen, or else the first one at the top and the last one at the bottom. A page that
- * fits the viewport is at both ends at once.
+ * The section being read: the last one whose top has passed the reading line. It depends only
+ * on the scroll position, so it never trusts a stale address. A page that doesn't scroll shows
+ * every section at once, so there it is the one the address names.
  */
 function readActive(sections: readonly PageSection[]) {
-  const root = document.documentElement
-  const atTop = window.scrollY <= 0
-  const atBottom = window.scrollY + window.innerHeight >= root.scrollHeight - 2
-  if (atTop || atBottom) {
-    const linked = sections.find(({ id }) => location.hash === `#${id}`)?.id
-    const box = linked && document.getElementById(linked)?.getBoundingClientRect()
-    if (linked && box && box.bottom > 0 && box.top < window.innerHeight) return linked
-    return atTop ? sections[0]?.id : sections.at(-1)?.id
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight
+  if (scrollable <= 1) {
+    return sections.find(({ id }) => location.hash === `#${id}`)?.id ?? sections[0]?.id
   }
+  const scrolled = Math.min(scrollable, Math.max(0, window.scrollY))
+  const point = readingLine(scrolled, scrollable, window.innerHeight)
   let active = sections[0]?.id
   for (const { id } of sections) {
     const top = document.getElementById(id)?.getBoundingClientRect().top
-    if (top !== undefined && top <= window.innerHeight * READING_LINE) active = id
+    if (top !== undefined && top <= point) active = id
   }
   return active
 }
