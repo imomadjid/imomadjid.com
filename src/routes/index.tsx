@@ -130,7 +130,7 @@ const projects = [
 ] as const satisfies readonly Project[]
 
 // Sections still being built. They show only with the dev tools, so merging dev into master
-// never puts them on imomadjid.com. Gallery and Guestbook are empty stand-ins for now.
+// never puts them on imomadjid.com. Gallery and Guestbook say Coming soon for now.
 const draftSections = [
   { id: 'projects', label: 'Random bullshit' },
   { id: 'gallery', label: 'Gallery' },
@@ -301,7 +301,7 @@ function Home() {
             {(['gallery', 'guestbook'] as const).map((id) => (
               <Section key={id} id={id} className="mt-12">
                 <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
-                  {draftSections.find((entry) => entry.id === id)?.label}
+                  Coming soon
                 </div>
               </Section>
             ))}
