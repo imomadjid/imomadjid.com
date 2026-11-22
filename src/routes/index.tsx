@@ -100,7 +100,17 @@ const projects = [
     name: 'Krillion Bench',
     description: 'A general knowledge benchmark for LLMs on Krillion.io.',
     year: 2026,
-    href: 'https://github.com/imomadjid/krillion-bench',
+    href: 'https://krillion-bench.vercel.app',
+    // The live results site: score chart, tooltips, all configurations, a model search. It has
+    // no dark mode.
+    preview: {
+      kind: 'video',
+      light: {
+        webm: '/projects/krillion-bench/light.webm',
+        mp4: '/projects/krillion-bench/light.mp4',
+        poster: '/projects/krillion-bench/light.jpg',
+      },
+    },
   },
   {
     name: 'Book n Quill',
@@ -143,7 +153,7 @@ const projects = [
     description:
       'A 60-second game: name as many women as you can, and each one joins a tally everyone shares.',
     year: 2024,
-    href: 'https://github.com/imomadjid/name-a-woman',
+    href: 'https://name-a-woman.pages.dev',
   },
 ] as const satisfies readonly Project[]
 
