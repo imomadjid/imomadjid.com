@@ -46,7 +46,10 @@ function ProjectRow({
           <span className="font-medium text-neutral-900 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-100">
             {project.name}
           </span>
-          <span className="text-sm text-neutral-500 tabular-nums">{project.year}</span>
+          {/* Allo's open figures (ss03), slashed zero, and tabular figures. */}
+          <span className="[font-feature-settings:'ss03'] text-sm text-neutral-500 slashed-zero tabular-nums">
+            {project.year}
+          </span>
         </span>
         <span className="mt-0.5 block text-sm leading-relaxed text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
           {project.description}
