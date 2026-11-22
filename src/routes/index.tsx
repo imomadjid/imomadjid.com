@@ -7,6 +7,8 @@ import { AmbientLight } from '#/components/ambient-light'
 import { BlindWand } from '#/components/blind-wand'
 import { Logo } from '#/components/logo'
 import { ProfileAvatar } from '#/components/profile-avatar'
+import { ProjectList } from '#/components/project-list'
+import type { Project } from '#/components/project-list'
 import { Signature } from '#/components/signature'
 import { TableOfContents } from '#/components/table-of-contents'
 import type { PageSection } from '#/components/table-of-contents'
@@ -46,7 +48,7 @@ const structuredData = {
       jobTitle: 'Design engineer and product designer',
       worksFor: { '@type': 'Organization', name: 'DocDraft', url: 'https://docdraft.ai' },
       homeLocation: { '@type': 'Place', name: 'Jakarta, Indonesia' },
-      sameAs: ['https://github.com/MassiveMassimo', 'https://www.linkedin.com/in/imomadjid/'],
+      sameAs: ['https://github.com/imomadjid', 'https://www.linkedin.com/in/imomadjid/'],
     },
   ],
 }
@@ -78,18 +80,67 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-// Stand-ins that make the page tall enough to try the contents and the fixed light while scrolling.
-// They show only with the dev tools, so merging dev into master never puts them on imomadjid.com.
-const placeholders = [
-  { id: 'placeholder-1', label: 'Placeholder 1' },
-  { id: 'placeholder-2', label: 'Placeholder 2' },
-  { id: 'placeholder-3', label: 'Placeholder 3' },
+// Public repos, newest first. Each links to its live site where there is one.
+const projects = [
+  {
+    name: 'antijank',
+    description:
+      'Headless animation review for coding agents. It reports jank as text, with no screenshots.',
+    year: 2026,
+    href: 'https://github.com/imomadjid/antijank',
+  },
+  {
+    name: 'Krillion Bench',
+    description: 'A general knowledge benchmark for LLMs on Krillion.io.',
+    year: 2026,
+    href: 'https://github.com/imomadjid/krillion-bench',
+  },
+  {
+    name: 'Book n Quill',
+    description: 'A playful notepad with a Minecraft Java Book and Quill interface.',
+    year: 2026,
+    href: 'https://book-n-quill.mhmmadjid.workers.dev',
+  },
+  {
+    name: 'Lukis',
+    description: 'A local-first painterly image editor, built with Astro and WebGPU.',
+    year: 2026,
+    href: 'https://lukis.imomadjid.com',
+  },
+  {
+    name: 'Influencer Tracker',
+    description:
+      'Scores finfluencers’ stock calls on Instagram and X against real forward prices, versus SPY.',
+    year: 2026,
+    href: 'https://influencer-tracker-beta.vercel.app',
+  },
+  {
+    name: 'Binsight',
+    description: 'An iPhone app that uses vision machine learning to help sort trash.',
+    year: 2025,
+    href: 'https://github.com/imomadjid/Binsight',
+  },
+  {
+    name: 'Name a Woman',
+    description:
+      'A 60-second game: name as many women as you can, and each one joins a tally everyone shares.',
+    year: 2024,
+    href: 'https://github.com/imomadjid/name-a-woman',
+  },
+] as const satisfies readonly Project[]
+
+// Sections still being built. They show only with the dev tools, so merging dev into master
+// never puts them on imomadjid.com. Gallery and Guestbook are empty stand-ins for now.
+const draftSections = [
+  { id: 'projects', label: 'Random bullshit' },
+  { id: 'gallery', label: 'Gallery' },
+  { id: 'guestbook', label: 'Guestbook' },
 ] as const satisfies readonly PageSection[]
 
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
   { id: 'about', label: 'About', mark: Logo },
-  ...(import.meta.env.DEV_TOOLS ? placeholders : []),
+  ...(import.meta.env.DEV_TOOLS ? draftSections : []),
 ] as const satisfies readonly PageSection[]
 
 type SectionId = (typeof sections)[number]['id']
@@ -226,7 +277,7 @@ function Home() {
             >
               {[
                 { label: 'Email', href: 'mailto:mhmmadjid@gmail.com' },
-                { label: 'GitHub', href: 'https://github.com/MassiveMassimo' },
+                { label: 'GitHub', href: 'https://github.com/imomadjid' },
                 { label: 'LinkedIn', href: 'https://www.linkedin.com/in/imomadjid/' },
               ].map(({ label, href }) => (
                 <a
@@ -241,14 +292,20 @@ function Home() {
           </div>
         </Section>
 
-        {import.meta.env.DEV_TOOLS &&
-          placeholders.map(({ id, label }) => (
-            <Section key={id} id={id} className="mt-12">
-              <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
-                {label}
-              </div>
+        {import.meta.env.DEV_TOOLS && (
+          <>
+            <Section id="projects" className="mt-12">
+              <ProjectList projects={projects} />
             </Section>
-          ))}
+            {(['gallery', 'guestbook'] as const).map((id) => (
+              <Section key={id} id={id} className="mt-12">
+                <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
+                  {draftSections.find((entry) => entry.id === id)?.label}
+                </div>
+              </Section>
+            ))}
+          </>
+        )}
       </div>
     </main>
   )
