@@ -90,7 +90,7 @@ export async function startAmbient(
       return channels.slice(0, 3).map(Number)
     }
     let surfaceColor = readSurface()
-    let paintedBackdrop = ''
+    let paintedSurface: number[] = []
     let fromSurface = surfaceColor
     let toSurface = surfaceColor
     let renderedFrames = 0
@@ -366,15 +366,12 @@ export async function startAmbient(
       }
       lighting.set({ params: lightParams() })
       composite.set({ params: materialParams() })
-      // Over the content, the light layer is encoded against the plain surface beneath it, so
-      // paint that surface in step with the surface the shader reads, through theme changes.
-      // Unlit, the canvas paints the wall itself and the backdrop keeps the surface token.
-      const wallColor = settings.content.lit
-        ? `rgb(${surfaceColor.map((channel) => channel.toFixed(2)).join(' ')})`
-        : ''
-      if (wallColor !== paintedBackdrop) {
-        backdrop.style.backgroundColor = wallColor
-        paintedBackdrop = wallColor
+      // The light layer is encoded against the plain wall beneath it, so paint that wall in step
+      // with the surface the shader reads, through theme changes. Unlit, the canvas covers it.
+      const [red, green, blue] = surfaceColor
+      if (red !== paintedSurface[0] || green !== paintedSurface[1] || blue !== paintedSurface[2]) {
+        backdrop.style.backgroundColor = `rgb(${red} ${green} ${blue})`
+        paintedSurface = surfaceColor
       }
       try {
         frame(gpu, (current) => {
