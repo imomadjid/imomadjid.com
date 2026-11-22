@@ -4,7 +4,7 @@ import type { Scheme } from '#/lib/theme'
 
 // A handwritten note with a drawn arrow pointing at the blind wand. It writes itself in after
 // the page entrance and rubs itself out the first time someone grabs or turns the wand.
-// Lengths are CSS pixels in the note's own box; the arrow's tip lands just beside the rod,
+// Lengths are CSS pixels in the note's own box; the arrowhead stops a few pixels short of the rod,
 // a little above its end, on whichever side has room.
 const WIDTH = 190
 const HEIGHT = 64
@@ -190,13 +190,13 @@ export function WandHint({
       <Note
         id="right"
         label={label}
-        className="absolute bottom-0 left-[calc(100%-10px)] hidden min-[1000px]:block"
+        className="absolute bottom-0 left-full hidden min-[1000px]:block"
       />
       <Note
         id="left"
         label={label}
         mirrored
-        className="absolute -right-0.5 bottom-0 min-[1000px]:hidden"
+        className="absolute right-2 bottom-0 min-[1000px]:hidden"
       />
     </div>
   )
@@ -260,7 +260,7 @@ function Note({
           y={BASELINE}
           textAnchor={mirrored ? 'end' : 'start'}
           fill="currentColor"
-          className="font-hand text-micro"
+          className="font-hand text-xs"
           transform={`rotate(-3 ${textX} ${BASELINE})`}
         >
           {label}
