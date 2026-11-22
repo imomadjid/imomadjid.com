@@ -183,6 +183,21 @@ const projects = [
       'A 60-second game: name as many women as you can, and each one joins a tally everyone shares.',
     year: 2024,
     href: 'https://name-a-woman.pages.dev',
+    // Five names, each card's portrait forming from dots. Played back 1.4x, since the recorder
+    // rendered the dots below 60 fps.
+    preview: {
+      kind: 'video',
+      light: {
+        webm: '/projects/name-a-woman/light.webm',
+        mp4: '/projects/name-a-woman/light.mp4',
+        poster: '/projects/name-a-woman/light.jpg',
+      },
+      dark: {
+        webm: '/projects/name-a-woman/dark.webm',
+        mp4: '/projects/name-a-woman/dark.mp4',
+        poster: '/projects/name-a-woman/dark.jpg',
+      },
+    },
   },
 ] as const satisfies readonly Project[]
 
