@@ -8,6 +8,9 @@ struct SurfaceParams {
   entranceDusk: f32,
   // 1 encodes the light as a hard-light layer over the page instead of painting the wall.
   overlay: f32,
+  // The plain wall painted under that layer: the surface, raised through the sunrise and sunset
+  // glow (`glowBackdrop` in src/lib/sunlit-backdrop.ts).
+  backdrop: vec3f,
 }
 @group(0) @binding(0) var<uniform> params: SurfaceParams;
 @group(0) @binding(1) var lighting: texture_2d<f32>;
@@ -24,14 +27,14 @@ fn ditherNoise(position: vec2f) -> f32 {
   return fract(52.9829189 * fract(dot(position, vec2f(0.06711056, 0.00583715))));
 }
 
-// Encodes the lit wall as a CSS hard-light layer over the plain surface color, so content under
-// it takes the same light. Hard-light multiplies by 2s below 0.5 and screens with 2s - 1 above it,
-// per channel, in sRGB: shade divides the wall by the surface, and light brighter than the surface
-// is the share of the gap to white that it fills. 0.5 leaves a pixel unchanged.
-fn encodeHardLight(wall: vec3f, surface: vec3f) -> vec3f {
-  let shade = 0.5 * clamp(wall / max(surface, vec3f(0.0001)), vec3f(0.0), vec3f(1.0));
-  let light = 0.5 + 0.5 * clamp((wall - surface) / max(1.0 - surface, vec3f(0.0001)), vec3f(0.0), vec3f(1.0));
-  return select(light, shade, wall <= surface);
+// Encodes the lit wall as a CSS hard-light layer over the plain wall painted beneath it, so
+// content under it takes the same light. Hard-light multiplies by 2s below 0.5 and screens with
+// 2s - 1 above it, per channel, in sRGB: shade divides the wall by the backdrop, and light brighter
+// than the backdrop is the share of the gap to white that it fills. 0.5 leaves a pixel unchanged.
+fn encodeHardLight(wall: vec3f, backdrop: vec3f) -> vec3f {
+  let shade = 0.5 * clamp(wall / max(backdrop, vec3f(0.0001)), vec3f(0.0), vec3f(1.0));
+  let light = 0.5 + 0.5 * clamp((wall - backdrop) / max(1.0 - backdrop, vec3f(0.0001)), vec3f(0.0), vec3f(1.0));
+  return select(light, shade, wall <= backdrop);
 }
 
 @fragment
@@ -76,5 +79,5 @@ fn fs_main(@location(0) uv: vec2f, @builtin(position) position: vec4f) -> @locat
   }
   // Each overlay level spans two wall levels; dither the 8-bit output so gradients don't band.
   let dither = (ditherNoise(position.xy) - 0.5) / 255.0;
-  return vec4f(encodeHardLight(wall, params.surfaceColor) + dither, 1.0);
+  return vec4f(encodeHardLight(wall, params.backdrop) + dither, 1.0);
 }

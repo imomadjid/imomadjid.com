@@ -3,6 +3,8 @@ import { test } from 'node:test'
 
 import { effect, frame, init, sampler, target } from 'vgpu/node'
 
+import { glowBackdrop } from '#/lib/sunlit-backdrop'
+
 import surfaceSource from './ambient-surface.wgsl'
 
 type SurfaceParams = {
@@ -14,6 +16,7 @@ type SurfaceParams = {
   entranceDawn: number
   entranceDusk: number
   overlay: number
+  backdrop: number[]
 }
 
 /** Renders the material shader into one pixel from a one-pixel lighting texture. */
@@ -65,6 +68,7 @@ void test('zero light intensity preserves the surface throughout theme transitio
     entranceDawn: 0,
     entranceDusk: 0,
     overlay: 0,
+    backdrop: [0, 0, 0],
   }
   const { gpu, light, render } = await surfaceShader(params)
   try {
@@ -101,6 +105,7 @@ void test('the overlay over the plain surface reproduces the lit wall', async ()
     entranceDawn: 0,
     entranceDusk: 0,
     overlay: 0,
+    backdrop: [0, 0, 0],
   }
   const { gpu, light, render } = await surfaceShader(params)
   try {
@@ -118,6 +123,7 @@ void test('the overlay over the plain surface reproduces the lit wall', async ()
           night,
           direction: night > 0 ? 1 : 0,
           surfaceColor: [surface, surface, surface],
+          backdrop: [surface, surface, surface],
           overlay: 0,
         })
         const wall = await render()
@@ -135,6 +141,62 @@ void test('the overlay over the plain surface reproduces the lit wall', async ()
       }
     }
     assert.ok(brightened > 0 && darkened > 0, 'both the multiply and screen branches ran')
+  } finally {
+    gpu.dispose()
+  }
+})
+
+void test('content under the overlay keeps its contrast through the sunrise and sunset glow', async () => {
+  const params: SurfaceParams = {
+    surfaceColor: [0, 0, 0],
+    night: 0,
+    intensity: 0.7,
+    warmth: 0.55,
+    direction: 0,
+    entranceDawn: 0,
+    entranceDusk: 0,
+    overlay: 0,
+    backdrop: [0, 0, 0],
+  }
+  const { gpu, light, render } = await surfaceShader(params)
+  try {
+    let worst = 1
+    // Full sun, at the light's resting peak on the text column and at its brightest.
+    for (const irradiance of [107, 255]) {
+      light(255, irradiance)
+      for (const direction of [0, 1]) {
+        for (let night = 0.05; night < 0.74; night += 0.05) {
+          // The surface moves with the light, from the day surface to the night one.
+          const surface = (250 + (23 - 250) * night) / 255
+          const backdrop = glowBackdrop({
+            surface: [surface * 255, surface * 255, surface * 255],
+            night,
+            direction,
+            warmth: params.warmth,
+            intensity: params.intensity,
+          }).map((channel) => channel / 255)
+          Object.assign(params, { night, direction, surfaceColor: [surface, surface, surface] })
+          params.overlay = 0
+          const wall = await render()
+          Object.assign(params, { overlay: 1, backdrop })
+          const encoded = await render()
+          // Body text stays dark until the tone crossover.
+          const ink = 82 / 255
+          for (const [index, source = 0.5] of encoded.entries()) {
+            const base = backdrop[index] ?? 0
+            const shownWall = hardLight(base, source)
+            assert.ok(
+              Math.abs(shownWall - (wall[index] ?? 0)) < 1.5 / 255,
+              `phase ${night}, channel ${index}: wall ${wall[index]}, overlay gives ${shownWall}`,
+            )
+            const kept = Math.abs(shownWall - hardLight(ink, source)) / Math.abs(surface - ink)
+            worst = Math.min(worst, kept)
+          }
+        }
+      }
+    }
+    // Screening the glow over dark text kept none of its contrast in the beam.
+    assert.ok(worst > 0.8, `body text kept ${worst.toFixed(2)} of its contrast in the glow`)
   } finally {
     gpu.dispose()
   }
