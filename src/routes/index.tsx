@@ -125,8 +125,10 @@ const projects = [
     description: 'A local-first painterly image editor, built with Astro and WebGPU.',
     year: 2026,
     href: 'https://lukis.imomadjid.com',
-    // Drags a photo in, paints it, then moves Paint and Brush. The photo is "Manarola, Italy" by
-    // Linh Nguyen, CC0 (commons.wikimedia.org/wiki/File:Manarola,_Italy_(Unsplash_DNE9iZ1Kqzk).jpg).
+    // Drags a photo in, paints it, moves Paint and Brush, then presses Restart, which returns to
+    // the first frame so the loop is seamless. Captured frame by frame at 60 fps. The photo is
+    // "Manarola, Italy" by Linh Nguyen, CC0
+    // (commons.wikimedia.org/wiki/File:Manarola,_Italy_(Unsplash_DNE9iZ1Kqzk).jpg).
     preview: {
       kind: 'video',
       light: projectVideo('lukis', 'light'),
