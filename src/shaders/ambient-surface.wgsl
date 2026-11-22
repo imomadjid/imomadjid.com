@@ -6,6 +6,8 @@ struct SurfaceParams {
   direction: f32,
   entranceDawn: f32,
   entranceDusk: f32,
+  // 1 encodes the light as a hard-light layer over the page instead of painting the wall.
+  overlay: f32,
 }
 @group(0) @binding(0) var<uniform> params: SurfaceParams;
 @group(0) @binding(1) var lighting: texture_2d<f32>;
@@ -17,8 +19,23 @@ fn srgbToLinear(c: vec3f) -> vec3f {
 fn linearToSrgb(c: vec3f) -> vec3f {
   return select(c * 12.92, 1.055 * pow(max(c, vec3f(0.0)), vec3f(1.0 / 2.4)) - 0.055, c > vec3f(0.0031308));
 }
+// Interleaved gradient noise: a fixed pattern with no visible structure at this scale.
+fn ditherNoise(position: vec2f) -> f32 {
+  return fract(52.9829189 * fract(dot(position, vec2f(0.06711056, 0.00583715))));
+}
+
+// Encodes the lit wall as a CSS hard-light layer over the plain surface color, so content under
+// it takes the same light. Hard-light multiplies by 2s below 0.5 and screens with 2s - 1 above it,
+// per channel, in sRGB: shade divides the wall by the surface, and light brighter than the surface
+// is the share of the gap to white that it fills. 0.5 leaves a pixel unchanged.
+fn encodeHardLight(wall: vec3f, surface: vec3f) -> vec3f {
+  let shade = 0.5 * clamp(wall / max(surface, vec3f(0.0001)), vec3f(0.0), vec3f(1.0));
+  let light = 0.5 + 0.5 * clamp((wall - surface) / max(1.0 - surface, vec3f(0.0001)), vec3f(0.0), vec3f(1.0));
+  return select(light, shade, wall <= surface);
+}
+
 @fragment
-fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+fn fs_main(@location(0) uv: vec2f, @builtin(position) position: vec4f) -> @location(0) vec4f {
   let n = params.night;
   let surface = srgbToLinear(params.surfaceColor);
   let sunset = srgbToLinear(mix(vec3f(0.70, 0.77, 0.85), vec3f(0.96, 0.59, 0.29), params.direction * params.warmth));
@@ -53,5 +70,11 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let shade = directShare * (1.0 - light);
   let skyFill = mix(vec3f(1.0), vec3f(0.89, 0.94, 1.0), clamp(params.warmth * (1.0 - n) * shade * 3.0, 0.0, 1.0));
   let color = graded * illumination * skyFill + moonlight;
-  return vec4f(clamp(linearToSrgb(color), vec3f(0.0), vec3f(1.0)), 1.0);
+  let wall = clamp(linearToSrgb(color), vec3f(0.0), vec3f(1.0));
+  if (params.overlay < 0.5) {
+    return vec4f(wall, 1.0);
+  }
+  // Each overlay level spans two wall levels; dither the 8-bit output so gradients don't band.
+  let dither = (ditherNoise(position.xy) - 0.5) / 255.0;
+  return vec4f(encodeHardLight(wall, params.surfaceColor) + dither, 1.0);
 }

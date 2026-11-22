@@ -155,7 +155,8 @@ function Home() {
     <main className="relative isolate flex min-h-svh justify-center overflow-hidden px-6 pb-16">
       <AmbientLight settings={settings} />
       <TableOfContents sections={sections} />
-      <div data-sunlit-anchor className="relative z-10 w-full max-w-[34rem]">
+      {/* No z-index here: a stacking context would hold the wand under the light layer. */}
+      <div data-sunlit-anchor className="relative w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
         {/* The opening screen fills the viewport with mobile toolbars shown, so it never resizes

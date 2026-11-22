@@ -51,6 +51,7 @@ export async function startAmbient(
     if (disposed) return
     disposed = true
     sceneLight.set(null)
+    host.style.removeProperty('background-color')
     cancelAnimationFrame(frameId)
     for (const cleanup of cleanups.reverse()) cleanup()
     gpu.dispose()
@@ -88,6 +89,7 @@ export async function startAmbient(
       return channels.slice(0, 3).map(Number)
     }
     let surfaceColor = readSurface()
+    let paintedBackdrop = ''
     let fromSurface = surfaceColor
     let toSurface = surfaceColor
     let renderedFrames = 0
@@ -225,6 +227,7 @@ export async function startAmbient(
       direction,
       entranceDawn: entrance * (1 - entranceNight),
       entranceDusk: entrance * entranceNight,
+      overlay: settings.content.lit ? 1 : 0,
     })
     const lighting = effect(gpu, lightingSource, {
       label: 'sunlit-light',
@@ -362,6 +365,15 @@ export async function startAmbient(
       }
       lighting.set({ params: lightParams() })
       composite.set({ params: materialParams() })
+      // Over the content, the light layer is encoded against the plain surface beneath it, so
+      // paint that surface in step with the surface the shader reads, through theme changes.
+      const backdrop = settings.content.lit
+        ? `rgb(${surfaceColor.map((channel) => channel.toFixed(2)).join(' ')})`
+        : ''
+      if (backdrop !== paintedBackdrop) {
+        host.style.backgroundColor = backdrop
+        paintedBackdrop = backdrop
+      }
       try {
         frame(gpu, (current) => {
           current.pass({ target: lightTarget, timer: lightSpan }, (pass) => pass.draw(lighting))

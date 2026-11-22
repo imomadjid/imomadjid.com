@@ -17,6 +17,10 @@ export const ambientControls = {
     railWidth: [0.018, 0, 0.06, 0.001],
     distance: [0.25, 0.1, 0.6, 0.01],
   },
+  // Whether the light falls on the page's content too, as if it were printed on the wall.
+  content: {
+    lit: true,
+  },
   // The tilt wand's distance from the wall, which sets how far its shadow falls.
   wand: {
     depth: [0.09, 0.02, 0.3, 0.01],
@@ -42,7 +46,7 @@ export const ambientControls = {
 
 export type AmbientSettings = ResolvedValues<typeof ambientControls>
 
-const { light, blinds, wand, foliage, breeze, transition } = ambientControls
+const { light, blinds, content, wand, foliage, breeze, transition } = ambientControls
 
 // Production values; DialKit only tunes these in development.
 export const defaultAmbientSettings: AmbientSettings = {
@@ -62,6 +66,7 @@ export const defaultAmbientSettings: AmbientSettings = {
     railWidth: blinds.railWidth[0],
     distance: blinds.distance[0],
   },
+  content: { lit: content.lit },
   wand: { depth: wand.depth[0] },
   foliage: {
     movement: foliage.movement[0],
