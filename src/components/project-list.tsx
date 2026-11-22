@@ -101,7 +101,8 @@ function ProjectRow({
 /**
  * Projects with one shared 16:9 preview that flies to the row being read and sits just after its
  * title. Moving down the list, the box rises from the title's text bottom so the rows below stay
- * readable; moving up, it hangs from the title's text top so the rows above do. The other rows
+ * readable; moving up, it hangs from the title's text top so the rows above do. The first row
+ * always takes it above and the last row below, where there are no rows to hide. The other rows
  * mute while one is active. Keyboard focus drives it the same way.
  */
 export function ProjectList({ projects }: { projects: readonly Project[] }) {
@@ -120,7 +121,10 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
     const height = box.offsetHeight
     const visiting = preview?.shown === true
     let direction: Direction
-    if (visiting && index !== preview.index) direction = index > preview.index ? 'down' : 'up'
+    // The ends have rows on one side only, so the box covers the other side.
+    if (index === 0) direction = 'down'
+    else if (index === projects.length - 1) direction = 'up'
+    else if (visiting && index !== preview.index) direction = index > preview.index ? 'down' : 'up'
     else if (visiting) direction = preview.direction
     // A new visit has no direction yet: rise above the title unless that leaves the screen.
     else direction = title.bottom - height >= 0 ? 'down' : 'up'
