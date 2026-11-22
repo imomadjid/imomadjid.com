@@ -144,7 +144,7 @@ function Home() {
   const { settings, isSleeping, signatureTiming, signatureRun } = useTuning()
 
   return (
-    <main className="relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
+    <main className="relative isolate flex min-h-svh items-center justify-center overflow-x-clip px-6 py-16">
       <AmbientLight settings={settings} />
       <TableOfContents sections={sections} />
       <div data-sunlit-anchor className="relative z-10 w-full max-w-[34rem]">
