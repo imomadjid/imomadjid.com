@@ -1,8 +1,7 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import type { PointerEvent } from 'react'
 
-import { FluidHoverHighlight } from '#/components/fluid-hover-highlight'
-import { useFluidHover, useRegisterFluidHoverItem } from '#/hooks/use-fluid-hover'
-import type { UseFluidHoverReturn } from '#/hooks/use-fluid-hover'
+import { cn } from '#/lib/utils'
 
 export type Project = {
   name: string
@@ -13,45 +12,85 @@ export type Project = {
   href: string
 }
 
-/**
- * One row: the whole row is the link. It registers with the list so the shared highlight can
- * measure it, and reports focus so the keyboard moves the highlight too.
- */
+/** Which way the reader is moving through the list, so the preview can stay out of the way. */
+type Direction = 'down' | 'up'
+
+type Preview = {
+  index: number
+  direction: Direction
+  x: number
+  y: number
+  /** False after the pointer leaves: the box fades out where it last was. */
+  shown: boolean
+  /** True for the first frame of a visit, so the box fades in in place instead of flying. */
+  fresh: boolean
+}
+
+// Space between the end of a title and the preview, in px.
+const titleGap = 12
+// The preview keeps this far from the viewport's right edge, in px.
+const viewportMargin = 16
+
 function ProjectRow({
   project,
   index,
-  registerItem,
-  onFocus,
+  muted,
+  titleRef,
+  onEnter,
   onBlur,
 }: {
   project: Project
   index: number
-  registerItem: UseFluidHoverReturn['registerItem']
-  onFocus: (index: number) => void
+  muted: boolean
+  titleRef: (element: HTMLSpanElement | null) => void
+  onEnter: (index: number) => void
   onBlur: (next: EventTarget | null) => void
 }) {
-  const ref = useRef<HTMLAnchorElement>(null)
-  useRegisterFluidHoverItem(registerItem, index, ref)
-
   return (
     <li>
       <a
-        ref={ref}
         href={project.href}
-        onFocus={() => onFocus(index)}
+        onPointerEnter={(event: PointerEvent) => {
+          // A tap navigates; there is nothing to preview first.
+          if (event.pointerType !== 'touch') onEnter(index)
+        }}
+        onFocus={() => onEnter(index)}
         onBlur={(event) => onBlur(event.relatedTarget)}
-        className="relative z-10 block rounded-2xl px-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+        className="block rounded-lg py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
       >
         <span className="flex items-baseline justify-between gap-6">
-          <span className="font-medium text-neutral-900 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-100">
-            {project.name}
+          <span
+            className={cn(
+              'font-medium transition-colors duration-200 motion-reduce:transition-none',
+              muted
+                ? 'text-neutral-400 dark:text-neutral-600'
+                : 'text-neutral-900 dark:text-neutral-100',
+            )}
+          >
+            {/* Measured for the preview: leading-none makes its box the text's own top and
+                bottom, so the preview lines up with the letters, not the line's leading. */}
+            <span ref={titleRef} className="inline-block leading-none">
+              {project.name}
+            </span>
           </span>
           {/* Allo's open figures (ss03), slashed zero, and tabular figures. */}
-          <span className="[font-feature-settings:'ss03'] text-sm text-neutral-500 slashed-zero tabular-nums">
+          <span
+            className={cn(
+              "[font-feature-settings:'ss03'] text-sm slashed-zero tabular-nums transition-colors duration-200 motion-reduce:transition-none",
+              muted ? 'text-neutral-300 dark:text-neutral-700' : 'text-neutral-500',
+            )}
+          >
             {project.year}
           </span>
         </span>
-        <span className="mt-0.5 block text-sm leading-relaxed text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
+        <span
+          className={cn(
+            'mt-0.5 block text-sm leading-relaxed transition-colors duration-200 motion-reduce:transition-none',
+            muted
+              ? 'text-neutral-400 dark:text-neutral-600'
+              : 'text-neutral-600 dark:text-neutral-400',
+          )}
+        >
           {project.description}
         </span>
       </a>
@@ -60,48 +99,76 @@ function ProjectRow({
 }
 
 /**
- * Projects as a list whose hover fill glides between rows (Fluid Functionalism's fluid hover).
- * Keyboard focus drives the same fill. The rows bleed past the column by their padding, so the
- * text lines up with the paragraphs above.
+ * Projects with one shared 16:9 preview that flies to the row being read and sits just after its
+ * title. Moving down the list, the box rises from the title's text bottom so the rows below stay
+ * readable; moving up, it hangs from the title's text top so the rows above do. The other rows
+ * mute while one is active. Keyboard focus drives it the same way.
  */
 export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const listRef = useRef<HTMLDivElement>(null)
-  const hover = useFluidHover(listRef)
-  const { handlers, registerItem, setActiveIndex } = hover
+  const boxRef = useRef<HTMLDivElement>(null)
+  const titleRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const [preview, setPreview] = useState<Preview | null>(null)
+
+  const enter = (index: number) => {
+    const list = listRef.current?.getBoundingClientRect()
+    const title = titleRefs.current[index]?.getBoundingClientRect()
+    const box = boxRef.current
+    if (!list || !title || !box) return
+
+    const width = box.offsetWidth
+    const height = box.offsetHeight
+    const visiting = preview?.shown === true
+    let direction: Direction
+    if (visiting && index !== preview.index) direction = index > preview.index ? 'down' : 'up'
+    else if (visiting) direction = preview.direction
+    // A new visit has no direction yet: rise above the title unless that leaves the screen.
+    else direction = title.bottom - height >= 0 ? 'down' : 'up'
+
+    const maxX = window.innerWidth - viewportMargin - width - list.left
+    const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
+    const y = direction === 'down' ? title.bottom - list.top - height : title.top - list.top
+    setPreview({ index, direction, x, y, shown: true, fresh: !visiting })
+  }
+
+  const leave = () => setPreview((current) => current && { ...current, shown: false })
+
+  const active = preview?.shown ? preview.index : null
 
   return (
-    // The pointer tracking sits on a wrapper so the list holds only its rows, the fill beside it.
-    // It's a visual effect; the rows are plain links that work without it.
-    <div
-      ref={listRef}
-      onMouseEnter={handlers.onMouseEnter}
-      onMouseMove={handlers.onMouseMove}
-      onMouseLeave={handlers.onMouseLeave}
-      className="relative -mx-3"
-    >
-      {/* The fill's classes are spelled out here because production CSS doesn't scan the
-          registry files. Neutral alphas rather than bg-hover: dark: follows the Sunlit scene,
-          the token follows the instant theme class. */}
-      <FluidHoverHighlight
-        hover={hover}
-        className="pointer-events-none absolute top-0 left-0 rounded-2xl bg-black/4 dark:bg-white/6"
-      />
-      <ul className="flex flex-col gap-0.5">
+    <div ref={listRef} onPointerLeave={leave} className="relative">
+      <ul className="flex flex-col">
         {projects.map((project, index) => (
           <ProjectRow
             key={project.href}
             project={project}
             index={index}
-            registerItem={registerItem}
-            onFocus={setActiveIndex}
+            muted={active !== null && active !== index}
+            titleRef={(element) => {
+              titleRefs.current[index] = element
+            }}
+            onEnter={enter}
             onBlur={(next) => {
-              // Focus moving to another row keeps the highlight, which glides there instead.
+              // Focus moving to another row keeps the preview, which flies there instead.
               if (next instanceof Node && listRef.current?.contains(next)) return
-              setActiveIndex(null)
+              leave()
             }}
           />
         ))}
       </ul>
+      {/* The preview. It stays mounted, hidden, so it can be measured before its first visit. */}
+      <div
+        ref={boxRef}
+        aria-hidden="true"
+        style={{ transform: `translate(${preview?.x ?? 0}px, ${preview?.y ?? 0}px)` }}
+        className={cn(
+          'pointer-events-none absolute top-0 left-0 z-10 aspect-video w-[32rem] max-w-[calc(100vw-2rem)] rounded-xl bg-neutral-200 shadow-lg ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-neutral-800',
+          preview?.shown ? 'opacity-100' : 'opacity-0',
+          preview?.fresh || !preview?.shown
+            ? 'transition-opacity duration-150'
+            : 'transition-[opacity,transform] duration-300 motion-reduce:transition-opacity',
+        )}
+      />
     </div>
   )
 }
