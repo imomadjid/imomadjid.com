@@ -40,20 +40,15 @@ const knock = (frequency: number, gain: number): Layer => ({
 /** Overtones of a struck material as [ratio to the note, level, decay]. Real bars are inharmonic. */
 type Mode = readonly [ratio: number, level: number, decay: number]
 /** A free glass bar: modes at 2.76x and 5.4x, the higher dying first. */
-export const GLASS: readonly Mode[] = [
+const GLASS: readonly Mode[] = [
   [2.76, 0.3, 0.03],
   [5.4, 0.08, 0.014],
 ]
 /** An undercut wooden bar, like a marimba: one rounder mode at 3.99x. */
-export const WOOD: readonly Mode[] = [[3.99, 0.14, 0.02]]
+const WOOD: readonly Mode[] = [[3.99, 0.14, 0.02]]
 
 /** A struck note: a sine fundamental plus the material's overtones. */
-export const note = (
-  frequency: number,
-  gain: number,
-  decay: number,
-  modes: readonly Mode[],
-): Layer[] => [
+const note = (frequency: number, gain: number, decay: number, modes: readonly Mode[]): Layer[] => [
   { source: { type: 'sine', frequency }, envelope: { attack: 0.003, decay }, gain },
   ...modes.map(([ratio, level, modeDecay]): Layer => ({
     source: { type: 'sine', frequency: frequency * ratio },
@@ -62,8 +57,8 @@ export const note = (
   })),
 ]
 
-/** The toggle's sounds as data, so they can also be rendered offline for comparison. */
-export const themeSoundLayers = {
+/** The toggle's sounds as data. */
+const themeSoundLayers = {
   light: [...click(2400, 1.4), knock(392, 0.2), ...note(784, 0.07, 0.07, GLASS)],
   dark: [...click(1400, 1.6), knock(262, 0.22), ...note(523, 0.08, 0.08, WOOD)],
   // An open fifth: C5 and G5 struck together. The C5 has no overtone, so it doesn't beat against the glass.

@@ -4,7 +4,7 @@ import type { SceneLight } from '#/lib/sunlit-scene'
 import { getResolvedScheme, toggleScheme } from '#/lib/theme'
 import type { Scheme } from '#/lib/theme'
 import { warmThemeSounds } from '#/lib/theme-sounds'
-import { playWandSwitch, playWandTick } from '#/lib/wand-sounds'
+import { playWandTick } from '#/lib/wand-sounds'
 
 import {
   facetLight,
@@ -59,8 +59,6 @@ const HOVER_TWIST = 0.3
 // turn rather than following it.
 const SWITCH_PROGRESS = 0.4
 const CLOSING_SWITCH_DELAY = 0.1
-// Closed slats meet with a clack near the end of the turn.
-const SHUT_PROGRESS = 0.9
 // The tilter's gear: eight teeth tick by over a full turn of the wand, loudest near the middle
 // of the turn, where it spins fastest.
 const TOOTH = TWIST / 8
@@ -225,8 +223,6 @@ export function startBlindWand(
   // The turn's starting point and the scheme it is turning to, until the theme switches.
   let twistFrom = turn
   let twistStartedAt = 0
-  // A closing turn the slats have yet to shut on.
-  let shutting = false
   let pending: Scheme | null = null
   // Only turns someone made are heard; the system changing the theme turns the wand silently.
   let voiced = false
@@ -425,10 +421,6 @@ export function startBlindWand(
           : progress >= SWITCH_PROGRESS
       if (still || due) switchTheme()
     }
-    if (shutting && !pending && (still || progress >= SHUT_PROGRESS)) {
-      shutting = false
-      playWandSwitch('dark')
-    }
     const nightTarget = turnTarget > 0 ? 1 : 0
     fallbackNight = still
       ? nightTarget
@@ -529,7 +521,6 @@ export function startBlindWand(
     const next: Scheme = (pending ?? shown) === 'dark' ? 'light' : 'dark'
     voiced = true
     pending = next === shown ? null : next
-    shutting = pending === 'dark'
     twistFrom = turn
     twistStartedAt = performance.now()
     turnTarget = next === 'dark' ? TWIST : 0
@@ -543,8 +534,6 @@ export function startBlindWand(
     pending = null
     if (!scheme || scheme === getResolvedScheme()) return
     toggleScheme()
-    // Opening slats rock apart as the light comes in; closing ones clack shut later.
-    if (scheme === 'light') playWandSwitch(scheme)
   }
 
   function hover(event: PointerEvent) {
@@ -563,7 +552,6 @@ export function startBlindWand(
       // Already turning there: the wand switched the theme itself.
       if (target === turnTarget) return
       pending = null
-      shutting = false
       voiced = false
       turnTarget = target
       twistFrom = turn
