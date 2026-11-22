@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
 import { BlindWand } from '#/components/blind-wand'
+import { Logo } from '#/components/logo'
 import { ProfileAvatar } from '#/components/profile-avatar'
 import { Signature } from '#/components/signature'
 import { TableOfContents } from '#/components/table-of-contents'
@@ -87,7 +88,7 @@ const placeholders = [
 
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
-  { id: 'about', label: 'About' },
+  { id: 'about', label: 'About', mark: Logo },
   ...(import.meta.env.DEV_TOOLS ? placeholders : []),
 ] as const satisfies readonly PageSection[]
 

@@ -11,19 +11,13 @@
 @source not './components/ui/{badge,button,checkbox,field,input,radio-group,scroll-area,sidebar,sidebar-core,sidebar-menu,slider,switch,textarea,tooltip}.tsx';
 @source not './lib/{font-weight,icon-context,key-cap,omit,shape-context,size-context,springs,type-scale}.{ts,tsx}';
 
-/* Allo 1.0.3, SIL Open Font License 1.1: https://github.com/joshpuckett/allo */
+/* Allo 1.0.3, SIL Open Font License 1.1: https://github.com/joshpuckett/allo
+   The variable Friendly webfont, unmodified: weight 100 to 900 and optical size 9 to 32, without
+   the roundness axis. Its 400 matches the static Regular, and weight changes animate. */
 @font-face {
   font-family: 'Allo';
-  src: url('/fonts/allo/Allo-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Allo';
-  src: url('/fonts/allo/Allo-Black.woff2') format('woff2');
-  font-weight: 900;
+  src: url('/fonts/allo/AlloVariableFriendly.woff2') format('woff2');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -37,6 +31,14 @@
   font-weight: 500;
   font-style: normal;
   font-display: swap;
+}
+
+/* Emboldens an outlined mark, such as the logo, with a currentColor stroke beside text that
+   changes weight. Registered as a length so it animates with font-weight. */
+@property --embolden {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
 }
 
 /* Staged page entrance: chunks --enter-step apart, set per element with --enter-index.

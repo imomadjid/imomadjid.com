@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
+import type { ComponentType, SVGProps } from 'react'
 
-/** A section of the page: `id` is its element's id, `label` its name in the contents. */
-export type PageSection = { id: string; label: string }
+/**
+ * A section of the page: `id` is its element's id, `label` its name in the contents. A `mark`
+ * shows in place of the label, which screen readers still announce.
+ */
+export type PageSection = {
+  id: string
+  label: string
+  mark?: ComponentType<SVGProps<SVGSVGElement>>
+}
 
 // Below this fraction of the viewport's height, a section's top counts as reached.
 const READING_LINE = 0.35
@@ -72,14 +80,24 @@ export function TableOfContents({ sections }: { sections: readonly PageSection[]
       className="fixed top-1/2 left-8 z-10 hidden -translate-y-1/2 lg:block"
     >
       <ol className="animate-enter text-sm">
-        {sections.map(({ id, label }) => (
+        {sections.map(({ id, label, mark: Mark }) => (
           <li key={id}>
             <a
               href={`#${id}`}
               aria-current={active === id ? 'true' : undefined}
-              className="inline-flex min-h-8 items-center text-neutral-500 transition-colors duration-300 hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 aria-[current=true]:text-neutral-950 motion-reduce:transition-none dark:text-neutral-500 dark:hover:text-neutral-50 dark:aria-[current=true]:text-neutral-50"
+              className="inline-flex min-h-8 items-center text-neutral-500 transition-[color,font-weight,--embolden] duration-300 hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 aria-[current=true]:font-semibold aria-[current=true]:text-neutral-950 aria-[current=true]:[--embolden:0.55px] motion-reduce:transition-none dark:text-neutral-500 dark:hover:text-neutral-50 dark:aria-[current=true]:text-neutral-50"
             >
-              {label}
+              {Mark ? (
+                <>
+                  <Mark
+                    aria-hidden="true"
+                    className="h-3.5 w-auto overflow-visible [stroke:currentColor] [stroke-width:var(--embolden)] [stroke-linejoin:round]"
+                  />
+                  <span className="sr-only">{label}</span>
+                </>
+              ) : (
+                label
+              )}
             </a>
           </li>
         ))}

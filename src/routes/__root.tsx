@@ -27,7 +27,7 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: appCss },
       {
         rel: 'preload',
-        href: '/fonts/allo/Allo-Regular.woff2',
+        href: '/fonts/allo/AlloVariableFriendly.woff2',
         as: 'font',
         type: 'font/woff2',
         crossOrigin: 'anonymous',
