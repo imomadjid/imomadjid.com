@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent } from 'react'
 
+import { playRowTick } from '#/lib/project-list-sounds'
+import { unlockSoundsOnGesture } from '#/lib/theme-sounds'
 import { cn } from '#/lib/utils'
 
 export type Project = {
@@ -98,13 +100,17 @@ function ProjectRow({
  * Projects with one shared 16:9 preview that flies to the row being read. It sits just after the
  * title, its bottom on the title's text bottom, so it rises over the rows above and leaves the
  * row's description readable. The other rows mute while one is active. Keyboard focus drives it
- * the same way.
+ * the same way, and a soft tick marks each move to another row, pitched up when moving up;
+ * arriving from outside the list is silent.
  */
 export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const listRef = useRef<HTMLDivElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const titleRefs = useRef<(HTMLSpanElement | null)[]>([])
   const [preview, setPreview] = useState<Preview | null>(null)
+
+  // Hover and focus aren't gestures, so the row ticks can't start audio; the next press does.
+  useEffect(() => unlockSoundsOnGesture(), [])
 
   const enter = (index: number) => {
     const list = listRef.current?.getBoundingClientRect()
@@ -115,6 +121,8 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
     const width = box.offsetWidth
     const height = box.offsetHeight
     const visiting = preview?.shown === true
+    if (visiting && index !== preview.index) playRowTick(index > preview.index ? 'down' : 'up')
+
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
     // The box's bottom sits on the title's text bottom, so the row's description stays readable.
