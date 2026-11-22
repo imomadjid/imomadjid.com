@@ -25,15 +25,34 @@ function themed<T>(light: T, dark: T | undefined) {
       ]
 }
 
+// Warming spends data on a guess, so skip it for visitors saving data. Only Chromium reports the
+// connection; elsewhere warming stays on.
+function savingData() {
+  if (matchMedia('(prefers-reduced-data: reduce)').matches) return true
+  const connection = navigator.connection
+  return (
+    connection?.saveData === true ||
+    connection?.effectiveType === 'slow-2g' ||
+    connection?.effectiveType === '2g'
+  )
+}
+
+// A theme's hidden copy has no boxes; it stays paused and unloaded.
+const visible = (element: Element) => element.getClientRects().length > 0
+
 /**
  * Every project's media, stacked in the preview box. The `shown` project's layer is opaque and
- * the rest fade out, so moving between rows crossfades. Each layer is offset by `offsets[index]`,
- * the distance from the box's spot to its own row's spot, and eases there on the box's own curve
- * and duration. The two motions cancel, so each project's media holds its place on the page while
- * the box slides over it like a window. A fresh visit (`instant`) places the layers without
- * moving them, as the box fades in where it lands. Only the `playing`
- * project's video plays, from the start each time its row is entered, and only the copy for the
- * current theme; with reduced motion the poster stays still.
+ * the rest fade out blurred, so moving between rows crossfades through a blur. Each layer is
+ * offset by `offsets[index]`, the distance from the box's spot to its own row's spot, and eases
+ * there on the box's own curve and duration. The two motions cancel, so each project's media
+ * holds its place on the page while the box slides over it like a window. A fresh visit
+ * (`instant`) places the layers without moving them, as the box fades in where it lands.
+ *
+ * Only the `playing` project's video plays, from the start each time its row is entered, and only
+ * the copy for the current theme; with reduced motion the poster stays still. Videos load nothing
+ * until then, except that the rows on either side of the playing one start buffering, since the
+ * reader is likely to move there next. Posters are lazy images under each video rather than
+ * `poster` attributes, which browsers fetch even for the hidden theme's copy.
  */
 export function PreviewMedia({
   previews,
@@ -52,12 +71,15 @@ export function PreviewMedia({
 
   useEffect(() => {
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const warm = playing !== null && !savingData()
     for (const [video, index] of videos.current) {
-      // A theme's hidden copy has no boxes; it stays paused and unloaded.
-      if (index === playing && !reduceMotion && video.getClientRects().length > 0) {
+      if (index === playing && !reduceMotion && visible(video)) {
         video.currentTime = 0
         video.play().catch(() => {})
-      } else video.pause()
+        continue
+      }
+      video.pause()
+      if (warm && Math.abs(index - playing) === 1 && visible(video)) video.preload = 'auto'
     }
   }, [playing])
 
@@ -71,41 +93,49 @@ export function PreviewMedia({
           'absolute inset-0 ease-[cubic-bezier(0.22,1,0.36,1)]',
           instant
             ? 'transition-none'
-            : 'transition-[opacity,translate] duration-300 motion-reduce:transition-opacity',
+            : 'transition-[opacity,translate,filter] duration-300 motion-reduce:transition-opacity',
           preview.kind === 'image' && preview.className,
-          index === shown ? 'opacity-100' : 'opacity-0',
+          index === shown ? 'opacity-100' : 'opacity-0 motion-safe:blur-sm',
         )}
         style={{ translate: `0 ${offsets[index] ?? 0}px` }}
       >
         {preview.kind === 'video'
           ? themed(preview.light, preview.dark).map(({ source, className }) => (
-              <video
-                key={source.webm}
-                ref={(element) => {
-                  if (!element) return
-                  videos.current.set(element, index)
-                  return () => {
-                    videos.current.delete(element)
-                  }
-                }}
-                poster={source.poster}
-                muted
-                loop
-                playsInline
-                preload="none"
-                disablePictureInPicture
-                disableRemotePlayback
-                className={cn('size-full object-cover', className)}
-              >
-                <source src={source.webm} type="video/webm" />
-                <source src={source.mp4} type="video/mp4" />
-              </video>
+              <div key={source.webm} className={cn('relative size-full', className)}>
+                <img
+                  src={source.poster}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 size-full object-cover"
+                />
+                <video
+                  ref={(element) => {
+                    if (!element) return
+                    videos.current.set(element, index)
+                    return () => {
+                      videos.current.delete(element)
+                    }
+                  }}
+                  muted
+                  loop
+                  playsInline
+                  preload="none"
+                  disablePictureInPicture
+                  disableRemotePlayback
+                  className="relative size-full object-cover"
+                >
+                  <source src={source.webm} type="video/webm" />
+                  <source src={source.mp4} type="video/mp4" />
+                </video>
+              </div>
             ))
           : themed(preview.light, preview.dark).map(({ source, className }) => (
               <img
                 key={source}
                 src={source}
                 alt=""
+                loading="lazy"
                 decoding="async"
                 className={cn('size-full object-contain', className)}
               />

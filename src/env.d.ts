@@ -6,3 +6,14 @@ interface ImportMetaEnv {
    */
   readonly DEV_TOOLS: boolean
 }
+
+/** The Network Information API, Chromium only, which TypeScript's DOM types leave out. */
+interface NetworkInformation {
+  /** The visitor turned on their browser's or OS's data saver. */
+  readonly saveData?: boolean
+  readonly effectiveType?: 'slow-2g' | '2g' | '3g' | '4g'
+}
+
+interface Navigator {
+  readonly connection?: NetworkInformation
+}

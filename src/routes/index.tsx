@@ -14,6 +14,7 @@ import { TableOfContents } from '#/components/table-of-contents'
 import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
+import { projectFile, projectVideo } from '#/lib/project-media'
 import { defaultSignatureTiming, signatureControls } from '#/lib/signature-settings'
 import { textLinkClass } from '#/lib/text-link'
 import { cn } from '#/lib/utils'
@@ -91,8 +92,8 @@ const projects = [
     // The README's cover, light and dark.
     preview: {
       kind: 'image',
-      light: '/projects/antijank/light.svg',
-      dark: '/projects/antijank/dark.svg',
+      light: projectFile('antijank/light.svg'),
+      dark: projectFile('antijank/dark.svg'),
       className: 'bg-white dark:bg-[#0d1117]',
     },
   },
@@ -105,11 +106,7 @@ const projects = [
     // no dark mode.
     preview: {
       kind: 'video',
-      light: {
-        webm: '/projects/krillion-bench/light.webm',
-        mp4: '/projects/krillion-bench/light.mp4',
-        poster: '/projects/krillion-bench/light.jpg',
-      },
+      light: projectVideo('krillion-bench', 'light'),
     },
   },
   {
@@ -120,11 +117,7 @@ const projects = [
     // Writes a packing list, turns the page, and signs it. The app has no dark mode.
     preview: {
       kind: 'video',
-      light: {
-        webm: '/projects/book-n-quill/light.webm',
-        mp4: '/projects/book-n-quill/light.mp4',
-        poster: '/projects/book-n-quill/light.jpg',
-      },
+      light: projectVideo('book-n-quill', 'light'),
     },
   },
   {
@@ -136,16 +129,8 @@ const projects = [
     // Linh Nguyen, CC0 (commons.wikimedia.org/wiki/File:Manarola,_Italy_(Unsplash_DNE9iZ1Kqzk).jpg).
     preview: {
       kind: 'video',
-      light: {
-        webm: '/projects/lukis/light.webm',
-        mp4: '/projects/lukis/light.mp4',
-        poster: '/projects/lukis/light.jpg',
-      },
-      dark: {
-        webm: '/projects/lukis/dark.webm',
-        mp4: '/projects/lukis/dark.mp4',
-        poster: '/projects/lukis/dark.jpg',
-      },
+      light: projectVideo('lukis', 'light'),
+      dark: projectVideo('lukis', 'dark'),
     },
   },
   {
@@ -157,16 +142,8 @@ const projects = [
     // Leaderboard, the top creator's scorecard, then one of their tickers against SPY.
     preview: {
       kind: 'video',
-      light: {
-        webm: '/projects/influencer-tracker/light.webm',
-        mp4: '/projects/influencer-tracker/light.mp4',
-        poster: '/projects/influencer-tracker/light.jpg',
-      },
-      dark: {
-        webm: '/projects/influencer-tracker/dark.webm',
-        mp4: '/projects/influencer-tracker/dark.mp4',
-        poster: '/projects/influencer-tracker/dark.jpg',
-      },
+      light: projectVideo('influencer-tracker', 'light'),
+      dark: projectVideo('influencer-tracker', 'dark'),
     },
   },
   {
@@ -175,7 +152,7 @@ const projects = [
     year: 2025,
     href: 'https://github.com/imomadjid/Binsight',
     // The four app screenshots from the README.
-    preview: { kind: 'image', light: '/projects/binsight/screens.webp' },
+    preview: { kind: 'image', light: projectFile('binsight/screens.webp') },
   },
   {
     name: 'Name a Woman',
@@ -187,16 +164,8 @@ const projects = [
     // rendered the dots below 60 fps.
     preview: {
       kind: 'video',
-      light: {
-        webm: '/projects/name-a-woman/light.webm',
-        mp4: '/projects/name-a-woman/light.mp4',
-        poster: '/projects/name-a-woman/light.jpg',
-      },
-      dark: {
-        webm: '/projects/name-a-woman/dark.webm',
-        mp4: '/projects/name-a-woman/dark.mp4',
-        poster: '/projects/name-a-woman/dark.jpg',
-      },
+      light: projectVideo('name-a-woman', 'light'),
+      dark: projectVideo('name-a-woman', 'dark'),
     },
   },
 ] as const satisfies readonly Project[]
