@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent } from 'react'
 
+import { PreviewMedia } from '#/components/project-preview-media'
+import type { ProjectPreview } from '#/components/project-preview-media'
 import { playRowTick } from '#/lib/project-list-sounds'
 import { unlockSoundsOnGesture } from '#/lib/theme-sounds'
 import { cn } from '#/lib/utils'
@@ -12,14 +14,12 @@ export type Project = {
   year: number
   /** The live site where there is one, otherwise the repository. */
   href: string
+  /** What the hover preview shows; without one the box stays a plain placeholder. */
+  preview?: ProjectPreview
 }
-
-/** Which way the reader is moving through the list, so the preview can stay out of the way. */
-type Direction = 'down' | 'up'
 
 type Preview = {
   index: number
-  direction: Direction
   x: number
   y: number
   /** False after the pointer leaves: the box fades out where it last was. */
@@ -101,21 +101,38 @@ function ProjectRow({
 }
 
 /**
- * Projects with one shared 16:9 preview that flies to the row being read and sits just after its
- * title. Moving down the list, its bottom meets the title's text bottom, so the rows ahead stay
- * readable; moving up, its top meets the title's text top, so the rows above do. The first and
- * last rows always take it above the title. The other rows mute while one is active. Keyboard
- * focus drives it the same way, and a soft tick marks each move to another row, pitched up when
- * moving up; arriving from outside the list is silent.
+ * Projects with one shared 16:9 preview that flies to the row being read. It sits just after the
+ * title, its bottom on the title's text bottom, so it rises over the rows above and leaves the
+ * row's description readable. The other rows mute while one is active. Keyboard focus drives it
+ * the same way, and a soft tick marks each move to another row, pitched up when moving up;
+ * arriving from outside the list is silent.
  */
 export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const listRef = useRef<HTMLDivElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const titleRefs = useRef<(HTMLSpanElement | null)[]>([])
   const [preview, setPreview] = useState<Preview | null>(null)
+  // The media mounts once the list nears the viewport, so posters are ready by the first hover
+  // without loading them for visitors who never scroll this far. Videos load only when played.
+  const [mediaReady, setMediaReady] = useState(false)
 
   // Hover and focus aren't gestures, so the row ticks can't start audio; the next press does.
   useEffect(() => unlockSoundsOnGesture(), [])
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!list) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        setMediaReady(true)
+        observer.disconnect()
+      },
+      { rootMargin: '400px 0px' },
+    )
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [])
 
   const enter = (index: number) => {
     const list = listRef.current?.getBoundingClientRect()
@@ -126,23 +143,13 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
     const width = box.offsetWidth
     const height = box.offsetHeight
     const visiting = preview?.shown === true
-    let direction: Direction
-    if (visiting && index !== preview.index) {
-      direction = index > preview.index ? 'down' : 'up'
-      playRowTick(direction)
-    } else if (visiting) direction = preview.direction
-    // A new visit has no direction yet: rise above the title unless that leaves the screen.
-    else direction = title.bottom - height >= 0 ? 'down' : 'up'
-    // The first and last rows always rise above the title: below the first there's every row
-    // still to read, and the last has nothing below to cover instead.
-    if (index === 0 || index === projects.length - 1) direction = 'down'
+    if (visiting && index !== preview.index) playRowTick(index > preview.index ? 'down' : 'up')
 
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
-    // Moving down, the box's bottom sits on the title's text bottom, over the rows already read;
-    // moving up, its top meets the title's text top, over the rows below.
-    const y = direction === 'down' ? title.bottom - list.top - height : title.top - list.top
-    setPreview({ index, direction, x, y, shown: true, fresh: !visiting })
+    // The box's bottom sits on the title's text bottom, so the row's description stays readable.
+    const y = title.bottom - list.top - height
+    setPreview({ index, x, y, shown: true, fresh: !visiting })
   }
 
   const leave = () => setPreview((current) => current && { ...current, shown: false })
@@ -176,13 +183,22 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
         aria-hidden="true"
         style={{ transform: `translate(${preview?.x ?? 0}px, ${preview?.y ?? 0}px)` }}
         className={cn(
-          'pointer-events-none absolute top-0 left-0 z-10 aspect-video w-[32rem] max-w-[calc(100vw-2rem)] rounded-xl bg-neutral-200 shadow-lg ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-neutral-800',
+          'pointer-events-none absolute top-0 left-0 z-10 aspect-video w-[32rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl bg-neutral-200 shadow-lg ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-neutral-800',
           preview?.shown ? 'opacity-100' : 'opacity-0',
           preview?.fresh || !preview?.shown
             ? 'transition-opacity duration-150'
             : 'transition-[opacity,transform] duration-300 motion-reduce:transition-opacity',
         )}
-      />
+      >
+        {/* The last row's media stays while the box fades out; only the active row's plays. */}
+        {mediaReady && (
+          <PreviewMedia
+            previews={projects.map((project) => project.preview)}
+            shown={preview?.index ?? null}
+            playing={active}
+          />
+        )}
+      </div>
     </div>
   )
 }

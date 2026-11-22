@@ -88,6 +88,13 @@ const projects = [
       'Headless animation review for coding agents. It reports jank as text, with no screenshots.',
     year: 2026,
     href: 'https://github.com/imomadjid/antijank',
+    // The README's cover, light and dark.
+    preview: {
+      kind: 'image',
+      light: '/projects/antijank/light.svg',
+      dark: '/projects/antijank/dark.svg',
+      className: 'bg-white dark:bg-[#0d1117]',
+    },
   },
   {
     name: 'Krillion Bench',
@@ -119,6 +126,8 @@ const projects = [
     description: 'An iPhone app that uses vision machine learning to help sort trash.',
     year: 2025,
     href: 'https://github.com/imomadjid/Binsight',
+    // The four app screenshots from the README.
+    preview: { kind: 'image', light: '/projects/binsight/screens.webp' },
   },
   {
     name: 'Name a Woman',
