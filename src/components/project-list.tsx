@@ -104,8 +104,8 @@ function ProjectRow({
  * Projects with one shared 16:9 preview that flies to the row being read. It sits just after the
  * title, its bottom on the title's text bottom, so it rises over the rows above and leaves the
  * row's description readable. The other rows mute while one is active. Keyboard focus drives it
- * the same way, and a soft tick marks each move to another row, pitched up when moving up;
- * arriving from outside the list is silent.
+ * the same way, and a soft tick marks each row the reader lands on, entering the list included,
+ * pitched up when moving up the list.
  */
 export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const listRef = useRef<HTMLDivElement>(null)
@@ -143,7 +143,10 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
     const width = box.offsetWidth
     const height = box.offsetHeight
     const visiting = preview?.shown === true
-    if (visiting && index !== preview.index) playRowTick(index > preview.index ? 'down' : 'up')
+    // Every new row ticks, the first one of a visit too; staying on a row doesn't.
+    if (!visiting || index !== preview.index) {
+      playRowTick(visiting && index < preview.index ? 'up' : 'down')
+    }
 
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
