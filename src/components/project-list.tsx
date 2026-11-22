@@ -14,8 +14,12 @@ export type Project = {
   href: string
 }
 
+/** Which way the reader is moving through the list, so the preview can stay out of the way. */
+type Direction = 'down' | 'up'
+
 type Preview = {
   index: number
+  direction: Direction
   x: number
   y: number
   /** False after the pointer leaves: the box fades out where it last was. */
@@ -97,11 +101,12 @@ function ProjectRow({
 }
 
 /**
- * Projects with one shared 16:9 preview that flies to the row being read. It sits just after the
- * title, its bottom on the title's text bottom, so it rises over the rows above and leaves the
- * row's description readable. The other rows mute while one is active. Keyboard focus drives it
- * the same way, and a soft tick marks each move to another row, pitched up when moving up;
- * arriving from outside the list is silent.
+ * Projects with one shared 16:9 preview that flies to the row being read and sits just after its
+ * title. Moving down the list, its bottom meets the title's text bottom, so the rows ahead stay
+ * readable; moving up, its top meets the title's text top, so the rows above do. The first and
+ * last rows always take it above the title. The other rows mute while one is active. Keyboard
+ * focus drives it the same way, and a soft tick marks each move to another row, pitched up when
+ * moving up; arriving from outside the list is silent.
  */
 export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const listRef = useRef<HTMLDivElement>(null)
@@ -121,13 +126,23 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
     const width = box.offsetWidth
     const height = box.offsetHeight
     const visiting = preview?.shown === true
-    if (visiting && index !== preview.index) playRowTick(index > preview.index ? 'down' : 'up')
+    let direction: Direction
+    if (visiting && index !== preview.index) {
+      direction = index > preview.index ? 'down' : 'up'
+      playRowTick(direction)
+    } else if (visiting) direction = preview.direction
+    // A new visit has no direction yet: rise above the title unless that leaves the screen.
+    else direction = title.bottom - height >= 0 ? 'down' : 'up'
+    // The first and last rows always rise above the title: below the first there's every row
+    // still to read, and the last has nothing below to cover instead.
+    if (index === 0 || index === projects.length - 1) direction = 'down'
 
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
-    // The box's bottom sits on the title's text bottom, so the row's description stays readable.
-    const y = title.bottom - list.top - height
-    setPreview({ index, x, y, shown: true, fresh: !visiting })
+    // Moving down, the box's bottom sits on the title's text bottom, over the rows already read;
+    // moving up, its top meets the title's text top, over the rows below.
+    const y = direction === 'down' ? title.bottom - list.top - height : title.top - list.top
+    setPreview({ index, direction, x, y, shown: true, fresh: !visiting })
   }
 
   const leave = () => setPreview((current) => current && { ...current, shown: false })
