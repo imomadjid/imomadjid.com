@@ -30,7 +30,7 @@ export async function startAmbient(
   const decoded = image.decode()
   decoded.catch(() => {})
   const profiling =
-    import.meta.env.DEV && new URLSearchParams(location.search).has('ambientProfile')
+    import.meta.env.DEV_TOOLS && new URLSearchParams(location.search).has('ambientProfile')
   const adapter = profiling
     ? await navigator.gpu?.requestAdapter({ powerPreference: 'low-power' })
     : null
@@ -385,7 +385,7 @@ export async function startAmbient(
       if (host.dataset.sceneTone !== tone) host.dataset.sceneTone = tone
       if (canvas.dataset.renderer !== 'webgpu') canvas.dataset.renderer = 'webgpu'
       renderedFrames += 1
-      if (import.meta.env.DEV && now - reportTime > 1000) {
+      if (import.meta.env.DEV_TOOLS && now - reportTime > 1000) {
         canvas.dataset.frames = String(renderedFrames)
         canvas.dataset.phase = night.toFixed(3)
         canvas.dataset.entrance = entrance.toFixed(3)

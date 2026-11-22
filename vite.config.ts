@@ -1,3 +1,6 @@
+import { appendFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { devtools } from '@tanstack/devtools-vite'
@@ -5,6 +8,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import { wgslVitePlugin } from 'vgpu/client'
 import { defineConfig } from 'vite-plus'
+import type { Plugin } from 'vite-plus'
 
 import { fluidRegistryFiles } from './tools/fluid-registry-files.ts'
 
@@ -50,6 +54,29 @@ const vendoredStyleRules = {
   // NOTE: False positive on Button's asChild path, which forwards the ref prop via cloneElement.
   'react/refs': 'off',
 } as const
+
+// `CLOUDFLARE_ENV=dev` builds dev.imomadjid.com from the `dev` environment in wrangler.jsonc.
+const devSite = process.env.CLOUDFLARE_ENV === 'dev'
+
+// Sets import.meta.env.DEV_TOOLS, which turns on DialKit, Sleep Focus, renderer profiling, and
+// the /dev playground in the dev server and on dev.imomadjid.com; production builds drop them.
+// It also keeps the dev site, a copy of production, out of search results. Prerendered pages and
+// other files are served as static assets before the Worker runs, so their header comes from
+// _headers. robots.txt still lets crawlers in, or they would never see the noindex.
+const devTools = (): Plugin => ({
+  name: 'dev-tools',
+  config: (_, { command }) => ({
+    define: { 'import.meta.env.DEV_TOOLS': JSON.stringify(command === 'serve' || devSite) },
+  }),
+  async writeBundle({ dir }) {
+    if (!devSite || this.environment.name !== 'client' || !dir) return
+    await appendFile(
+      join(dir, '_headers'),
+      '\n# dev.imomadjid.com stays out of search results.\n/*\n  X-Robots-Tag: noindex\n',
+    )
+    await writeFile(join(dir, 'robots.txt'), 'User-agent: *\nAllow: /\n')
+  },
+})
 
 const config = defineConfig({
   fmt: {
@@ -119,6 +146,7 @@ const config = defineConfig({
       },
     }),
     viteReact(),
+    devTools(),
   ],
 })
 

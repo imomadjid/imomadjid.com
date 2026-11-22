@@ -46,11 +46,13 @@ export function AmbientLight({ settings }: { settings: AmbientSettings }) {
   }, [])
 
   // The canvas paints the surface token so the renderer can read it without a transition.
+  // The light comes through a window in the room, so it stays put while the page scrolls past.
+  // The large viewport height keeps it from resizing as mobile toolbars collapse.
   return (
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 -z-1 size-full bg-surface-1 opacity-0 data-[renderer=webgpu]:opacity-100 motion-safe:transition-opacity motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]"
+      className="pointer-events-none fixed inset-x-0 top-0 -z-1 h-lvh w-full bg-surface-1 opacity-0 data-[renderer=webgpu]:opacity-100 motion-safe:transition-opacity motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]"
     />
   )
 }

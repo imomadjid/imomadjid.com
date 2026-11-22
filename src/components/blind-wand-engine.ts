@@ -215,8 +215,12 @@ export function startBlindWand(
     light: query<SVGStopElement>(`#${ids.gradient(section, 'light')} stop`),
   }))
 
+  // The light's frame: the fixed canvas, in viewport pixels, and where `main` sits in it. The
+  // wand scrolls with the page through light that stays put, so this moves as the page scrolls.
   let width = 1
   let height = 1
+  let originX = 0
+  let originY = 0
   let pivotX = 0
   let length = UNMEASURED_LENGTH
   let angle = 0
@@ -254,9 +258,25 @@ export function startBlindWand(
   const hangTop = HANG_Y - PIVOT_ABOVE
   const rodX = (y: number) => pivotX + (y - hangTop) * Math.tan(angle)
 
+  function frameLight() {
+    const scene = main.getBoundingClientRect()
+    // Without a canvas, light the wand as if the wall were `main` itself.
+    const light = canvas?.getBoundingClientRect() ?? scene
+    width = Math.max(light.width, 1)
+    height = Math.max(light.height, 1)
+    originX = scene.left - light.left
+    originY = scene.top - light.top
+  }
+
+  // Scroll events run before this frame's animation callbacks, so painting here lets the
+  // renderer draw the shadow in the same frame the wand moves.
+  function follow() {
+    frameLight()
+    paint()
+  }
+
   function measure() {
-    width = Math.max(main.clientWidth, 1)
-    height = Math.max(main.clientHeight, 1)
+    frameLight()
     const row = button.parentElement
     if (!row) return
     const { left, top } = offsetWithin(row, main)
@@ -307,7 +327,10 @@ export function startBlindWand(
     const points = stripeStops.map((_, index) => {
       const along = TIP_START + ((length - TIP_START) * index) / last
       const reach = along - HANG_Y
-      return [(pivotX + downX * reach) / width, (hangTop + downY * reach) / height] as const
+      return [
+        (originX + pivotX + downX * reach) / width,
+        (originY + hangTop + downY * reach) / height,
+      ] as const
     })
     const current = getSettings()
     const light = lightWand(current, scene(), points, width / height, current.wand.depth)
@@ -377,10 +400,10 @@ export function startBlindWand(
     hang?.setAttribute('transform', `translate(${boxHalfWidth} ${-PIVOT_ABOVE})`)
     for (const swing of swings) swing.setAttribute('transform', `rotate(${degrees} 0 ${HANG_Y})`)
     // The scene measures the wand from its top along its length, so hand it the point the
-    // swinging wand would reach at the hook's height.
+    // swinging wand would reach at the hook's height, in the canvas's frame.
     wandPose.set({
-      x: (pivotX - downX * HANG_Y) / width,
-      y: (hangTop - downY * HANG_Y) / height,
+      x: (originX + pivotX - downX * HANG_Y) / width,
+      y: (originY + hangTop - downY * HANG_Y) / height,
       angle,
       hang: HANG_Y / height,
       tipStart: TIP_START / height,
@@ -605,10 +628,13 @@ export function startBlindWand(
   hit?.addEventListener('pointerup', release, options)
   hit?.addEventListener('pointercancel', release, options)
   button.addEventListener('click', click, options)
+  window.addEventListener('scroll', follow, { ...options, passive: true })
   reducedMotion.addEventListener('change', wake, options)
   const unsubscribe = sceneLight.subscribe(wake)
   const resizeObserver = new ResizeObserver(measure)
   resizeObserver.observe(main)
+  // The viewport can resize without changing `main`, once the page is taller than it.
+  if (canvas) resizeObserver.observe(canvas)
   const anchor = main.querySelector('[data-sunlit-anchor]')
   if (anchor) resizeObserver.observe(anchor)
   measure()

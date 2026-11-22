@@ -19,9 +19,11 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'Imo Madjid' },
+      // The dev site, a copy of production, stays out of search results.
+      ...(import.meta.env.DEV_TOOLS ? [{ name: 'robots', content: 'noindex' }] : []),
     ],
     links: [
-      ...(import.meta.env.DEV ? [{ rel: 'stylesheet', href: dialkitCss }] : []),
+      ...(import.meta.env.DEV_TOOLS ? [{ rel: 'stylesheet', href: dialkitCss }] : []),
       { rel: 'stylesheet', href: appCss },
       {
         rel: 'preload',
@@ -68,7 +70,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <ShapeProvider defaultShape="pill">
           <SurfaceProvider value={1}>{children}</SurfaceProvider>
         </ShapeProvider>
-        {import.meta.env.DEV && <ThemedDialKit />}
+        {import.meta.env.DEV_TOOLS && <ThemedDialKit />}
         <TanStackDevtools
           config={{ position: 'bottom-right' }}
           plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}

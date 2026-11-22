@@ -22,6 +22,7 @@ provides an `intent` executable. After regenerating guidance with
 bun install           # Install dependencies and Lefthook hooks
 bun run dev           # Start on port 3000
 bun run build         # Build client and Worker output
+bun run build:dev     # Build dev.imomadjid.com: dev tools on, noindex
 bun run preview       # Preview the production build
 ```
 
@@ -32,11 +33,12 @@ generated file committed. After adding or moving routes, run the dev server or
 `bun run build` before checking types. Do not run a separate Router CLI against
 this file; its output differs from Start's and triggers dev-server reloads.
 
-DialKit tunes the Sunlit background and the Sleep Focus avatar state in
-development only. `src/routes/index.tsx` reads the controls through a hook that
-is chosen at build time, so production uses `defaultAmbientSettings` from
-`src/lib/ambient-settings.ts` and ships no DialKit code. Change the defaults in
-`ambientControls`; tuned values persist only in the development browser.
+DialKit tunes the Sunlit background and the Sleep Focus avatar state in the
+dev server and on dev.imomadjid.com. `src/routes/index.tsx` reads the controls
+through a hook that is chosen at build time by `import.meta.env.DEV_TOOLS`, so
+production uses `defaultAmbientSettings` from `src/lib/ambient-settings.ts` and
+ships no DialKit code. Change the defaults in `ambientControls`; tuned values
+persist only in the browser that tuned them.
 
 Inside `main`, the `dark:` variant follows the renderer's `data-scene-tone`
 crossover instead of the instant `.dark` class, so text and inverted marks flip
@@ -116,8 +118,9 @@ The `imomadjid.com` zone is on Cloudflare's Free plan. Rumahweb delegates DNS to
 is configured in `wrangler.jsonc` so deployments preserve it.
 
 The [Check and deploy workflow](.github/workflows/deploy.yml) deploys after all
-checks pass on pushes to `master`. Pull requests run checks without deploying.
-You can also run the workflow manually on `master`.
+checks pass on pushes to `master`, and to dev.imomadjid.com on pushes to `dev`.
+Pull requests into either branch run checks without deploying. You can also run
+the workflow manually on `master` or `dev`.
 
 Configure these GitHub Actions values in the repository settings:
 
@@ -132,6 +135,22 @@ of source control. No runtime secrets are required by the portfolio.
 For an authorized local deployment, authenticate with Wrangler and run
 `bun run deploy`. To roll back, use `bunx wrangler rollback` and select a prior
 deployed version. Check `bunx wrangler deployments list` for deployment history.
+
+### Dev site
+
+Pushes to the `dev` branch deploy dev.imomadjid.com, a second Worker
+(`imomadjid-com-dev`) from the `dev` environment in `wrangler.jsonc`. It is a
+production build with the dev tools on: the `/dev` playground, DialKit, Sleep
+Focus, and `?ambientProfile`. It also answers on its own `workers.dev` subdomain.
+Every page carries a `noindex` robots meta tag, and static files send
+`X-Robots-Tag: noindex`. `robots.txt` still lets crawlers in, because a crawler
+that is kept out never reads the noindex and can list a linked URL anyway.
+
+`bun run build:dev` builds it locally (`CLOUDFLARE_ENV=dev`), and
+`bun run deploy:dev` deploys it. Wrangler creates the `dev.imomadjid.com` custom
+domain and its DNS record on the first deploy, using the same API token. To keep
+the site private as well as unindexed, put it behind Cloudflare Access in the
+Zero Trust dashboard; the build needs no change for that.
 
 ### Dependency audit
 

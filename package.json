@@ -9,6 +9,7 @@
     "intent": "node ./node_modules/@tanstack/intent/dist/cli.mjs",
     "dev": "vp dev --port 3000",
     "build": "vp build",
+    "build:dev": "CLOUDFLARE_ENV=dev vp build",
     "preview": "vp preview",
     "lint": "vp lint",
     "lint:fix": "bun run lint --fix",
@@ -25,7 +26,8 @@
     "audit:ui:browser": "shadscan --check-ui",
     "deps:check": "taze",
     "prepare": "lefthook install",
-    "deploy": "bun run build && wrangler deploy"
+    "deploy": "bun run build && wrangler deploy",
+    "deploy:dev": "bun run build:dev && wrangler deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
