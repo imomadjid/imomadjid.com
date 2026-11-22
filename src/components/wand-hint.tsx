@@ -260,7 +260,7 @@ function Note({
           y={BASELINE}
           textAnchor={mirrored ? 'end' : 'start'}
           fill="currentColor"
-          className="font-hand text-[22px]"
+          className="font-hand text-micro"
           transform={`rotate(-3 ${textX} ${BASELINE})`}
         >
           {label}

@@ -52,6 +52,9 @@ const SWING_DAMPING = 2.5
 const OPENING = { stiffness: 38, damping: 9.5, tickSpeed: 20 }
 const CLOSING = { stiffness: 38 / 4, damping: 9.5 / 2, tickSpeed: 12 }
 const DRAG_THRESHOLD = 6
+// A tap's own click, if the browser sends one, follows within this many ms.
+const TAP_CLICK_WINDOW = 800
+const BOX_BELOW = 16
 // Hovering starts the turn a little, so the hook and hole move before the click.
 const HOVER_TWIST = 0.3
 // Opening switches the theme once the twist is this far along, so the page changes with the
@@ -185,6 +188,7 @@ export function startBlindWand(
   if (!host || !svg) return null
   // Hoisted handlers below read this without the narrowing above.
   const main: HTMLElement = host
+  const box: SVGSVGElement = svg
   const ids = wandIds(id)
   const canvas = main.querySelector('canvas')
   const listeners = new AbortController()
@@ -236,6 +240,8 @@ export function startBlindWand(
   let drag: { pointerId: number; startX: number; startY: number; target: number } | null = null
   let moved = false
   let suppressClick = false
+  // When a touch last let go, so the click that may follow it does not turn the wand again.
+  let touchedAt = -Infinity
   let frameId = 0
   let lastTime = 0
   let previousPointer: { x: number; y: number; time: number } | null = null
@@ -263,7 +269,18 @@ export function startBlindWand(
   }
 
   // Geometry along the wand that only changes with its length.
+  // Half the width of the SVG's box, so it covers the wand at full swing: Safari only hit
+  // tests what lies inside it, not everything an overflowing SVG draws.
+  let boxHalfWidth = 0
+
   function layout() {
+    const reach = length - PIVOT_ABOVE
+    boxHalfWidth = Math.ceil(length * Math.sin(SWING_LIMIT) + ROD_RADIUS * 4 + 16)
+    box.setAttribute('width', String(boxHalfWidth * 2))
+    // It also runs past the rod's end, under the hit line's round cap.
+    box.setAttribute('height', String(Math.max(reach, 1) + BOX_BELOW))
+    box.style.marginLeft = `${-boxHalfWidth}px`
+    box.style.marginBottom = `${-BOX_BELOW}px`
     hit?.setAttribute('y2', String(length))
     focusRing?.setAttribute('height', String(length - ROD_START + 4))
     stripes?.setAttribute('y2', String(length))
@@ -357,7 +374,7 @@ export function startBlindWand(
       hook.setAttribute('stroke', toCss(mixRgb(metal, light.sun, light.direct * 0.4)))
     }
     const degrees = ((-angle * 180) / Math.PI).toFixed(3)
-    hang?.setAttribute('transform', `translate(0 ${-length})`)
+    hang?.setAttribute('transform', `translate(${boxHalfWidth} ${-PIVOT_ABOVE})`)
     for (const swing of swings) swing.setAttribute('transform', `rotate(${degrees} 0 ${HANG_Y})`)
     // The scene measures the wand from its top along its length, so hand it the point the
     // swinging wand would reach at the hook's height.
@@ -503,17 +520,28 @@ export function startBlindWand(
   function release(event: PointerEvent) {
     if (!drag || event.pointerId !== drag.pointerId) return
     drag = null
-    suppressClick = moved
     if (hit) delete hit.dataset.dragging
+    if (event.pointerType === 'mouse') suppressClick = moved
+    else {
+      // Taps turn the wand as they lift: Safari on iOS can withhold the click after a touch
+      // that sets the wand moving.
+      touchedAt = performance.now()
+      if (event.type === 'pointerup' && !moved) turnWand()
+    }
     wake()
   }
 
-  function activate() {
-    // A drag swings the wand; only a touch or a key press turns it.
+  function click() {
+    // A drag swings the wand; a click or a key press turns it, and a tap already has.
     if (suppressClick) {
       suppressClick = false
       return
     }
+    if (performance.now() - touchedAt < TAP_CLICK_WINDOW) return
+    turnWand()
+  }
+
+  function turnWand() {
     onInteract()
     // Turns first; the page follows partway through the turn. Turning again before then
     // turns back to the scheme still on screen.
@@ -576,7 +604,7 @@ export function startBlindWand(
   hit?.addEventListener('pointermove', pull, options)
   hit?.addEventListener('pointerup', release, options)
   hit?.addEventListener('pointercancel', release, options)
-  button.addEventListener('click', activate, options)
+  button.addEventListener('click', click, options)
   reducedMotion.addEventListener('change', wake, options)
   const unsubscribe = sceneLight.subscribe(wake)
   const resizeObserver = new ResizeObserver(measure)
