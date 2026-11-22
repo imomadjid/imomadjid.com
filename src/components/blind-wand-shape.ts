@@ -65,6 +65,8 @@ export function rodPath(left: number, right: number, length: number) {
 // The hook's curl, as [depth, height] points in its own plane: depth runs through the tip's
 // face, toward the room. The wire comes down behind the tip, threads the hole at its top edge,
 // where the wand's weight rests, and curls up in front.
+// The tilter's wire runs up out of sight, past where the page can be pulled down to.
+const WIRE_REACH = 2000
 const HOOK_REACH = 3.5
 const HOOK_CURL: readonly (readonly [number, number])[] = bezierChain([
   [0, HOLE_Y - 10],
@@ -109,7 +111,7 @@ export function hookPaths(turn: number) {
   const sin = Math.sin(turn)
   const bendX = -Math.sin(HOOK_BEND)
   const bendZ = Math.cos(HOOK_BEND)
-  let back = `M0 ${-PIVOT_ABOVE - 40} V${HOLE_Y - 10}`
+  let back = `M0 ${-WIRE_REACH} V${HOLE_Y - 10}`
   let front = ''
   let previous: { x: number; y: number; ahead: boolean } | null = null
   for (const [depth, y] of HOOK_CURL) {

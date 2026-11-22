@@ -203,7 +203,7 @@ function Home() {
   const { settings, isSleeping, signatureTiming, signatureRun } = useTuning()
 
   return (
-    <main className="relative isolate flex min-h-svh justify-center overflow-hidden px-6 pb-16">
+    <main className="relative isolate flex min-h-svh justify-center overflow-x-clip px-6 pb-16">
       <AmbientLight settings={settings} />
       <TableOfContents sections={sections} />
       {/* No z-index here: a stacking context would hold the wand under the light layer. */}
