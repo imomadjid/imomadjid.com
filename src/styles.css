@@ -33,14 +33,6 @@
   font-display: swap;
 }
 
-/* Emboldens an outlined mark, such as the logo, with a currentColor stroke beside text that
-   changes weight. Registered as a length so it animates with font-weight. */
-@property --embolden {
-  syntax: '<length>';
-  inherits: true;
-  initial-value: 0px;
-}
-
 /* Staged page entrance: chunks --enter-step apart, set per element with --enter-index.
    The hidden state lives only in the keyframe, so content stays visible if it never runs. */
 :root {

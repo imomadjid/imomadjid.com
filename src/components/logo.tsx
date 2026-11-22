@@ -1,18 +1,23 @@
 import type { SVGProps } from 'react'
 
 /**
- * The "imo" mark, as in public/favicon.svg. It fills with currentColor; size it by height. A
- * stroke in the same color emboldens it, measured in screen pixels like text's stroke.
+ * The "imo" mark, as in public/favicon.svg, drawn as centre-lines with a currentColor stroke: a
+ * capsule, a rounded rectangle and a circle. At the default stroke width of 12 it matches the
+ * favicon's outline; set `stroke-width` to change its weight. Size it by height.
  */
 export function Logo(props: Omit<SVGProps<SVGSVGElement>, 'children' | 'viewBox'>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152 68" fill="currentColor" {...props}>
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        vectorEffect="non-scaling-stroke"
-        d="M74 0C82.1174 0 89.2069 4.39697 93.0195 10.9385C99.2313 4.21314 108.123 0 118 0C136.778 0 152 15.2223 152 34C152 52.7777 136.778 68 118 68C108.123 68 99.2313 63.7862 93.0195 57.0605C89.207 63.6025 82.1177 68 74 68H54C47.6953 68 42.0111 65.347 38 61.0977C33.9889 65.347 28.3047 68 22 68C9.84974 68 0 58.1503 0 46V22C0 9.84974 9.84974 0 22 0C28.3044 0 33.9889 2.65233 38 6.90137C42.0111 2.65233 47.6956 0 54 0H74ZM22 12C16.4772 12 12 16.4772 12 22V46C12 51.5228 16.4772 56 22 56C27.5228 56 32 51.5228 32 46V22C32 16.4772 27.5228 12 22 12ZM54 12C48.4772 12 44 16.4772 44 22V46C44 51.5228 48.4772 56 54 56H74C79.5228 56 84 51.5228 84 46V22C84 16.4772 79.5228 12 74 12H54ZM118 12C105.85 12 96 21.8497 96 34C96 46.1503 105.85 56 118 56C130.15 56 140 46.1503 140 34C140 21.8497 130.15 12 118 12Z"
-      />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 152 68"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={12}
+      {...props}
+    >
+      <path d="M6 22A16 16 0 0 1 38 22V46A16 16 0 0 1 6 46Z" />
+      <path d="M54 6H74A16 16 0 0 1 90 22V46A16 16 0 0 1 74 62H54A16 16 0 0 1 38 46V22A16 16 0 0 1 54 6Z" />
+      <circle cx="118" cy="34" r="28" />
     </svg>
   )
 }

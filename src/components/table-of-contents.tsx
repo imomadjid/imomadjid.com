@@ -85,13 +85,13 @@ export function TableOfContents({ sections }: { sections: readonly PageSection[]
             <a
               href={`#${id}`}
               aria-current={active === id ? 'true' : undefined}
-              className="inline-flex min-h-8 items-center text-neutral-500 transition-[color,font-weight,--embolden] duration-300 hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 aria-[current=true]:font-semibold aria-[current=true]:text-neutral-950 aria-[current=true]:[--embolden:0.55px] motion-reduce:transition-none dark:text-neutral-500 dark:hover:text-neutral-50 dark:aria-[current=true]:text-neutral-50"
+              className="group inline-flex min-h-8 items-center text-neutral-500 transition-[color,font-weight] duration-300 hover:text-neutral-950 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 aria-[current=true]:font-semibold aria-[current=true]:text-neutral-950 motion-reduce:transition-none dark:text-neutral-500 dark:hover:text-neutral-50 dark:aria-[current=true]:text-neutral-50"
             >
               {Mark ? (
                 <>
                   <Mark
                     aria-hidden="true"
-                    className="h-3.5 w-auto overflow-visible [stroke:currentColor] [stroke-width:var(--embolden)] [stroke-linejoin:round]"
+                    className="h-3.5 w-auto [stroke-width:9.34] transition-[stroke-width] duration-300 group-aria-[current=true]:[stroke-width:12] motion-reduce:transition-none"
                   />
                   <span className="sr-only">{label}</span>
                 </>
