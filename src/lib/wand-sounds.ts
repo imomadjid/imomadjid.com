@@ -12,7 +12,7 @@ import { HISS_CUT, LEVEL } from './theme-sounds'
 // near -16 dBFS.
 
 /** One tooth of the gear: a dry click with a faint pitched body, so jitter can vary it. */
-export function tickLayers(center: number): Layer[] {
+function tickLayers(center: number): Layer[] {
   return [
     {
       source: { type: 'noise' },
@@ -32,7 +32,7 @@ export function tickLayers(center: number): Layer[] {
 const TICK_CENTERS = [2500, 2700, 2900, 3100] as const
 
 /** A tick's volume from the wand's spin, 0 to 1: slow teeth are softer. */
-export function tickVolume(speed: number) {
+function tickVolume(speed: number) {
   return 0.5 + 0.5 * Math.min(1, Math.max(0, speed))
 }
 
