@@ -12,12 +12,8 @@ export type Project = {
   href: string
 }
 
-/** Which way the reader is moving through the list, so the preview can stay out of the way. */
-type Direction = 'down' | 'up'
-
 type Preview = {
   index: number
-  direction: Direction
   x: number
   y: number
   /** False after the pointer leaves: the box fades out where it last was. */
@@ -36,7 +32,6 @@ function ProjectRow({
   index,
   muted,
   titleRef,
-  descriptionRef,
   onEnter,
   onBlur,
 }: {
@@ -44,7 +39,6 @@ function ProjectRow({
   index: number
   muted: boolean
   titleRef: (element: HTMLSpanElement | null) => void
-  descriptionRef: (element: HTMLSpanElement | null) => void
   onEnter: (index: number) => void
   onBlur: (next: EventTarget | null) => void
 }) {
@@ -85,9 +79,7 @@ function ProjectRow({
             {project.year}
           </span>
         </span>
-        {/* Measured for the preview, which hangs below it when the reader moves up. */}
         <span
-          ref={descriptionRef}
           className={cn(
             'mt-0.5 block text-sm leading-relaxed transition-colors duration-200 motion-reduce:transition-none',
             muted
@@ -103,44 +95,31 @@ function ProjectRow({
 }
 
 /**
- * Projects with one shared 16:9 preview that flies to the row being read and sits just after its
- * title. Moving down the list, the box rises from the title's text bottom so the rows below stay
- * readable; moving up, it hangs below the description so the rows above do. Either way the
- * active row's description stays readable. The first row
- * always takes it above and the last row below, where there are no rows to hide. The other rows
- * mute while one is active. Keyboard focus drives it the same way.
+ * Projects with one shared 16:9 preview that flies to the row being read. It sits just after the
+ * title, its bottom on the title's text bottom, so it rises over the rows above and leaves the
+ * row's description readable. The other rows mute while one is active. Keyboard focus drives it
+ * the same way.
  */
 export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const listRef = useRef<HTMLDivElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const titleRefs = useRef<(HTMLSpanElement | null)[]>([])
-  const descriptionRefs = useRef<(HTMLSpanElement | null)[]>([])
   const [preview, setPreview] = useState<Preview | null>(null)
 
   const enter = (index: number) => {
     const list = listRef.current?.getBoundingClientRect()
     const title = titleRefs.current[index]?.getBoundingClientRect()
-    const description = descriptionRefs.current[index]?.getBoundingClientRect()
     const box = boxRef.current
-    if (!list || !title || !description || !box) return
+    if (!list || !title || !box) return
 
     const width = box.offsetWidth
     const height = box.offsetHeight
     const visiting = preview?.shown === true
-    let direction: Direction
-    // The ends have rows on one side only, so the box covers the other side.
-    if (index === 0) direction = 'down'
-    else if (index === projects.length - 1) direction = 'up'
-    else if (visiting && index !== preview.index) direction = index > preview.index ? 'down' : 'up'
-    else if (visiting) direction = preview.direction
-    // A new visit has no direction yet: rise above the title unless that leaves the screen.
-    else direction = title.bottom - height >= 0 ? 'down' : 'up'
-
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
-    const y =
-      direction === 'down' ? title.bottom - list.top - height : description.bottom - list.top
-    setPreview({ index, direction, x, y, shown: true, fresh: !visiting })
+    // The box's bottom sits on the title's text bottom, so the row's description stays readable.
+    const y = title.bottom - list.top - height
+    setPreview({ index, x, y, shown: true, fresh: !visiting })
   }
 
   const leave = () => setPreview((current) => current && { ...current, shown: false })
@@ -158,9 +137,6 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
             muted={active !== null && active !== index}
             titleRef={(element) => {
               titleRefs.current[index] = element
-            }}
-            descriptionRef={(element) => {
-              descriptionRefs.current[index] = element
             }}
             onEnter={enter}
             onBlur={(next) => {
