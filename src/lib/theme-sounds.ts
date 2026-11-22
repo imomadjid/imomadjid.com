@@ -79,25 +79,68 @@ const themeSounds = {
 
 /** Overall level: the loudest 30 ms sit near -30 dBA, about where Allo's switch plays. */
 export const LEVEL = 0.55
-/** Repeats faster than FAST_MS play 30% softer, easing back to full by SLOW_MS, as cuelume does. */
-const FAST_MS = 80
-const SLOW_MS = 250
-let lastPlayedAt = -Infinity
+
+/**
+ * Softens a sound that repeats quickly, as cuelume does: each call returns its volume, full when
+ * the last call was `slowMs` ago or more, easing down by `depth` as the gap shrinks to `fastMs`.
+ */
+export function repeatDuck(fastMs: number, slowMs: number, depth: number) {
+  let lastPlayedAt = -Infinity
+  return (now: number) => {
+    const quickness = Math.min(1, Math.max(0, (slowMs - (now - lastPlayedAt)) / (slowMs - fastMs)))
+    lastPlayedAt = now
+    return 1 - depth * quickness
+  }
+}
+
+/** Repeats faster than 80 ms play 30% softer, easing back to full by 250 ms. */
+const themeDuck = repeatDuck(80, 250, 0.3)
+
+/** The shared AudioContext, once a press has started it. */
+let context: AudioContext | undefined
 
 /** Starts the AudioContext on press so the sound on release isn't late. */
 export function warmThemeSounds() {
   if (prefersReducedMotion()) return
-  ensureReady().catch(() => {})
+  ensureReady().then(
+    (ready) => {
+      context = ready
+    },
+    () => {},
+  )
+}
+
+/**
+ * Whether a press has started the AudioContext. Sounds that answer hover or focus check this:
+ * those aren't gestures, and a context they started would be blocked, with a console warning.
+ */
+export const soundsUnlocked = () => context?.state === 'running'
+
+/**
+ * Starts the AudioContext on the next mouse or pen press or key press, so sounds that answer
+ * hover or focus can play after it. A tap doesn't count: touch has no hover. Returns a cleanup.
+ */
+export function unlockSoundsOnGesture() {
+  if (soundsUnlocked()) return () => {}
+  const stop = () => {
+    window.removeEventListener('pointerdown', unlock, true)
+    window.removeEventListener('keydown', unlock, true)
+  }
+  function unlock(event: Event) {
+    if (event instanceof PointerEvent && event.pointerType === 'touch') return
+    stop()
+    warmThemeSounds()
+  }
+  window.addEventListener('pointerdown', unlock, true)
+  window.addEventListener('keydown', unlock, true)
+  return stop
 }
 
 export function playThemeSound(theme: Theme) {
   // Reduced motion doubles as the opt-out for interface sound.
   if (prefersReducedMotion()) return
-  const now = performance.now()
-  const quickness = Math.min(1, Math.max(0, (SLOW_MS - (now - lastPlayedAt)) / (SLOW_MS - FAST_MS)))
-  lastPlayedAt = now
   try {
-    themeSounds[theme]({ volume: LEVEL * (1 - 0.3 * quickness), jitter: { detune: 15 } })
+    themeSounds[theme]({ volume: LEVEL * themeDuck(performance.now()), jitter: { detune: 15 } })
   } catch {
     // Sound is decoration; the theme change must not depend on Web Audio.
   }

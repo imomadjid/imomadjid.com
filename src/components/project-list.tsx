@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent } from 'react'
 
+import { playRowTick } from '#/lib/project-list-sounds'
+import { unlockSoundsOnGesture } from '#/lib/theme-sounds'
 import { cn } from '#/lib/utils'
 
 export type Project = {
@@ -102,13 +104,17 @@ function ProjectRow({
  * Projects with one shared 16:9 preview that flies to the row being read and sits just after its
  * title. Moving down the list, the box rises from the title's text bottom so the rows below stay
  * readable; moving up, it hangs from the title's text top so the rows above do. The other rows
- * mute while one is active. Keyboard focus drives it the same way.
+ * mute while one is active. Keyboard focus drives it the same way, and a soft tick marks each
+ * move to another row; arriving from outside the list is silent.
  */
 export function ProjectList({ projects }: { projects: readonly Project[] }) {
   const listRef = useRef<HTMLDivElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const titleRefs = useRef<(HTMLSpanElement | null)[]>([])
   const [preview, setPreview] = useState<Preview | null>(null)
+
+  // Hover and focus aren't gestures, so the row ticks can't start audio; the next press does.
+  useEffect(() => unlockSoundsOnGesture(), [])
 
   const enter = (index: number) => {
     const list = listRef.current?.getBoundingClientRect()
@@ -120,8 +126,10 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
     const height = box.offsetHeight
     const visiting = preview?.shown === true
     let direction: Direction
-    if (visiting && index !== preview.index) direction = index > preview.index ? 'down' : 'up'
-    else if (visiting) direction = preview.direction
+    if (visiting && index !== preview.index) {
+      direction = index > preview.index ? 'down' : 'up'
+      playRowTick(direction)
+    } else if (visiting) direction = preview.direction
     // A new visit has no direction yet: rise above the title unless that leaves the screen.
     else direction = title.bottom - height >= 0 ? 'down' : 'up'
 
