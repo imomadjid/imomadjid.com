@@ -22,6 +22,8 @@ type Preview = {
   index: number
   x: number
   y: number
+  /** Where the box would sit for each row (its y there), for the media's counter-motion. */
+  rowYs: number[]
   /** False after the pointer leaves: the box fades out where it last was. */
   shown: boolean
   /** True for the first frame of a visit, so the box fades in in place instead of flying. */
@@ -151,8 +153,13 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
     // The box's bottom sits on the title's text bottom, so the row's description stays readable.
+    // Every row's spot is measured too: each row's media is parked at its own row's spot, so it
+    // holds still on the page while the box slides past it.
+    const rowYs = titleRefs.current.map(
+      (element) => (element?.getBoundingClientRect().bottom ?? title.bottom) - list.top - height,
+    )
     const y = title.bottom - list.top - height
-    setPreview({ index, x, y, shown: true, fresh: !visiting })
+    setPreview({ index, x, y, rowYs, shown: true, fresh: !visiting })
   }
 
   const leave = () => setPreview((current) => current && { ...current, shown: false })
@@ -199,7 +206,8 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
             previews={projects.map((project) => project.preview)}
             shown={preview?.index ?? null}
             playing={active}
-            instant={preview?.fresh ?? true}
+            offsets={preview?.rowYs.map((rowY) => rowY - preview.y) ?? []}
+            instant={preview === null || preview.fresh || !preview.shown}
           />
         )}
       </div>
