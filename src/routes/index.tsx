@@ -132,6 +132,21 @@ const projects = [
     description: 'A local-first painterly image editor, built with Astro and WebGPU.',
     year: 2026,
     href: 'https://lukis.imomadjid.com',
+    // Drags a photo in, paints it, then moves Paint and Brush. The photo is "Manarola, Italy" by
+    // Linh Nguyen, CC0 (commons.wikimedia.org/wiki/File:Manarola,_Italy_(Unsplash_DNE9iZ1Kqzk).jpg).
+    preview: {
+      kind: 'video',
+      light: {
+        webm: '/projects/lukis/light.webm',
+        mp4: '/projects/lukis/light.mp4',
+        poster: '/projects/lukis/light.jpg',
+      },
+      dark: {
+        webm: '/projects/lukis/dark.webm',
+        mp4: '/projects/lukis/dark.mp4',
+        poster: '/projects/lukis/dark.jpg',
+      },
+    },
   },
   {
     name: 'Influencer Tracker',
