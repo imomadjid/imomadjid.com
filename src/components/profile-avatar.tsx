@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react'
 
 // Sleep Focus is a development-only DialKit toggle; production never loads the particles.
-const SleepParticles = import.meta.env.DEV ? lazy(() => import('./sleep-particles')) : null
+const SleepParticles = import.meta.env.DEV_TOOLS ? lazy(() => import('./sleep-particles')) : null
 
 export function ProfileAvatar({ isSleeping }: { isSleeping: boolean }) {
   return (

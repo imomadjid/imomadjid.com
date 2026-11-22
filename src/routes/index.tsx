@@ -1,11 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDialKit, useDialKitController } from 'dialkit'
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
 import { BlindWand } from '#/components/blind-wand'
 import { ProfileAvatar } from '#/components/profile-avatar'
 import { Signature } from '#/components/signature'
+import { TableOfContents } from '#/components/table-of-contents'
+import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
 import { defaultSignatureTiming, signatureControls } from '#/lib/signature-settings'
@@ -74,6 +77,36 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
+// One list names the page's sections for both their headings and the table of contents.
+const sections = [
+  { id: 'about', label: 'About' },
+  { id: 'work', label: 'Work' },
+  { id: 'contact', label: 'Contact' },
+] as const satisfies readonly PageSection[]
+
+type SectionId = (typeof sections)[number]['id']
+
+/** A titled region of the page. Its heading is for assistive tech; the contents show it. */
+function Section({
+  id,
+  className,
+  children,
+}: {
+  id: SectionId
+  className?: string
+  children: ReactNode
+}) {
+  const headingId = `${id}-heading`
+  return (
+    <section id={id} aria-labelledby={headingId} className={cn('scroll-mt-16', className)}>
+      <h2 id={headingId} className="sr-only">
+        {sections.find((entry) => entry.id === id)?.label}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
 const productionTuning = {
   settings: defaultAmbientSettings,
   isSleeping: false,
@@ -105,7 +138,7 @@ function useDialTuning() {
 }
 
 // The build-time constant keeps hook order stable and drops DialKit from production.
-const useTuning = import.meta.env.DEV ? useDialTuning : () => productionTuning
+const useTuning = import.meta.env.DEV_TOOLS ? useDialTuning : () => productionTuning
 
 function Home() {
   const { settings, isSleeping, signatureTiming, signatureRun } = useTuning()
@@ -113,6 +146,7 @@ function Home() {
   return (
     <main className="relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
       <AmbientLight settings={settings} />
+      <TableOfContents sections={sections} />
       <div data-sunlit-anchor className="relative z-10 w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
@@ -123,53 +157,60 @@ function Home() {
         </div>
 
         <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
-          <p className="animate-enter text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
-            I’m Imo, a design engineer and product designer based in Jakarta. I design and build
-            interfaces, from early prototypes to shipped products.
-          </p>
+          <Section id="about">
+            <p className="animate-enter text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
+              I’m Imo, a design engineer and product designer based in Jakarta. I design and build
+              interfaces, from early prototypes to shipped products.
+            </p>
+          </Section>
 
-          <p className="animate-enter [--enter-index:2]">
-            I’m a software engineer at{' '}
-            <LinkButton href="https://docdraft.ai" logoSrc="/images/companies/docdraft.svg">
-              DocDraft
-            </LinkButton>
-            , working on document drafting and consultation tools. Before that, I was a UX engineer
-            at{' '}
-            <LinkButton href="https://meeting.ai" logoSrc="/images/companies/meeting-ai.png">
-              Meeting.ai
-            </LinkButton>
-            , where I designed and built experiences across web and mobile.
-          </p>
+          <Section id="work" className="space-y-8">
+            <p className="animate-enter [--enter-index:2]">
+              I’m a software engineer at{' '}
+              <LinkButton href="https://docdraft.ai" logoSrc="/images/companies/docdraft.svg">
+                DocDraft
+              </LinkButton>
+              , working on document drafting and consultation tools. Before that, I was a UX
+              engineer at{' '}
+              <LinkButton href="https://meeting.ai" logoSrc="/images/companies/meeting-ai.png">
+                Meeting.ai
+              </LinkButton>
+              , where I designed and built experiences across web and mobile.
+            </p>
 
-          <p className="animate-enter [--enter-index:3]">
-            I work across user research, design systems, and frontend engineering. I like working
-            through interaction details in code, trying them out and refining how they feel. I also
-            made{' '}
-            <LinkButton
-              href="https://lukis.imomadjid.com"
-              logoSrc="/images/projects/lukis.svg"
-              invertLogo
-            >
-              Lukis
-            </LinkButton>
-            , which turns an image into a painting right in the browser.
-          </p>
+            <p className="animate-enter [--enter-index:3]">
+              I work across user research, design systems, and frontend engineering. I like working
+              through interaction details in code, trying them out and refining how they feel. I
+              also made{' '}
+              <LinkButton
+                href="https://lukis.imomadjid.com"
+                logoSrc="/images/projects/lukis.svg"
+                invertLogo
+              >
+                Lukis
+              </LinkButton>
+              , which turns an image into a painting right in the browser.
+            </p>
 
-          <p className="animate-enter [--enter-index:4]">
-            I’ve also built native apps at the{' '}
-            <LinkButton
-              href="https://developer.apple.com/academies/"
-              logoSrc="/images/companies/apple.svg"
-              invertLogo
-            >
-              Apple Developer Academy
-            </LinkButton>
-            . I’m happy to talk about design, a product you’re building, or an idea you’d like to
-            explore.
-          </p>
+            <p className="animate-enter [--enter-index:4]">
+              I’ve also built native apps at the{' '}
+              <LinkButton
+                href="https://developer.apple.com/academies/"
+                logoSrc="/images/companies/apple.svg"
+                invertLogo
+              >
+                Apple Developer Academy
+              </LinkButton>
+              . I’m happy to talk about design, a product you’re building, or an idea you’d like to
+              explore.
+            </p>
+          </Section>
         </div>
 
-        <footer className="mt-12 flex flex-wrap items-center justify-between gap-x-10 gap-y-6">
+        <Section
+          id="contact"
+          className="mt-12 flex flex-wrap items-center justify-between gap-x-10 gap-y-6"
+        >
           <Signature
             key={signatureRun}
             timing={signatureTiming}
@@ -193,7 +234,7 @@ function Home() {
               </a>
             ))}
           </nav>
-        </footer>
+        </Section>
       </div>
     </main>
   )

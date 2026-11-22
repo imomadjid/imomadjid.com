@@ -1,10 +1,11 @@
 name: Check and deploy
 
+# master deploys imomadjid.com; dev deploys dev.imomadjid.com, with the dev tools and noindex.
 on:
   pull_request:
-    branches: [master]
+    branches: [master, dev]
   push:
-    branches: [master]
+    branches: [master, dev]
   workflow_dispatch:
 
 permissions:
@@ -35,10 +36,11 @@ jobs:
         run: bun test src/components src/lib tools/fluid-registry-files.test.ts
       - name: Check React
         run: bun run doctor
+      # The dev branch builds the `dev` environment in wrangler.jsonc; the built config keeps it.
       - name: Build
-        run: bun run build
+        run: bun run ${{ github.ref == 'refs/heads/dev' && 'build:dev' || 'build' }}
       - name: Deploy to Cloudflare Workers
-        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev') && github.event_name != 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
