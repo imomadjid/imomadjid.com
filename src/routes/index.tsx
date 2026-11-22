@@ -154,6 +154,20 @@ const projects = [
       'Scores finfluencers’ stock calls on Instagram and X against real forward prices, versus SPY.',
     year: 2026,
     href: 'https://influencer-tracker-beta.vercel.app',
+    // Leaderboard, the top creator's scorecard, then one of their tickers against SPY.
+    preview: {
+      kind: 'video',
+      light: {
+        webm: '/projects/influencer-tracker/light.webm',
+        mp4: '/projects/influencer-tracker/light.mp4',
+        poster: '/projects/influencer-tracker/light.jpg',
+      },
+      dark: {
+        webm: '/projects/influencer-tracker/dark.webm',
+        mp4: '/projects/influencer-tracker/dark.mp4',
+        poster: '/projects/influencer-tracker/dark.jpg',
+      },
+    },
   },
   {
     name: 'Binsight',
