@@ -21,6 +21,7 @@ export type AmbientRenderer = {
 export async function startAmbient(
   canvas: HTMLCanvasElement,
   host: HTMLElement,
+  backdrop: HTMLElement,
   initialSettings: AmbientSettings,
   signal: AbortSignal,
 ): Promise<AmbientRenderer> {
@@ -51,7 +52,7 @@ export async function startAmbient(
     if (disposed) return
     disposed = true
     sceneLight.set(null)
-    host.style.removeProperty('background-color')
+    backdrop.style.removeProperty('background-color')
     cancelAnimationFrame(frameId)
     for (const cleanup of cleanups.reverse()) cleanup()
     gpu.dispose()
@@ -367,12 +368,13 @@ export async function startAmbient(
       composite.set({ params: materialParams() })
       // Over the content, the light layer is encoded against the plain surface beneath it, so
       // paint that surface in step with the surface the shader reads, through theme changes.
-      const backdrop = settings.content.lit
+      // Unlit, the canvas paints the wall itself and the backdrop keeps the surface token.
+      const wallColor = settings.content.lit
         ? `rgb(${surfaceColor.map((channel) => channel.toFixed(2)).join(' ')})`
         : ''
-      if (backdrop !== paintedBackdrop) {
-        host.style.backgroundColor = backdrop
-        paintedBackdrop = backdrop
+      if (wallColor !== paintedBackdrop) {
+        backdrop.style.backgroundColor = wallColor
+        paintedBackdrop = wallColor
       }
       try {
         frame(gpu, (current) => {
