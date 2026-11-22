@@ -153,26 +153,28 @@ function Home() {
   const { settings, isSleeping, signatureTiming, signatureRun } = useTuning()
 
   return (
-    <main className="relative isolate flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
+    <main className="relative isolate flex min-h-svh justify-center overflow-hidden px-6 pb-16">
       <AmbientLight settings={settings} />
       <TableOfContents sections={sections} />
       <div data-sunlit-anchor className="relative z-10 w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
-        {/* The wand hangs from above the page to the bottom of this row, where a toggle sat. */}
-        <div className="relative mb-10 flex animate-enter items-center justify-between gap-6">
-          <ProfileAvatar isSleeping={isSleeping} />
-          <BlindWand settings={settings} />
-        </div>
+        {/* The opening screen fills the viewport with mobile toolbars shown, so it never resizes
+            as they collapse, and grows where its content doesn't fit, as in landscape. */}
+        <Section id="about" className="flex min-h-svh flex-col justify-center py-16">
+          {/* The wand hangs from above the page to the bottom of this row, where a toggle sat. */}
+          <div className="relative mb-10 flex animate-enter items-center justify-between gap-6">
+            <ProfileAvatar isSleeping={isSleeping} />
+            <BlindWand settings={settings} />
+          </div>
+
+          <p className="animate-enter text-base leading-[1.8] text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
+            I’m Imo, a design engineer and product designer based in Jakarta. I design and build
+            interfaces, from early prototypes to shipped products.
+          </p>
+        </Section>
 
         <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
-          <Section id="about">
-            <p className="animate-enter text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
-              I’m Imo, a design engineer and product designer based in Jakarta. I design and build
-              interfaces, from early prototypes to shipped products.
-            </p>
-          </Section>
-
           <Section id="work" className="space-y-8">
             <p className="animate-enter [--enter-index:2]">
               I’m a software engineer at{' '}
