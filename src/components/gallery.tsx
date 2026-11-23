@@ -2,7 +2,7 @@ import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
 import type { CSSProperties } from 'react'
 
-import { CameraIllustration } from '#/components/camera-illustration'
+import cameraPhoto from '#/assets/camera/fujifilm-x-t30-iii.webp'
 import { IconButton } from '#/components/ui/icon-button'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
@@ -85,10 +85,16 @@ function Gallery({
     <Dialog.Root>
       <div className="flex flex-col gap-10">
         <div className="flex items-center gap-6 sm:gap-8">
-          <CameraIllustration className="w-[46%] max-w-60 shrink-0" />
+          <img
+            src={cameraPhoto}
+            alt="Fujifilm X-T30 III camera"
+            width={360}
+            height={233}
+            className="h-auto w-[23%] max-w-30 shrink-0"
+          />
           <p className="grid gap-y-1.5 text-xs font-semibold">
             <span className="text-neutral-900 dark:text-neutral-100">
-              <Figures text="Fujifilm X-T30" />
+              <Figures text="Fujifilm X-T30 III" />
             </span>
             <span className="text-neutral-500">
               <Figures text="Fujinon XC 13–33mm F3.5–6.3 OIS" />
