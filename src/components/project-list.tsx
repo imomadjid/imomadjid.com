@@ -62,7 +62,7 @@ function ProjectRow({
         onBlur={(event) => onBlur(event.relatedTarget)}
         className="block rounded-lg py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
       >
-        <span className="flex items-baseline justify-between gap-6">
+        <span className="flex items-start justify-between gap-6">
           <span
             className={cn(
               'font-medium transition-colors duration-200 motion-reduce:transition-none',
@@ -77,10 +77,12 @@ function ProjectRow({
               {project.name}
             </span>
           </span>
-          {/* Allo's open figures (ss03), slashed zero, and tabular figures. */}
+          {/* Allo's open figures (ss03), slashed zero, and tabular figures. A size below the
+              title, in a line box as tall as the title's: Allo centers its line box on cap
+              height, and the figures are cap height, so they center on the title's first line. */}
           <span
             className={cn(
-              "[font-feature-settings:'ss03'] text-sm slashed-zero tabular-nums transition-colors duration-200 motion-reduce:transition-none",
+              "[font-feature-settings:'ss03'] text-xs leading-6 slashed-zero tabular-nums transition-colors duration-200 motion-reduce:transition-none",
               muted ? 'text-neutral-300 dark:text-neutral-700' : 'text-neutral-500',
             )}
           >
