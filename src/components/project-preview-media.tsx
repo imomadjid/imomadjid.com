@@ -42,9 +42,9 @@ const visible = (element: Element) => element.getClientRects().length > 0
 
 /**
  * Every project's media, stacked in the preview box. The `shown` project's layer is opaque and
- * the rest fade out blurred, so moving between rows crossfades through a blur. Each layer is
- * offset by `offsets[index]`, the distance from the box's spot to its own row's spot, and eases
- * there on the box's own curve and duration. The two motions cancel, so each project's media
+ * the rest fade out, so moving between rows crossfades. Each layer is offset by `offsets[index]`,
+ * the distance from the box's spot to its own row's spot, and eases there on the box's own curve
+ * and duration. The two motions cancel, so each project's media
  * holds its place on the page while the box slides over it like a window. A fresh visit
  * (`instant`) places the layers without moving them, as the box fades in where it lands.
  *
@@ -93,9 +93,9 @@ export function PreviewMedia({
           'absolute inset-0 ease-[cubic-bezier(0.22,1,0.36,1)]',
           instant
             ? 'transition-none'
-            : 'transition-[opacity,translate,filter] duration-300 motion-reduce:transition-opacity',
+            : 'transition-[opacity,translate] duration-300 motion-reduce:transition-opacity',
           preview.kind === 'image' && preview.className,
-          index === shown ? 'opacity-100' : 'opacity-0 motion-safe:blur-sm',
+          index === shown ? 'opacity-100' : 'opacity-0',
         )}
         style={{ translate: `0 ${offsets[index] ?? 0}px` }}
       >
