@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDialKit, useDialKitController } from 'dialkit'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
@@ -173,11 +173,14 @@ const projects = [
 ] as const satisfies readonly Project[]
 
 // Sections still being built. They show only with the dev tools, so merging dev into master
-// never puts them on imomadjid.com. Both say Coming soon for now.
+// never puts them on imomadjid.com. Guestbook says Coming soon for now.
 const draftSections = [
   { id: 'gallery', label: 'Gallery' },
   { id: 'guestbook', label: 'Guestbook' },
 ] as const satisfies readonly PageSection[]
+
+// Lazy behind the flag, so production builds emit neither its code nor its photos.
+const GallerySection = import.meta.env.DEV_TOOLS ? lazy(() => import('#/components/gallery')) : null
 
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
@@ -331,14 +334,18 @@ function Home() {
           <ProjectList projects={projects} />
         </Section>
 
-        {import.meta.env.DEV_TOOLS &&
-          draftSections.map(({ id }) => (
-            <Section key={id} id={id} className="mt-12">
+        {import.meta.env.DEV_TOOLS && (
+          <>
+            <Section id="gallery" className="mt-24">
+              <Suspense>{GallerySection && <GallerySection />}</Suspense>
+            </Section>
+            <Section id="guestbook" className="mt-12">
               <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
                 Coming soon
               </div>
             </Section>
-          ))}
+          </>
+        )}
       </div>
     </main>
   )
