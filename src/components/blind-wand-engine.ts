@@ -1,4 +1,5 @@
 import type { AmbientSettings } from '#/lib/ambient-settings'
+import { lightFrame, lightOverscan } from '#/lib/light-frame'
 import { sceneLight, wandPose } from '#/lib/sunlit-scene'
 import type { SceneLight } from '#/lib/sunlit-scene'
 import { getResolvedScheme, toggleScheme } from '#/lib/theme'
@@ -214,8 +215,8 @@ export function startBlindWand(
     light: query<SVGStopElement>(`#${ids.gradient(section, 'light')} stop`),
   }))
 
-  // The light's frame: the fixed canvas, in viewport pixels, and where `main` sits in it. The
-  // wand scrolls with the page through light that stays put, so this moves as the page scrolls.
+  // The light's frame (src/lib/light-frame.ts), in viewport pixels, and where `main` sits in it.
+  // The wand scrolls with the page through light that stays put, so this moves as it scrolls.
   let width = 1
   let height = 1
   let originX = 0
@@ -257,10 +258,12 @@ export function startBlindWand(
   const hangTop = HANG_Y - PIVOT_ABOVE
   const rodX = (y: number) => pivotX + (y - hangTop) * Math.tan(angle)
 
+  let overscan = 0
+
   function frameLight() {
     const scene = main.getBoundingClientRect()
     // Without a canvas, light the wand as if the wall were `main` itself.
-    const light = canvas?.getBoundingClientRect() ?? scene
+    const light = canvas ? lightFrame(canvas, overscan) : scene
     width = Math.max(light.width, 1)
     height = Math.max(light.height, 1)
     originX = scene.left - light.left
@@ -275,6 +278,7 @@ export function startBlindWand(
   }
 
   function measure() {
+    if (canvas) overscan = lightOverscan(canvas)
     frameLight()
     const row = button.parentElement
     if (!row) return
@@ -401,7 +405,7 @@ export function startBlindWand(
     hang?.setAttribute('transform', `translate(${boxHalfWidth} ${-PIVOT_ABOVE})`)
     for (const swing of swings) swing.setAttribute('transform', `rotate(${degrees} 0 ${HANG_Y})`)
     // The scene measures the wand from its top along its length, so hand it the point the
-    // swinging wand would reach at the hook's height, in the canvas's frame.
+    // swinging wand would reach at the hook's height, in the light's frame.
     wandPose.set({
       x: (originX + pivotX - downX * HANG_Y) / width,
       y: (originY + hangTop - downY * HANG_Y) / height,

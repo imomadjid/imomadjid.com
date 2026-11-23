@@ -8,6 +8,9 @@ struct SurfaceParams {
   entranceDusk: f32,
   // 1 encodes the light as a hard-light layer over the page instead of painting the wall.
   overlay: f32,
+  // The canvas's top and height in frame heights; it overscans the frame on touch screens.
+  viewTop: f32,
+  viewSpan: f32,
   // The plain wall painted under that layer: the surface, raised through the sunrise and sunset
   // glow (`glowBackdrop` in src/lib/sunlit-backdrop.ts).
   backdrop: vec3f,
@@ -60,7 +63,7 @@ fn fs_main(@location(0) uv: vec2f, @builtin(position) position: vec4f) -> @locat
   let illumination = 1.0 - directShare * (1.0 - light);
   // Entrance grading is independent of theme interpolation. Dawn stays light;
   // dusk adds a localized warm beam to the already-dark receiving surface.
-  let coolGradient = 0.35 + 0.65 * (1.0 - smoothstep(0.0, 1.0, uv.y));
+  let coolGradient = 0.35 + 0.65 * (1.0 - smoothstep(0.0, 1.0, params.viewTop + uv.y * params.viewSpan));
   let dawnSurface = material * mix(vec3f(1.0), vec3f(0.78, 0.87, 1.0), params.entranceDawn * coolGradient);
   let dawnGold = 4.0 * params.entranceDawn * (1.0 - params.entranceDawn);
   let entranceGold = (dawnGold * 0.10 + params.entranceDusk * 0.16)

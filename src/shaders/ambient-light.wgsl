@@ -42,6 +42,9 @@ struct Params {
   phoneTiltX: f32,
   phoneTiltY: f32,
   phoneTiltZ: f32,
+  // The canvas's top and height in frame heights; it overscans the frame on touch screens.
+  viewTop: f32,
+  viewSpan: f32,
 }
 @group(0) @binding(0) var<uniform> params: Params;
 @group(0) @binding(1) var foliage: texture_2d<f32>;
@@ -107,7 +110,8 @@ fn leafCoverage(uv: vec2f, lod: f32) -> f32 {
 }
 
 @fragment
-fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+fn fs_main(@location(0) canvasUv: vec2f) -> @location(0) vec4f {
+  let uv = vec2f(canvasUv.x, params.viewTop + canvasUv.y * params.viewSpan);
   let wall = vec3f((uv.x - 1.0) * params.aspect, uv.y, 0.0);
   let lightAngle = (params.angle + params.night * 42.0) * 0.0174533;
   // Phone tilt turns the room, but not the sun outside: turn the light about the wall's middle.

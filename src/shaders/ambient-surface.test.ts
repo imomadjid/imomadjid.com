@@ -16,6 +16,8 @@ type SurfaceParams = {
   entranceDawn: number
   entranceDusk: number
   overlay: number
+  viewTop: number
+  viewSpan: number
   backdrop: number[]
 }
 
@@ -68,6 +70,8 @@ void test('zero light intensity preserves the surface throughout theme transitio
     entranceDawn: 0,
     entranceDusk: 0,
     overlay: 0,
+    viewTop: 0,
+    viewSpan: 1,
     backdrop: [0, 0, 0],
   }
   const { gpu, light, render } = await surfaceShader(params)
@@ -105,6 +109,8 @@ void test('the overlay over the plain surface reproduces the lit wall', async ()
     entranceDawn: 0,
     entranceDusk: 0,
     overlay: 0,
+    viewTop: 0,
+    viewSpan: 1,
     backdrop: [0, 0, 0],
   }
   const { gpu, light, render } = await surfaceShader(params)
@@ -156,6 +162,8 @@ void test('content under the overlay keeps its contrast through the sunrise and 
     entranceDawn: 0,
     entranceDusk: 0,
     overlay: 0,
+    viewTop: 0,
+    viewSpan: 1,
     backdrop: [0, 0, 0],
   }
   const { gpu, light, render } = await surfaceShader(params)

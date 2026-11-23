@@ -6,6 +6,7 @@ import surfaceSource from '#/shaders/ambient-surface.wgsl'
 import type { AmbientSettings } from './ambient-settings'
 import { smoothStep, transitionTiming, transitionValue } from './ambient-transition'
 import { createTiltTracker } from './device-tilt'
+import { lightFrame, lightOverscan } from './light-frame'
 import { glowBackdrop } from './sunlit-backdrop'
 import { anchorShadow, canopies, sunSource } from './sunlit-geometry'
 import { createGust } from './sunlit-gust'
@@ -134,6 +135,8 @@ export async function startAmbient(
     const rect = canvas.getBoundingClientRect()
     let width = rect.width
     let height = rect.height
+    let overscan = lightOverscan(canvas)
+    let view = lightFrame(canvas, overscan)
     const dpr = () => Math.min(window.devicePixelRatio || 1, 1.5)
     // Keep the rail shadow clear of the text column; omit it when the wall has no room.
     const anchor = host.querySelector('[data-sunlit-anchor]')
@@ -208,7 +211,9 @@ export async function startAmbient(
       ...wandParams(),
       time: ambientTime,
       night,
-      aspect: width / Math.max(height, 1),
+      aspect: view.width / view.height,
+      viewTop: view.viewTop,
+      viewSpan: view.viewSpan,
       angle: lightAngle(),
       softness: settings.light.softness,
       progressiveSoftness: settings.light.progressiveSoftness,
@@ -240,6 +245,8 @@ export async function startAmbient(
       entranceDawn: entrance * (1 - entranceNight),
       entranceDusk: entrance * entranceNight,
       overlay: settings.content.lit ? 1 : 0,
+      viewTop: view.viewTop,
+      viewSpan: view.viewSpan,
       backdrop: backdropColor.map((channel) => channel / 255),
     })
     const lighting = effect(gpu, lightingSource, {
@@ -279,6 +286,8 @@ export async function startAmbient(
 
     function resize() {
       if (disposed) return
+      overscan = lightOverscan(canvas)
+      view = lightFrame(canvas, overscan)
       placeRail()
       output.resize(outputSize())
       lightTarget.resize(lightSize())
@@ -300,9 +309,8 @@ export async function startAmbient(
 
     function movePointer(event: PointerEvent) {
       if (reducedMotion.matches || !finePointer.matches || event.pointerType === 'touch') return
-      const bounds = canvas.getBoundingClientRect()
-      const x = (event.clientX - bounds.left) / Math.max(bounds.width, 1)
-      const y = (event.clientY - bounds.top) / Math.max(bounds.height, 1)
+      const x = (event.clientX - view.left) / view.width
+      const y = (event.clientY - view.top) / view.height
       pointerActive = true
       aimTargetX = Math.max(0, Math.min(1, x))
       aimTargetY = Math.max(0, Math.min(1, y))
@@ -320,9 +328,9 @@ export async function startAmbient(
       wake()
     }
 
-    // Push the branches with a pointer stroke from the previous point to (x, y), in canvas UV.
+    // Push the branches with a pointer stroke from the previous point to (x, y), in frame UV.
     function pushBranches(x: number, y: number, seconds: number) {
-      const aspect = width / Math.max(height, 1)
+      const aspect = view.width / view.height
       const source = sunSource(lightAngle(), night, tilt, aspect)
       const { near, far } = canopies(settings.foliage.scale, settings.foliage.depth)
       const wall = (u: number, v: number): [number, number] => [(u - 1) * aspect, v]
