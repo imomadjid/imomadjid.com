@@ -67,5 +67,21 @@ void test('the inline script applies the settled theme and stores the record', (
   })
   assert.deepEqual([...classes], ['dark'])
   assert.deepEqual(root.dataset, { theme: 'system' })
+  assert.deepEqual(root.style, { colorScheme: 'dark' })
   assert.match(storage.get('imomadjid:theme') ?? '', /"theme":"system"/)
+})
+
+void test('a light page opts out of Safari darkening it', () => {
+  const root = { classList: { add: () => {} }, dataset: {}, style: {} }
+  runInNewContext(THEME_SCRIPT, {
+    localStorage: {
+      getItem: () => stored({ theme: 'light', base: 'dark', at: Date.now() }),
+      setItem: () => {},
+    },
+    matchMedia: () => ({ matches: true }),
+    document: { documentElement: root },
+    Date,
+    JSON,
+  })
+  assert.deepEqual(root.style, { colorScheme: 'light only' })
 })

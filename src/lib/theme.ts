@@ -19,6 +19,15 @@ export type ThemeRecord = {
 const STORAGE_KEY = 'imomadjid:theme'
 const CHANGE_EVENT = 'portfolio-theme-change'
 const MEDIA_QUERY = '(prefers-color-scheme: dark)'
+
+/**
+ * The root's `color-scheme` for each scheme the site renders. The head's
+ * `<meta name="color-scheme" content="light dark">` tells Safari's Adaptive Dark Mode the
+ * site draws its own dark theme, but a plain `light` on the root when the visitor picks light
+ * no longer says so, and Safari could darken the page. `light only` is WebKit's documented
+ * opt-out (Safari 27.3 beta 2 on); it changes nothing else.
+ */
+const COLOR_SCHEME = { light: 'light only', dark: 'dark' } as const satisfies Record<Scheme, string>
 let transitionTimeout: ReturnType<typeof setTimeout> | undefined
 
 export const prefersReducedMotion = () =>
@@ -111,7 +120,7 @@ function applyTheme(theme: Theme, animate = true) {
   root.classList.toggle('dark', resolved === 'dark')
   root.classList.toggle('light', resolved === 'light')
   root.dataset.theme = theme
-  root.style.colorScheme = resolved
+  root.style.colorScheme = COLOR_SCHEME[resolved]
 }
 
 export function setTheme(theme: Theme) {
@@ -191,4 +200,4 @@ function subscribeTheme(notify: () => void) {
 }
 
 // Static, trusted script. Runs before paint; no browser globals run during SSR.
-export const THEME_SCRIPT = `(function(){var settle=${settleTheme.toString()};var m=matchMedia("${MEDIA_QUERY}").matches?"dark":"light";var raw=null;try{raw=localStorage.getItem("${STORAGE_KEY}")}catch(e){}var p=settle(raw,m,Date.now());try{localStorage.setItem("${STORAGE_KEY}",JSON.stringify(p))}catch(e){}var r=document.documentElement;var v=p.theme==="system"?m:p.theme;r.classList.add(v);r.dataset.theme=p.theme;r.style.colorScheme=v})()`
+export const THEME_SCRIPT = `(function(){var settle=${settleTheme.toString()};var m=matchMedia("${MEDIA_QUERY}").matches?"dark":"light";var raw=null;try{raw=localStorage.getItem("${STORAGE_KEY}")}catch(e){}var p=settle(raw,m,Date.now());try{localStorage.setItem("${STORAGE_KEY}",JSON.stringify(p))}catch(e){}var r=document.documentElement;var v=p.theme==="system"?m:p.theme;r.classList.add(v);r.dataset.theme=p.theme;r.style.colorScheme=${JSON.stringify(COLOR_SCHEME)}[v]})()`
