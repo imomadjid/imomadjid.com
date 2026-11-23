@@ -330,16 +330,17 @@ function Home() {
           </div>
         </Section>
 
-        <Section id="projects" className="mt-12">
+        {/* Sections sit 8rem apart; About's bottom padding supplies half of the first gap. */}
+        <Section id="projects" className="mt-16">
           <ProjectList projects={projects} />
         </Section>
 
         {import.meta.env.DEV_TOOLS && (
           <>
-            <Section id="gallery" className="mt-24">
+            <Section id="gallery" className="mt-32">
               <Suspense>{GallerySection && <GallerySection />}</Suspense>
             </Section>
-            <Section id="guestbook" className="mt-12">
+            <Section id="guestbook" className="mt-32">
               <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
                 Coming soon
               </div>
