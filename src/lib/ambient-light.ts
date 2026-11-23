@@ -87,10 +87,11 @@ export async function startAmbient(
     let entranceTiming = transitionTiming(
       night ? settings.transition.duskEntrance : settings.transition.dawnEntrance,
     )
-    // The canvas paints the surface token without a transition, so this reads the
-    // destination color on theme changes rather than an in-flight value.
+    // The canvas carries the surface token as its text color, without a transition, so this
+    // reads the destination color on theme changes rather than an in-flight value. Not its
+    // background: Safari would fill its toolbars with that (see AmbientLight).
     const readSurface = () => {
-      const channels = getComputedStyle(canvas).backgroundColor.match(/[\d.]+/g)
+      const channels = getComputedStyle(canvas).color.match(/[\d.]+/g)
       if (!channels || channels.length < 3) throw new Error('Cannot read surface color')
       return channels.slice(0, 3).map(Number)
     }

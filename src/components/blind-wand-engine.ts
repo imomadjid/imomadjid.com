@@ -158,7 +158,7 @@ function readSurface(canvas: HTMLCanvasElement | null): Rgb {
   const fallback: Rgb = document.documentElement.classList.contains('dark')
     ? [0.09, 0.09, 0.09]
     : [0.98, 0.98, 0.98]
-  const channels = canvas && getComputedStyle(canvas).backgroundColor.match(/[\d.]+/g)
+  const channels = canvas && getComputedStyle(canvas).color.match(/[\d.]+/g)
   if (!channels || channels.length < 3) return fallback
   return [Number(channels[0]) / 255, Number(channels[1]) / 255, Number(channels[2]) / 255]
 }

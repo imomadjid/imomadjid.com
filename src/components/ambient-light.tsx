@@ -5,6 +5,11 @@ import type { AmbientSettings } from '#/lib/ambient-settings'
 
 // The backdrop and the light share their geometry; they can't share a wrapper, which would form a
 // stacking context and hold the light under the content.
+//
+// Neither fixed layer has a background color of its own. Safari 26 fills the area under its
+// toolbars with the background color of a fixed element touching the viewport edge, instead of
+// letting the page scroll under them. So the backdrop paints from an absolute child, which it
+// doesn't sample, and the canvas carries the surface token as its text color.
 const VIEWPORT_LAYER = 'pointer-events-none fixed inset-x-0 top-0 h-lvh'
 
 export function AmbientLight({ settings }: { settings: AmbientSettings }) {
@@ -57,15 +62,17 @@ export function AmbientLight({ settings }: { settings: AmbientSettings }) {
   // the large viewport height keeps it from resizing as mobile toolbars collapse. With lit content
   // it lies over the page as a hard-light layer (see AGENTS.md). The backdrop paints the plain
   // wall it is encoded against under all of it, wherever the page ends, and falls back to the
-  // surface token without the renderer. The canvas paints the token for the renderer to read.
+  // surface token without the renderer. The canvas carries the token for the renderer to read.
   return (
     <>
-      <div ref={backdropRef} aria-hidden="true" className={`${VIEWPORT_LAYER} -z-1 bg-surface-1`} />
+      <div aria-hidden="true" className={`${VIEWPORT_LAYER} -z-1`}>
+        <div ref={backdropRef} className="absolute inset-0 bg-surface-1" />
+      </div>
       <canvas
         ref={canvasRef}
         aria-hidden="true"
         data-lit-content={settings.content.lit ? '' : undefined}
-        className={`${VIEWPORT_LAYER} -z-1 w-full bg-surface-1 opacity-0 data-lit-content:z-20 data-lit-content:mix-blend-hard-light data-[renderer=webgpu]:opacity-100 motion-safe:transition-opacity motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]`}
+        className={`${VIEWPORT_LAYER} -z-1 w-full text-surface-1 opacity-0 data-lit-content:z-20 data-lit-content:mix-blend-hard-light data-[renderer=webgpu]:opacity-100 motion-safe:transition-opacity motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]`}
       />
     </>
   )
