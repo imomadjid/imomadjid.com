@@ -19,9 +19,7 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
-      // Covering the safe areas lets fixed layers, the Sunlit light among them, reach the screen
-      // edges under Safari's status bar and toolbar instead of stopping where they begin.
-      { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       // The site draws its own dark theme, so Safari's Adaptive Dark Mode leaves it alone.
       { name: 'color-scheme', content: 'light dark' },
       { title: 'Imo Madjid' },
