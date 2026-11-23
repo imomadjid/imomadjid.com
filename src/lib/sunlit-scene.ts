@@ -12,6 +12,8 @@ export type SceneLight = {
   aimY: number
   /** How far phone tilt has turned the room against the sun, as a rotation in the wall's frame. */
   phoneTilt: [number, number, number]
+  /** The angle the wand hangs at to stay plumb as the phone rolls, radians clockwise on screen. */
+  plumb: number
   surface: [number, number, number]
 }
 

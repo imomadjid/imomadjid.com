@@ -428,6 +428,7 @@ export async function startAmbient(
         aimX,
         aimY,
         phoneTilt: tilt,
+        plumb: tiltTracker.plumb(),
         surface: [surfaceColor[0] / 255, surfaceColor[1] / 255, surfaceColor[2] / 255],
       })
       // Match the material's dusk curve; update DOM only at a foreground crossover.

@@ -43,6 +43,7 @@ export const ambientControls = {
     influence: [0.15, 0, 1, 0.01],
     range: [3, 0, 12, 0.5],
     recenter: [3, 0.5, 10, 0.1],
+    wandSwing: [1, 0, 1, 0.01],
   },
   transition: {
     dawnEntrance: { type: 'easing', duration: 3.2, ease: [0.3, 0, 0.2, 1] },
@@ -92,6 +93,7 @@ export const defaultAmbientSettings: AmbientSettings = {
     influence: phoneTilt.influence[0],
     range: phoneTilt.range[0],
     recenter: phoneTilt.recenter[0],
+    wandSwing: phoneTilt.wandSwing[0],
   },
   transition,
 }

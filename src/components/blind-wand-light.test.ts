@@ -14,6 +14,7 @@ const scene: SceneLight = {
   aimX: 1.08,
   aimY: 0.45,
   phoneTilt: [0, 0, 0],
+  plumb: 0,
   surface: [0.98, 0.98, 0.98],
 }
 

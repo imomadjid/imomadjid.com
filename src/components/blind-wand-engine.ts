@@ -315,6 +315,7 @@ export function startBlindWand(
         entranceNight: 0,
         ...restingAim,
         phoneTilt: [0, 0, 0],
+        plumb: 0,
         surface: fallbackSurface,
       }
     )
@@ -431,6 +432,8 @@ export function startBlindWand(
     const preview = hovering && !drag && !still ? (turnTarget > 0 ? -HOVER_TWIST : HOVER_TWIST) : 0
     const aim = turnTarget + preview
     const spring = turnTarget > 0 ? CLOSING : OPENING
+    // Rolling the phone turns gravity within the screen, so the wand swings to hang plumb.
+    const plumb = Math.max(-SWING_LIMIT * 0.9, Math.min(SWING_LIMIT * 0.9, scene().plumb))
     if (still) {
       angle = swingVelocity = turnVelocity = 0
       turn = turnTarget
@@ -439,7 +442,7 @@ export function startBlindWand(
       const substeps = Math.ceil(delta * 240)
       const dt = delta / substeps
       for (let index = 0; index < substeps; index++) {
-        let swingForce = -SWING_STIFFNESS * angle - SWING_DAMPING * swingVelocity
+        let swingForce = -SWING_STIFFNESS * (angle - plumb) - SWING_DAMPING * swingVelocity
         if (drag) swingForce += 140 * (drag.target - angle) - 14 * swingVelocity
         swingVelocity += swingForce * dt
         angle = Math.max(-SWING_LIMIT, Math.min(SWING_LIMIT, angle + swingVelocity * dt))
@@ -471,7 +474,7 @@ export function startBlindWand(
     const settled =
       !drag &&
       !pending &&
-      Math.abs(angle) + Math.abs(swingVelocity) < 5e-4 &&
+      Math.abs(angle - plumb) + Math.abs(swingVelocity) < 5e-4 &&
       // A few thousandths of a radian is far below a pixel on the rod, and the slower closing
       // spring would otherwise keep redrawing the scene for seconds.
       Math.abs(aim - turn) + Math.abs(turnVelocity) < 5e-3 &&
@@ -481,7 +484,8 @@ export function startBlindWand(
       )
     if (settled) {
       voiced = false
-      angle = swingVelocity = turnVelocity = 0
+      angle = still ? 0 : plumb
+      swingVelocity = turnVelocity = 0
       turn = aim
       fallbackNight = nightTarget
       fallbackSurface = surfaceTarget

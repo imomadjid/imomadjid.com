@@ -3,6 +3,7 @@ import { test } from 'node:test'
 
 import {
   createTiltTracker,
+  plumbSwing,
   relativeTilt,
   rotate,
   tiltSource,
@@ -12,7 +13,7 @@ import {
 import type { Vec3 } from './vec3'
 
 // A range far past any test angle, so the easing into it stays linear.
-const settings = { influence: 1, range: 1e5, recenter: 3 }
+const settings = { influence: 1, range: 1e5, recenter: 3, wandSwing: 1 }
 const near = (a: readonly number[], b: readonly number[], epsilon = 1e-9) =>
   a.every((value, index) => Math.abs(value - (b[index] ?? Number.NaN)) < epsilon)
 
@@ -54,15 +55,15 @@ void test('shadows slide downhill as the phone tilts', () => {
 void test('the turn eases into its range and scales with influence', () => {
   const flat: Vec3 = [0, 0, 1]
   const steep = upFromOrientation(0, 80)
-  const limited = relativeTilt(flat, steep, { influence: 1, range: 6, recenter: 3 })
+  const limited = relativeTilt(flat, steep, { ...settings, range: 6 })
   assert.ok(Math.hypot(...limited) < (6 * Math.PI) / 180)
   const half = relativeTilt(flat, upFromOrientation(0, 2), {
+    ...settings,
     influence: 0.5,
     range: 90,
-    recenter: 3,
   })
   assert.ok(Math.abs(Math.hypot(...half) - (1 * Math.PI) / 180) < 1e-4)
-  assert.ok(near(relativeTilt(flat, steep, { influence: 1, range: 0, recenter: 3 }), [0, 0, 0]))
+  assert.ok(near(relativeTilt(flat, steep, { ...settings, range: 0 }), [0, 0, 0]))
 })
 
 // A tracker whose light has turned partway toward a 12 degree roll.
@@ -108,4 +109,33 @@ void test('a reset starts from rest without gliding back', () => {
   tracker.reset()
   assert.ok(near(tracker.step(1 / 60, settings, true), [0, 0, 0]))
   assert.equal(tracker.moving(), false)
+})
+
+void test('the wand swings to stay plumb as an upright phone rolls', () => {
+  const upright = upFromOrientation(90, 0)
+  // Turned like a steering wheel, right edge down: up turns the other way in the phone's
+  // frame, and gravity leans right on screen.
+  const rolled = toScreen(upright, 10)
+  assert.ok(rolled[0] < 0)
+  assert.ok(Math.abs(plumbSwing(upright, rolled) - (10 * Math.PI) / 180) < 1e-9)
+  assert.ok(Math.abs(plumbSwing(upright, toScreen(upright, -10)) + (10 * Math.PI) / 180) < 1e-9)
+  // Tipped toward or away from the viewer, gravity stays straight down the screen.
+  assert.ok(Math.abs(plumbSwing(upright, upFromOrientation(60, 0))) < 1e-9)
+})
+
+void test('the wand ignores roll while the phone lies flat', () => {
+  const flat = upFromOrientation(2, 0)
+  assert.ok(Math.abs(plumbSwing(flat, upFromOrientation(2, 3))) < 1e-9)
+})
+
+void test('the tracker reports the plumb angle, and none while disabled', () => {
+  const tracker = createTiltTracker()
+  const upright = upFromOrientation(90, 0)
+  tracker.read(upright, true)
+  tracker.read(toScreen(upright, 10), true)
+  tracker.step(1 / 60, settings, true)
+  assert.ok(tracker.plumb() > 0.15)
+  assert.ok(tracker.moving())
+  tracker.step(0, settings, false)
+  assert.equal(tracker.plumb(), 0)
 })

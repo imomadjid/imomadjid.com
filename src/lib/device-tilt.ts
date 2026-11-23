@@ -17,6 +17,8 @@ export type TiltSettings = {
   range: number
   /** Seconds for a held pose to become the new rest. */
   recenter: number
+  /** Share of the phone's roll the blind wand swings to stay plumb, 0 to 1. */
+  wandSwing: number
 }
 
 const DEGREES = Math.PI / 180
@@ -83,6 +85,22 @@ export function relativeTilt(rest: Vec3, current: Vec3, settings: TiltSettings):
 }
 
 /**
+ * How far a hanging wand swings to stay plumb as the phone rolls from `rest` to `current`:
+ * the turn of gravity within the screen, in radians, clockwise on screen. It fades out as the
+ * phone lies flat, where gravity no longer pulls along the wall and the direction is noise.
+ */
+export function plumbSwing(rest: Vec3, current: Vec3): number {
+  // Down the screen is angle 0; up's x runs opposite to down's.
+  const hang = (up: Vec3) => Math.atan2(-up[0], up[1])
+  let swing = hang(current) - hang(rest)
+  if (swing > Math.PI) swing -= 2 * Math.PI
+  if (swing < -Math.PI) swing += 2 * Math.PI
+  const pull = Math.min(Math.hypot(rest[0], rest[1]), Math.hypot(current[0], current[1]))
+  const t = Math.min(1, Math.max(0, (pull - 0.2) / 0.3))
+  return swing * t * t * (3 - 2 * t)
+}
+
+/**
  * Follows the phone's pose and eases the light's turn toward it, frame by frame. While
  * disabled (reduced motion, or no range or influence), the light rests and the current pose
  * stays the rest, so enabling it again starts from no turn.
@@ -92,6 +110,7 @@ export function createTiltTracker() {
   let rest: Vec3 | null = null
   let target: Vec3 = [0, 0, 0]
   let tilt: Vec3 = [0, 0, 0]
+  let plumb = 0
   return {
     /**
      * A new reading of world up in the screen's frame. Returns whether it moved the pose
@@ -108,26 +127,34 @@ export function createTiltTracker() {
     reset() {
       current = rest = null
       target = tilt = [0, 0, 0]
+      plumb = 0
     },
     /** Advance by `delta` seconds; returns the turn to draw, in the wall's frame. */
     step(delta: number, settings: TiltSettings, enabled: boolean): Vec3 {
       if (!enabled || !current || !rest) {
         rest = current
         target = tilt = [0, 0, 0]
+        plumb = 0
         return tilt
       }
       rest = normalize(
         lerp(rest, current, 1 - Math.exp(-delta / Math.max(settings.recenter, 0.05))),
       )
       target = relativeTilt(rest, current, settings)
+      // The wand has its own swing, so it gets the angle to hang at, not an eased one.
+      plumb = plumbSwing(rest, current) * settings.wandSwing
       // Sensor readings arrive unevenly; a short ease hides the steps between them.
       tilt = lerp(tilt, target, 1 - Math.exp(-delta * 10))
       if (length(sub(tilt, target)) < SETTLED) tilt = target
       return tilt
     },
+    /** The angle the blind wand hangs at, from the last step; see `plumbSwing`. */
+    plumb() {
+      return plumb
+    },
     /** Whether the light is turned, or still turning back as the rest pose settles. */
     moving() {
-      return length(tilt) > SETTLED || length(target) > SETTLED
+      return length(tilt) > SETTLED || length(target) > SETTLED || Math.abs(plumb) > SETTLED
     },
   }
 }
