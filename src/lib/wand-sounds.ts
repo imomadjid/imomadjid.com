@@ -1,8 +1,7 @@
-import { defineSound } from '@web-kits/audio'
 import type { Layer } from '@web-kits/audio'
 
 import { HISS_CUT, LEVEL } from './theme-sounds'
-import { playSound } from './ui-sound'
+import { defineUiSound, playSound } from './ui-sound'
 
 // The blind wand's only sound. Turning the wand drives the tilter's small plastic gear in the
 // headrail, which ticks once per tooth, faster as the wand spins.
@@ -36,7 +35,7 @@ function tickVolume(speed: number) {
   return 0.5 + 0.5 * Math.min(1, Math.max(0, speed))
 }
 
-const ticks = TICK_CENTERS.map((center) => defineSound({ layers: tickLayers(center) }))
+const ticks = TICK_CENTERS.map((center) => defineUiSound(tickLayers(center)))
 
 /** One gear tooth passing. `speed` is the wand's spin, from 0 to 1. */
 export function playWandTick(speed: number) {

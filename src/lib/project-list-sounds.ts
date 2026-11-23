@@ -1,8 +1,7 @@
-import { defineSound } from '@web-kits/audio'
 import type { Layer } from '@web-kits/audio'
 
 import { HISS_CUT, LEVEL, repeatDuck } from './theme-sounds'
-import { playSound } from './ui-sound'
+import { defineUiSound, playSound } from './ui-sound'
 
 // The project list's detent: a soft tick each time the active row changes, like a picker wheel
 // passing a stop. Built like the wand's gear tooth (web-kits' Mechanical clicks): a few ms of
@@ -29,8 +28,8 @@ function detentLayers(center: number, body: number): Layer[] {
 
 /** Two semitones apart: 2^(2/12) ≈ 1.12. */
 const detents = {
-  down: defineSound({ layers: detentLayers(3000, 1000) }),
-  up: defineSound({ layers: detentLayers(3360, 1120) }),
+  down: defineUiSound(detentLayers(3000, 1000)),
+  up: defineUiSound(detentLayers(3360, 1120)),
 }
 
 /** The detent's level against the theme toggle's. */

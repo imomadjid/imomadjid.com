@@ -1,8 +1,7 @@
-import { defineSound } from '@web-kits/audio'
 import type { Layer } from '@web-kits/audio'
 
 import type { Theme } from './theme'
-import { playSound } from './ui-sound'
+import { defineUiSound, playSound } from './ui-sound'
 
 // A small switch thrown, then a struck note that names the theme: glass G5
 // for light, a rounder wooden C5 for dark, both at once for system.
@@ -73,10 +72,10 @@ const themeSoundLayers = {
 // Synthesized on demand: no audio files, and the AudioContext only starts on interaction
 // (`warmSoundsOnGesture`).
 const themeSounds = {
-  light: defineSound({ layers: themeSoundLayers.light }),
-  dark: defineSound({ layers: themeSoundLayers.dark }),
-  system: defineSound({ layers: themeSoundLayers.system }),
-} satisfies Record<Theme, ReturnType<typeof defineSound>>
+  light: defineUiSound(themeSoundLayers.light),
+  dark: defineUiSound(themeSoundLayers.dark),
+  system: defineUiSound(themeSoundLayers.system),
+} satisfies Record<Theme, ReturnType<typeof defineUiSound>>
 
 /** Overall level: the loudest 30 ms sit near -30 dBA, about where Allo's switch plays. */
 export const LEVEL = 0.55
