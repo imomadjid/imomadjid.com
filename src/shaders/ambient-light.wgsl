@@ -36,6 +36,9 @@ struct Params {
   wandHoleHeight: f32,
   wandLength: f32,
   wandRadius: f32,
+  phoneTiltX: f32,
+  phoneTiltY: f32,
+  phoneTiltZ: f32,
 }
 @group(0) @binding(0) var<uniform> params: Params;
 @group(0) @binding(1) var foliage: texture_2d<f32>;
@@ -47,6 +50,16 @@ struct Params {
 fn planeHit(origin: vec3f, ray: vec3f, point: vec3f, normal: vec3f) -> vec3f {
   let t = dot(point - origin, normal) / dot(ray, normal);
   return origin + ray * t;
+}
+
+// Rodrigues rotation by a rotation vector (axis times angle). Mirrors rotate in device-tilt.ts.
+fn turn(v: vec3f, rotation: vec3f) -> vec3f {
+  let angle = length(rotation);
+  if (angle < 1e-6) {
+    return v;
+  }
+  let k = rotation / angle;
+  return v * cos(angle) + cross(k, v) * sin(angle) + k * dot(k, v) * (1.0 - cos(angle));
 }
 
 // Gust strength rises and falls on slow, incommensurate cycles with short lulls between gusts,
@@ -76,7 +89,10 @@ fn leafCoverage(uv: vec2f, lod: f32) -> f32 {
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let wall = vec3f((uv.x - 1.0) * params.aspect, uv.y, 0.0);
   let lightAngle = (params.angle + params.night * 42.0) * 0.0174533;
-  let source = vec3f(2.6, tan(lightAngle) * 5.0, 5.0);
+  // Phone tilt turns the room, but not the sun outside: turn the light about the wall's middle.
+  let pivot = vec3f(-0.5 * params.aspect, 0.5, 0.0);
+  let source = pivot + turn(vec3f(2.6, tan(lightAngle) * 5.0, 5.0) - pivot,
+    vec3f(params.phoneTiltX, params.phoneTiltY, params.phoneTiltZ));
   let aim = vec3f((params.aimX - 1.0) * params.aspect, params.aimY, 0.0);
   // Art-directed receiver-dependent emitter size: preserve a clear focal area,
   // then broaden the actual shadow-ray footprint progressively away from it.

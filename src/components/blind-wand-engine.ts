@@ -315,6 +315,7 @@ export function startBlindWand(
         entrance: 0,
         entranceNight: 0,
         ...restingAim,
+        phoneTilt: [0, 0, 0],
         surface: fallbackSurface,
       }
     )

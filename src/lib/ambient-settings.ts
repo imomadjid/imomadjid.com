@@ -32,6 +32,12 @@ export const ambientControls = {
     strength: [0.7, 0, 1.5, 0.01],
     recovery: [1.3, 0.4, 3, 0.1],
   },
+  // Phone tilt turns the room against the sun. Range is the most it turns, in degrees.
+  phoneTilt: {
+    influence: [0.15, 0, 1, 0.01],
+    range: [3, 0, 12, 0.5],
+    recenter: [3, 0.5, 10, 0.1],
+  },
   transition: {
     dawnEntrance: { type: 'easing', duration: 3.2, ease: [0.3, 0, 0.2, 1] },
     duskEntrance: { type: 'easing', duration: 3.6, ease: [0.25, 0, 0.3, 1] },
@@ -42,7 +48,7 @@ export const ambientControls = {
 
 export type AmbientSettings = ResolvedValues<typeof ambientControls>
 
-const { light, blinds, wand, foliage, breeze, transition } = ambientControls
+const { light, blinds, wand, foliage, breeze, phoneTilt, transition } = ambientControls
 
 // Production values; DialKit only tunes these in development.
 export const defaultAmbientSettings: AmbientSettings = {
@@ -71,5 +77,10 @@ export const defaultAmbientSettings: AmbientSettings = {
     scale: foliage.scale[0],
   },
   breeze: { strength: breeze.strength[0], recovery: breeze.recovery[0] },
+  phoneTilt: {
+    influence: phoneTilt.influence[0],
+    range: phoneTilt.range[0],
+    recenter: phoneTilt.recenter[0],
+  },
   transition,
 }

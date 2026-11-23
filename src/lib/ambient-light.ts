@@ -5,7 +5,9 @@ import surfaceSource from '#/shaders/ambient-surface.wgsl'
 
 import type { AmbientSettings } from './ambient-settings'
 import { smoothStep, transitionTiming, transitionValue } from './ambient-transition'
+import { createTiltTracker } from './device-tilt'
 import { sceneLight, wandPose } from './sunlit-scene'
+import { watchTilt } from './tilt-sensor'
 
 const FOLIAGE_SIZE = 1024
 const FOLIAGE_MIPS = 5
@@ -120,6 +122,8 @@ export async function startAmbient(
     let aimTargetX = restingAimX
     let aimTargetY = restingAimY
     let pointerActive = false
+    const tiltTracker = createTiltTracker()
+    let tilt = tiltTracker.step(0, settings.phoneTilt, false)
     const rect = canvas.getBoundingClientRect()
     let width = rect.width
     let height = rect.height
@@ -216,6 +220,9 @@ export async function startAmbient(
       aimX,
       aimY,
       beamWidth: settings.light.beamWidth,
+      phoneTiltX: tilt[0],
+      phoneTiltY: tilt[1],
+      phoneTiltZ: tilt[2],
     })
     const materialParams = () => ({
       surfaceColor: surfaceColor.map((channel) => channel / 255),
@@ -277,6 +284,8 @@ export async function startAmbient(
       pointerTime = 0
       pointerActive = false
       breezeX = breezeY = bendX = bendY = 0
+      // The phone may be held differently on return; start from its new pose.
+      tiltTracker.reset()
       wake()
     }
 
@@ -355,6 +364,8 @@ export async function startAmbient(
       const aimFollow = still ? 1 : 1 - Math.exp(-delta * (pointerActive ? 5 : 2.5))
       aimX += (targetX - aimX) * aimFollow
       aimY += (targetY - aimY) * aimFollow
+      tilt = tiltTracker.step(delta, settings.phoneTilt, !still)
+      const tiltMoving = tiltTracker.moving(settings.phoneTilt)
       const aimMoving = Math.hypot(targetX - aimX, targetY - aimY) > 0.0001
       if (!aimMoving) {
         aimX = targetX
@@ -378,6 +389,7 @@ export async function startAmbient(
         entranceNight,
         aimX,
         aimY,
+        phoneTilt: tilt,
         surface: [surfaceColor[0] / 255, surfaceColor[1] / 255, surfaceColor[2] / 255],
       })
       // Match the material's dusk curve; update DOM only at a foreground crossover.
@@ -401,7 +413,11 @@ export async function startAmbient(
       const moving =
         settings.foliage.speed > 0 && settings.foliage.movement > 0 && settings.foliage.density > 0
       const gustMoving = Math.hypot(bendX, bendY, breezeX, breezeY) > 0.00001
-      if (!still && (moving || gustMoving || aimMoving || night !== to || entrance > 0)) wake()
+      if (
+        !still &&
+        (moving || gustMoving || aimMoving || tiltMoving || night !== to || entrance > 0)
+      )
+        wake()
       else lastTime = 0
     }
 
@@ -428,6 +444,16 @@ export async function startAmbient(
     host.addEventListener('pointerleave', leavePointer, options)
     window.addEventListener('blur', leavePointer, options)
     reducedMotion.addEventListener('change', wake, options)
+    watchTilt(
+      (up) => {
+        tiltTracker.read(up)
+        wake()
+      },
+      () => tiltTracker.reset(),
+      listeners.signal,
+      () =>
+        !reducedMotion.matches && settings.phoneTilt.range > 0 && settings.phoneTilt.influence > 0,
+    )
     // Redraw the wand's shadow as it swings.
     cleanups.push(wandPose.subscribe(wake))
 

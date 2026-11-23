@@ -10,6 +10,8 @@ export type SceneLight = {
   entranceNight: number
   aimX: number
   aimY: number
+  /** How far phone tilt has turned the room against the sun, as a rotation in the wall's frame. */
+  phoneTilt: [number, number, number]
   surface: [number, number, number]
 }
 
