@@ -80,14 +80,26 @@ const themeSounds = {
 
 /** Overall level: the loudest 30 ms sit near -30 dBA, about where Allo's switch plays. */
 export const LEVEL = 0.55
-/** Repeats faster than FAST_MS play 30% softer, easing back to full by SLOW_MS, as cuelume does. */
-const FAST_MS = 80
-const SLOW_MS = 250
-let lastPlayedAt = -Infinity
+
+/**
+ * Softens a sound that repeats quickly, as cuelume does: each call returns its volume, full when
+ * the last call was `slowMs` ago or more, easing down by `depth` as the gap shrinks to `fastMs`.
+ */
+export function repeatDuck(fastMs: number, slowMs: number, depth: number) {
+  let lastPlayedAt = -Infinity
+  return (now: number) => {
+    const quickness = Math.min(1, Math.max(0, (slowMs - (now - lastPlayedAt)) / (slowMs - fastMs)))
+    lastPlayedAt = now
+    return 1 - depth * quickness
+  }
+}
+
+/** Repeats faster than 80 ms play 30% softer, easing back to full by 250 ms. */
+const themeDuck = repeatDuck(80, 250, 0.3)
 
 export function playThemeSound(theme: Theme) {
-  const now = performance.now()
-  const quickness = Math.min(1, Math.max(0, (SLOW_MS - (now - lastPlayedAt)) / (SLOW_MS - FAST_MS)))
-  lastPlayedAt = now
-  playSound(themeSounds[theme], { volume: LEVEL * (1 - 0.3 * quickness), jitter: { detune: 15 } })
+  playSound(themeSounds[theme], {
+    volume: LEVEL * themeDuck(performance.now()),
+    jitter: { detune: 15 },
+  })
 }

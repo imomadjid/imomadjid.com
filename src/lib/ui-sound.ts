@@ -62,7 +62,11 @@ export function warmSoundsOnGesture() {
   }
 }
 
-/** Plays a web-kits sound if the audio clock is running, and drops it otherwise. */
+/**
+ * Plays a web-kits sound if the audio clock is running, and drops it otherwise. It never starts
+ * the AudioContext itself, so sounds that answer hover or focus, which aren't gestures, stay
+ * silent until a gesture has.
+ */
 export function playSound(sound: (options?: PlayOptions) => VoiceHandle, options: PlayOptions) {
   // Reduced motion doubles as the opt-out for interface sound.
   if (prefersReducedMotion() || !context || !clockRunning(context, performance.now())) return

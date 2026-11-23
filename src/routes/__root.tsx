@@ -20,6 +20,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      // The site draws its own dark theme, so Safari's Adaptive Dark Mode leaves it alone.
+      { name: 'color-scheme', content: 'light dark' },
       { title: 'Imo Madjid' },
       // The dev site, a copy of production, stays out of search results.
       ...(import.meta.env.DEV_TOOLS ? [{ name: 'robots', content: 'noindex' }] : []),
