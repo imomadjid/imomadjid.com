@@ -1,8 +1,8 @@
-import { defineSound, ensureReady } from '@web-kits/audio'
+import { defineSound } from '@web-kits/audio'
 import type { Layer } from '@web-kits/audio'
 
-import { prefersReducedMotion } from './theme'
 import type { Theme } from './theme'
+import { playSound } from './ui-sound'
 
 // A small switch thrown, then a struck note that names the theme: glass G5
 // for light, a rounder wooden C5 for dark, both at once for system.
@@ -70,7 +70,8 @@ const themeSoundLayers = {
   ],
 } satisfies Record<Theme, Layer[]>
 
-// Synthesized on demand: no audio files, and the AudioContext only starts on interaction.
+// Synthesized on demand: no audio files, and the AudioContext only starts on interaction
+// (`warmSoundsOnGesture`).
 const themeSounds = {
   light: defineSound({ layers: themeSoundLayers.light }),
   dark: defineSound({ layers: themeSoundLayers.dark }),
@@ -84,21 +85,9 @@ const FAST_MS = 80
 const SLOW_MS = 250
 let lastPlayedAt = -Infinity
 
-/** Starts the AudioContext on press so the sound on release isn't late. */
-export function warmThemeSounds() {
-  if (prefersReducedMotion()) return
-  ensureReady().catch(() => {})
-}
-
 export function playThemeSound(theme: Theme) {
-  // Reduced motion doubles as the opt-out for interface sound.
-  if (prefersReducedMotion()) return
   const now = performance.now()
   const quickness = Math.min(1, Math.max(0, (SLOW_MS - (now - lastPlayedAt)) / (SLOW_MS - FAST_MS)))
   lastPlayedAt = now
-  try {
-    themeSounds[theme]({ volume: LEVEL * (1 - 0.3 * quickness), jitter: { detune: 15 } })
-  } catch {
-    // Sound is decoration; the theme change must not depend on Web Audio.
-  }
+  playSound(themeSounds[theme], { volume: LEVEL * (1 - 0.3 * quickness), jitter: { detune: 15 } })
 }

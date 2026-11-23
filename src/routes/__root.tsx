@@ -2,12 +2,14 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { DialRoot } from 'dialkit'
+import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
 import { ShapeProvider } from '#/lib/shape-context'
 import { SurfaceProvider } from '#/lib/surface-context'
 import { textLinkClass } from '#/lib/text-link'
 import { THEME_SCRIPT, useTheme } from '#/lib/theme'
+import { warmSoundsOnGesture } from '#/lib/ui-sound'
 import { cn } from '#/lib/utils'
 
 import appCss from '#/styles.css?url'
@@ -57,6 +59,7 @@ function ThemedDialKit() {
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
+  useEffect(warmSoundsOnGesture, [])
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
