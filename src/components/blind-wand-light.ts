@@ -1,12 +1,12 @@
 import type { AmbientSettings } from '#/lib/ambient-settings'
 import { tiltSource } from '#/lib/device-tilt'
 import type { SceneLight } from '#/lib/sunlit-scene'
+import { type Vec3, cross, dot, normalize, scale, sub } from '#/lib/vec3'
 
 // A CPU port of the Sunlit light model (src/shaders/ambient-light.wgsl), evaluated only along
 // the wand. The wand hangs on the room side of the slats, so it catches the same striped light
 // as the wall behind it, shifted by its distance from the wall.
 
-type Vec3 = [number, number, number]
 export type Rgb = [number, number, number]
 
 export type WandLight = {
@@ -32,17 +32,6 @@ const MOON: Rgb = [0.63, 0.76, 1]
 // the rod by a few millimetres more than their penumbra alone (in wall heights).
 const ROD_SCATTER = 0.003
 
-const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
-const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
-const scale = (a: Vec3, s: number): Vec3 => [a[0] * s, a[1] * s, a[2] * s]
-const cross = (a: Vec3, b: Vec3): Vec3 => [
-  a[1] * b[2] - a[2] * b[1],
-  a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0],
-]
-function normalize(a: Vec3): Vec3 {
-  return scale(a, 1 / Math.max(Math.hypot(a[0], a[1], a[2]), 1e-9))
-}
 export function mix(a: number, b: number, t: number) {
   return a + (b - a) * t
 }

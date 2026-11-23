@@ -8,8 +8,8 @@ import {
   tiltSource,
   toScreen,
   upFromOrientation,
-  type Vec3,
 } from './device-tilt'
+import type { Vec3 } from './vec3'
 
 // A range far past any test angle, so the easing into it stays linear.
 const settings = { influence: 1, range: 1e5, recenter: 3 }
@@ -65,24 +65,47 @@ void test('the turn eases into its range and scales with influence', () => {
   assert.ok(near(relativeTilt(flat, steep, { influence: 1, range: 0, recenter: 3 }), [0, 0, 0]))
 })
 
+// A tracker whose light has turned partway toward a 12 degree roll.
+function turned() {
+  const tracker = createTiltTracker()
+  tracker.read([0, 0, 1], true)
+  tracker.read(upFromOrientation(0, 12), true)
+  for (let frame = 0; frame < 30; frame += 1) tracker.step(1 / 60, settings, true)
+  return tracker
+}
+
 void test('a held pose settles back to rest', () => {
   const tracker = createTiltTracker()
-  tracker.read([0, 0, 1])
-  tracker.read(upFromOrientation(0, 12))
+  tracker.read([0, 0, 1], true)
+  tracker.read(upFromOrientation(0, 12), true)
   const first = tracker.step(1 / 60, settings, true)
   let latest = first
   for (let frame = 0; frame < 60 * 40; frame += 1) latest = tracker.step(1 / 60, settings, true)
   assert.ok(Math.hypot(...first) > 0)
   assert.ok(Math.hypot(...latest) < 1e-4)
-  assert.equal(tracker.moving(settings), false)
+  assert.equal(tracker.moving(), false)
 })
 
-void test('reduced motion returns the light to rest', () => {
-  const tracker = createTiltTracker()
-  tracker.read([0, 0, 1])
-  tracker.read(upFromOrientation(0, 12))
-  for (let frame = 0; frame < 30; frame += 1) tracker.step(1 / 60, settings, true)
-  let latest = tracker.step(1 / 60, settings, false)
-  for (let frame = 0; frame < 120; frame += 1) latest = tracker.step(1 / 60, settings, false)
-  assert.ok(near(latest, [0, 0, 0]))
+void test('reduced motion puts the light back at rest at once', () => {
+  const tracker = turned()
+  assert.ok(tracker.moving())
+  // The renderer stops scheduling frames under reduced motion, so the next one has no delta.
+  assert.ok(near(tracker.step(0, settings, false), [0, 0, 0]))
+  assert.equal(tracker.moving(), false)
+})
+
+void test('readings while disabled ask for no redraw and become the rest pose', () => {
+  const tracker = turned()
+  tracker.step(0, settings, false)
+  assert.equal(tracker.read(upFromOrientation(60, 0), false), false)
+  // Enabling again starts from the pose the phone is in now, with no turn.
+  assert.ok(near(tracker.step(1 / 60, settings, true), [0, 0, 0]))
+  assert.equal(tracker.read(upFromOrientation(60, 5), true), true)
+})
+
+void test('a reset starts from rest without gliding back', () => {
+  const tracker = turned()
+  tracker.reset()
+  assert.ok(near(tracker.step(1 / 60, settings, true), [0, 0, 0]))
+  assert.equal(tracker.moving(), false)
 })

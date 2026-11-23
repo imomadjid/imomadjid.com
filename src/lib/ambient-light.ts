@@ -124,6 +124,8 @@ export async function startAmbient(
     let pointerActive = false
     const tiltTracker = createTiltTracker()
     let tilt = tiltTracker.step(0, settings.phoneTilt, false)
+    const tiltAllowed = () =>
+      !reducedMotion.matches && settings.phoneTilt.range > 0 && settings.phoneTilt.influence > 0
     const rect = canvas.getBoundingClientRect()
     let width = rect.width
     let height = rect.height
@@ -364,8 +366,8 @@ export async function startAmbient(
       const aimFollow = still ? 1 : 1 - Math.exp(-delta * (pointerActive ? 5 : 2.5))
       aimX += (targetX - aimX) * aimFollow
       aimY += (targetY - aimY) * aimFollow
-      tilt = tiltTracker.step(delta, settings.phoneTilt, !still)
-      const tiltMoving = tiltTracker.moving(settings.phoneTilt)
+      tilt = tiltTracker.step(delta, settings.phoneTilt, tiltAllowed())
+      const tiltMoving = tiltTracker.moving()
       const aimMoving = Math.hypot(targetX - aimX, targetY - aimY) > 0.0001
       if (!aimMoving) {
         aimX = targetX
@@ -446,13 +448,11 @@ export async function startAmbient(
     reducedMotion.addEventListener('change', wake, options)
     watchTilt(
       (up) => {
-        tiltTracker.read(up)
-        wake()
+        if (tiltTracker.read(up, tiltAllowed())) wake()
       },
       () => tiltTracker.reset(),
       listeners.signal,
-      () =>
-        !reducedMotion.matches && settings.phoneTilt.range > 0 && settings.phoneTilt.influence > 0,
+      tiltAllowed,
     )
     // Redraw the wand's shadow as it swings.
     cleanups.push(wandPose.subscribe(wake))

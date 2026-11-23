@@ -52,7 +52,8 @@ fn planeHit(origin: vec3f, ray: vec3f, point: vec3f, normal: vec3f) -> vec3f {
   return origin + ray * t;
 }
 
-// Rodrigues rotation by a rotation vector (axis times angle). Mirrors rotate in device-tilt.ts.
+// Rodrigues rotation by a rotation vector (axis times angle). Mirrors rotate in device-tilt.ts,
+// including its cutoff for no turn.
 fn turn(v: vec3f, rotation: vec3f) -> vec3f {
   let angle = length(rotation);
   if (angle < 1e-6) {

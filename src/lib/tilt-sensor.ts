@@ -1,4 +1,5 @@
-import { type Vec3, toScreen, upFromOrientation } from './device-tilt'
+import { toScreen, upFromOrientation } from './device-tilt'
+import type { Vec3 } from './vec3'
 
 // The motion sensor half of phone tilt. Only the lazily loaded renderer imports it; the wand
 // imports the light math from device-tilt.ts eagerly.
@@ -7,6 +8,11 @@ type OrientationPermission = { requestPermission?: () => Promise<'granted' | 'de
 
 // Controls a tap could mean to use. Landmark roles and tabindex="-1" focus targets wrap
 // plain page content, so they don't count.
+function screenAngle() {
+  if ('orientation' in screen) return screen.orientation.angle
+  return 'orientation' in window ? Number(window.orientation) : 0
+}
+
 const INTERACTIVE = [
   'a[href], button, input, select, textarea, label, summary',
   '[role="button"], [role="link"], [role="slider"], [role="switch"], [role="tab"]',
@@ -15,7 +21,8 @@ const INTERACTIVE = [
 
 /**
  * Calls `onUp` with world up in the screen's frame while the phone moves, and `onReset` when
- * the screen rotates. Runs only on touch-first devices. Safari on iOS asks before it shares
+ * the screen rotates. Readings keep coming while `allowed` is false, so the pose is current
+ * when it turns true; the caller decides whether to redraw. Runs only on touch-first devices. Safari on iOS asks before it shares
  * motion, and only from a tap: the first tap on the page itself, not on a link or control,
  * asks once. Elsewhere readings start straight away.
  */
@@ -34,12 +41,13 @@ export function watchTilt(
       'deviceorientation',
       (event) => {
         if (event.beta === null || event.gamma === null) return
-        const up = upFromOrientation(event.beta, event.gamma)
-        onUp(toScreen(up, screen.orientation?.angle ?? 0))
+        onUp(toScreen(upFromOrientation(event.beta, event.gamma), screenAngle()))
       },
       options,
     )
-    screen.orientation?.addEventListener('change', onReset, options)
+    // Safari before 16.4 has no screen.orientation, only the older window.orientation.
+    if ('orientation' in screen) screen.orientation.addEventListener('change', onReset, options)
+    else window.addEventListener('orientationchange', onReset, options)
   }
 
   // SAFETY: Safari on iOS adds this static method, which resolves to the permission state;
