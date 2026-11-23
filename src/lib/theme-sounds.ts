@@ -1,8 +1,7 @@
-import { defineSound, ensureReady } from '@web-kits/audio'
 import type { Layer } from '@web-kits/audio'
 
-import { prefersReducedMotion } from './theme'
 import type { Theme } from './theme'
+import { defineUiSound, playSound } from './ui-sound'
 
 // A small switch thrown, then a struck note that names the theme: glass G5
 // for light, a rounder wooden C5 for dark, both at once for system.
@@ -70,35 +69,36 @@ const themeSoundLayers = {
   ],
 } satisfies Record<Theme, Layer[]>
 
-// Synthesized on demand: no audio files, and the AudioContext only starts on interaction.
+// Synthesized on demand: no audio files, and the AudioContext only starts on interaction
+// (`warmSoundsOnGesture`).
 const themeSounds = {
-  light: defineSound({ layers: themeSoundLayers.light }),
-  dark: defineSound({ layers: themeSoundLayers.dark }),
-  system: defineSound({ layers: themeSoundLayers.system }),
-} satisfies Record<Theme, ReturnType<typeof defineSound>>
+  light: defineUiSound(themeSoundLayers.light),
+  dark: defineUiSound(themeSoundLayers.dark),
+  system: defineUiSound(themeSoundLayers.system),
+} satisfies Record<Theme, ReturnType<typeof defineUiSound>>
 
 /** Overall level: the loudest 30 ms sit near -30 dBA, about where Allo's switch plays. */
 export const LEVEL = 0.55
-/** Repeats faster than FAST_MS play 30% softer, easing back to full by SLOW_MS, as cuelume does. */
-const FAST_MS = 80
-const SLOW_MS = 250
-let lastPlayedAt = -Infinity
 
-/** Starts the AudioContext on press so the sound on release isn't late. */
-export function warmThemeSounds() {
-  if (prefersReducedMotion()) return
-  ensureReady().catch(() => {})
+/**
+ * Softens a sound that repeats quickly, as cuelume does: each call returns its volume, full when
+ * the last call was `slowMs` ago or more, easing down by `depth` as the gap shrinks to `fastMs`.
+ */
+export function repeatDuck(fastMs: number, slowMs: number, depth: number) {
+  let lastPlayedAt = -Infinity
+  return (now: number) => {
+    const quickness = Math.min(1, Math.max(0, (slowMs - (now - lastPlayedAt)) / (slowMs - fastMs)))
+    lastPlayedAt = now
+    return 1 - depth * quickness
+  }
 }
 
+/** Repeats faster than 80 ms play 30% softer, easing back to full by 250 ms. */
+const themeDuck = repeatDuck(80, 250, 0.3)
+
 export function playThemeSound(theme: Theme) {
-  // Reduced motion doubles as the opt-out for interface sound.
-  if (prefersReducedMotion()) return
-  const now = performance.now()
-  const quickness = Math.min(1, Math.max(0, (SLOW_MS - (now - lastPlayedAt)) / (SLOW_MS - FAST_MS)))
-  lastPlayedAt = now
-  try {
-    themeSounds[theme]({ volume: LEVEL * (1 - 0.3 * quickness), jitter: { detune: 15 } })
-  } catch {
-    // Sound is decoration; the theme change must not depend on Web Audio.
-  }
+  playSound(themeSounds[theme], {
+    volume: LEVEL * themeDuck(performance.now()),
+    jitter: { detune: 15 },
+  })
 }

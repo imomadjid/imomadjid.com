@@ -6,6 +6,7 @@ import surfaceSource from '#/shaders/ambient-surface.wgsl'
 import type { AmbientSettings } from './ambient-settings'
 import { smoothStep, transitionTiming, transitionValue } from './ambient-transition'
 import { createTiltTracker } from './device-tilt'
+import { glowBackdrop } from './sunlit-backdrop'
 import { sceneLight, wandPose } from './sunlit-scene'
 import { watchTilt } from './tilt-sensor'
 
@@ -23,6 +24,7 @@ export type AmbientRenderer = {
 export async function startAmbient(
   canvas: HTMLCanvasElement,
   host: HTMLElement,
+  backdrop: HTMLElement,
   initialSettings: AmbientSettings,
   signal: AbortSignal,
 ): Promise<AmbientRenderer> {
@@ -53,6 +55,7 @@ export async function startAmbient(
     if (disposed) return
     disposed = true
     sceneLight.set(null)
+    backdrop.style.removeProperty('background-color')
     cancelAnimationFrame(frameId)
     for (const cleanup of cleanups.reverse()) cleanup()
     gpu.dispose()
@@ -90,6 +93,8 @@ export async function startAmbient(
       return channels.slice(0, 3).map(Number)
     }
     let surfaceColor = readSurface()
+    let backdropColor: readonly number[] = surfaceColor
+    let paintedBackdrop: readonly number[] = []
     let fromSurface = surfaceColor
     let toSurface = surfaceColor
     let renderedFrames = 0
@@ -234,6 +239,8 @@ export async function startAmbient(
       direction,
       entranceDawn: entrance * (1 - entranceNight),
       entranceDusk: entrance * entranceNight,
+      overlay: settings.content.lit ? 1 : 0,
+      backdrop: backdropColor.map((channel) => channel / 255),
     })
     const lighting = effect(gpu, lightingSource, {
       label: 'sunlit-light',
@@ -373,8 +380,28 @@ export async function startAmbient(
         aimX = targetX
         aimY = targetY
       }
+      // The light layer is encoded against the plain wall beneath it, so paint that wall in step
+      // with the shader, through theme changes. Unlit, the canvas covers it.
+      backdropColor = settings.content.lit
+        ? glowBackdrop({
+            surface: surfaceColor,
+            night,
+            direction,
+            warmth: settings.light.warmth,
+            intensity: settings.light.intensity,
+          })
+        : surfaceColor
       lighting.set({ params: lightParams() })
       composite.set({ params: materialParams() })
+      const [red, green, blue] = backdropColor
+      if (
+        red !== paintedBackdrop[0] ||
+        green !== paintedBackdrop[1] ||
+        blue !== paintedBackdrop[2]
+      ) {
+        backdrop.style.backgroundColor = `rgb(${red} ${green} ${blue})`
+        paintedBackdrop = backdropColor
+      }
       try {
         frame(gpu, (current) => {
           current.pass({ target: lightTarget, timer: lightSpan }, (pass) => pass.draw(lighting))

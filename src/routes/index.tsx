@@ -7,11 +7,14 @@ import { AmbientLight } from '#/components/ambient-light'
 import { BlindWand } from '#/components/blind-wand'
 import { Logo } from '#/components/logo'
 import { ProfileAvatar } from '#/components/profile-avatar'
+import { ProjectList } from '#/components/project-list'
+import type { Project } from '#/components/project-list'
 import { Signature } from '#/components/signature'
 import { TableOfContents } from '#/components/table-of-contents'
 import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
+import { projectFile, projectVideo } from '#/lib/project-media'
 import { defaultSignatureTiming, signatureControls } from '#/lib/signature-settings'
 import { textLinkClass } from '#/lib/text-link'
 import { cn } from '#/lib/utils'
@@ -46,7 +49,7 @@ const structuredData = {
       jobTitle: 'Design engineer and product designer',
       worksFor: { '@type': 'Organization', name: 'DocDraft', url: 'https://docdraft.ai' },
       homeLocation: { '@type': 'Place', name: 'Jakarta, Indonesia' },
-      sameAs: ['https://github.com/MassiveMassimo', 'https://www.linkedin.com/in/imomadjid/'],
+      sameAs: ['https://github.com/imomadjid', 'https://www.linkedin.com/in/imomadjid/'],
     },
   ],
 }
@@ -78,18 +81,109 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-// Stand-ins that make the page tall enough to try the contents and the fixed light while scrolling.
-// They show only with the dev tools, so merging dev into master never puts them on imomadjid.com.
-const placeholders = [
-  { id: 'placeholder-1', label: 'Placeholder 1' },
-  { id: 'placeholder-2', label: 'Placeholder 2' },
-  { id: 'placeholder-3', label: 'Placeholder 3' },
+// Public repos, newest first. Each links to its live site where there is one.
+const projects = [
+  {
+    name: 'antijank',
+    description:
+      'Headless animation review for coding agents. It reports jank as text, with no screenshots.',
+    year: 2026,
+    href: 'https://github.com/imomadjid/antijank',
+    // The README's cover, light and dark.
+    preview: {
+      kind: 'image',
+      light: projectFile('antijank/light.svg'),
+      dark: projectFile('antijank/dark.svg'),
+      className: 'bg-white dark:bg-[#0d1117]',
+    },
+  },
+  {
+    name: 'Krillion Bench',
+    description: 'A general knowledge benchmark for LLMs on Krillion.io.',
+    year: 2026,
+    href: 'https://krillion-bench.vercel.app',
+    // The live results site: score chart, tooltips, all configurations, a model search. It has
+    // no dark mode.
+    preview: {
+      kind: 'video',
+      light: projectVideo('krillion-bench', 'light'),
+    },
+  },
+  {
+    name: 'Book n Quill',
+    description: 'A playful notepad with a Minecraft Java Book and Quill interface.',
+    year: 2026,
+    href: 'https://book-n-quill.mhmmadjid.workers.dev',
+    // Writes a packing list, turns the page, and signs it. The app has no dark mode.
+    preview: {
+      kind: 'video',
+      light: projectVideo('book-n-quill', 'light'),
+    },
+  },
+  {
+    name: 'Lukis',
+    description: 'A local-first painterly image editor, built with Astro and WebGPU.',
+    year: 2026,
+    href: 'https://lukis.imomadjid.com',
+    // Drags a photo in, paints it, moves Paint and Brush, then presses Restart, which returns to
+    // the first frame so the loop is seamless. Captured frame by frame at 60 fps. The photo is
+    // "Manarola, Italy" by Linh Nguyen, CC0
+    // (commons.wikimedia.org/wiki/File:Manarola,_Italy_(Unsplash_DNE9iZ1Kqzk).jpg).
+    preview: {
+      kind: 'video',
+      light: projectVideo('lukis', 'light'),
+      dark: projectVideo('lukis', 'dark'),
+    },
+  },
+  {
+    name: 'Influencer Tracker',
+    description:
+      'Scores finfluencers’ stock calls on Instagram and X against real forward prices, versus SPY.',
+    year: 2026,
+    href: 'https://influencer-tracker-beta.vercel.app',
+    // Leaderboard, the top creator's scorecard, then one of their tickers against SPY.
+    preview: {
+      kind: 'video',
+      light: projectVideo('influencer-tracker', 'light'),
+      dark: projectVideo('influencer-tracker', 'dark'),
+    },
+  },
+  {
+    name: 'Binsight',
+    description: 'An iPhone app that uses vision machine learning to help sort trash.',
+    year: 2025,
+    href: 'https://github.com/imomadjid/Binsight',
+    // The four app screenshots from the README.
+    preview: { kind: 'image', light: projectFile('binsight/screens.webp') },
+  },
+  {
+    name: 'Name a Woman',
+    description:
+      'A 60-second game: name as many women as you can, and each one joins a tally everyone shares.',
+    year: 2024,
+    href: 'https://name-a-woman.pages.dev',
+    // Five names, each card's portrait forming from dots. Played back 1.4x, since the recorder
+    // rendered the dots below 60 fps.
+    preview: {
+      kind: 'video',
+      light: projectVideo('name-a-woman', 'light'),
+      dark: projectVideo('name-a-woman', 'dark'),
+    },
+  },
+] as const satisfies readonly Project[]
+
+// Sections still being built. They show only with the dev tools, so merging dev into master
+// never puts them on imomadjid.com. Both say Coming soon for now.
+const draftSections = [
+  { id: 'gallery', label: 'Gallery' },
+  { id: 'guestbook', label: 'Guestbook' },
 ] as const satisfies readonly PageSection[]
 
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
   { id: 'about', label: 'About', mark: Logo },
-  ...(import.meta.env.DEV_TOOLS ? placeholders : []),
+  { id: 'projects', label: 'Random bullshit' },
+  ...(import.meta.env.DEV_TOOLS ? draftSections : []),
 ] as const satisfies readonly PageSection[]
 
 type SectionId = (typeof sections)[number]['id']
@@ -152,10 +246,11 @@ function Home() {
   const { settings, isSleeping, signatureTiming, signatureRun } = useTuning()
 
   return (
-    <main className="relative isolate flex min-h-svh justify-center overflow-hidden px-6 pb-16">
+    <main className="relative isolate flex min-h-svh justify-center overflow-x-clip px-6 pb-16">
       <AmbientLight settings={settings} />
       <TableOfContents sections={sections} />
-      <div data-sunlit-anchor className="relative z-10 w-full max-w-[34rem]">
+      {/* No z-index here: a stacking context would hold the wand under the light layer. */}
+      <div data-sunlit-anchor className="relative w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
 
         {/* The opening screen fills the viewport with mobile toolbars shown, so it never resizes
@@ -188,16 +283,7 @@ function Home() {
 
             <p className="animate-enter [--enter-index:3]">
               I work across user research, design systems, and frontend engineering. I like working
-              through interaction details in code, trying them out and refining how they feel. I
-              also made{' '}
-              <LinkButton
-                href="https://lukis.imomadjid.com"
-                logoSrc="/images/projects/lukis.svg"
-                invertLogo
-              >
-                Lukis
-              </LinkButton>
-              , which turns an image into a painting right in the browser.
+              through interaction details in code, trying them out and refining how they feel.
             </p>
 
             <p className="animate-enter [--enter-index:4]">
@@ -226,7 +312,7 @@ function Home() {
             >
               {[
                 { label: 'Email', href: 'mailto:mhmmadjid@gmail.com' },
-                { label: 'GitHub', href: 'https://github.com/MassiveMassimo' },
+                { label: 'GitHub', href: 'https://github.com/imomadjid' },
                 { label: 'LinkedIn', href: 'https://www.linkedin.com/in/imomadjid/' },
               ].map(({ label, href }) => (
                 <a
@@ -241,11 +327,15 @@ function Home() {
           </div>
         </Section>
 
+        <Section id="projects" className="mt-12">
+          <ProjectList projects={projects} />
+        </Section>
+
         {import.meta.env.DEV_TOOLS &&
-          placeholders.map(({ id, label }) => (
+          draftSections.map(({ id }) => (
             <Section key={id} id={id} className="mt-12">
               <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
-                {label}
+                Coming soon
               </div>
             </Section>
           ))}

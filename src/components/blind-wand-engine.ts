@@ -3,7 +3,6 @@ import { sceneLight, wandPose } from '#/lib/sunlit-scene'
 import type { SceneLight } from '#/lib/sunlit-scene'
 import { getResolvedScheme, toggleScheme } from '#/lib/theme'
 import type { Scheme } from '#/lib/theme'
-import { warmThemeSounds } from '#/lib/theme-sounds'
 import { playWandTick } from '#/lib/wand-sounds'
 
 import {
@@ -516,7 +515,6 @@ export function startBlindWand(
 
   function grab(event: PointerEvent) {
     if (event.button !== 0 || !hit) return
-    warmThemeSounds()
     onInteract()
     hit.setPointerCapture(event.pointerId)
     drag = {

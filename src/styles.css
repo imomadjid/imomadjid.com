@@ -40,7 +40,9 @@
 }
 
 @utility animate-enter {
-  animation: enter-fade 300ms ease-out both;
+  /* Backwards only: once it ends the element is no longer animated, so it stops forming a
+     stacking context, which would hold the blind wand under the Sunlit light layer. */
+  animation: enter-fade 300ms ease-out backwards;
   animation-delay: calc(var(--enter-index, 0) * var(--enter-step));
 
   @media (prefers-reduced-motion: no-preference) {

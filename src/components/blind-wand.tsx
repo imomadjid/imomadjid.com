@@ -88,11 +88,12 @@ export function BlindWand({ settings }: { settings: AmbientSettings }) {
     <>
       {/* Written on the wall, so the wand hangs in front of it. */}
       {hint.phase && <WandHint scheme={scheme} phase={hint.phase} onErased={hint.erased} />}
+      {/* Above the Sunlit light layer (z-20): it hangs in front of the wall and lights itself. */}
       <button
         ref={buttonRef}
         type="button"
         aria-label={label}
-        className="group pointer-events-none absolute right-0 bottom-0 h-svh w-2 outline-none"
+        className="group pointer-events-none absolute right-0 bottom-0 z-30 h-svh w-2 outline-none"
       >
         <svg
           aria-hidden="true"
