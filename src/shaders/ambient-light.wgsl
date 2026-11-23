@@ -15,8 +15,11 @@ struct Params {
   foliageScale: f32,
   pointerX: f32,
   pointerY: f32,
-  breezeX: f32,
-  breezeY: f32,
+  nearSway: f32,
+  farSway: f32,
+  rustle: f32,
+  rustleSpread: f32,
+  rustlePhase: f32,
   aimX: f32,
   aimY: f32,
   beamWidth: f32,
@@ -81,6 +84,23 @@ fn wind(p: vec2f, t: f32) -> vec2f {
   );
 }
 
+// A branch swung clockwise by `angle` about its attachment, as a texture lookup: the inverse
+// turn. Turning keeps leaf shapes, unlike an offset that fades across the canopy.
+fn swing(angle: f32) -> mat2x2f {
+  let c = cos(angle);
+  let s = sin(angle);
+  return mat2x2f(c, -s, s, c);
+}
+
+// How much of a leaf's shadow its turning lets through, 0 to 1, in patches of a few leaves.
+// Three waves at uneven angles and rates, so the patches never line up into a lattice.
+fn flicker(p: vec2f, phase: f32) -> f32 {
+  let waves = sin(dot(p, vec2f(31.0, 17.0)) + phase)
+    + sin(dot(p, vec2f(-13.0, 29.0)) - phase * 0.83 + 2.1)
+    + sin(dot(p, vec2f(23.0, -27.0)) + phase * 1.21 + 4.2);
+  return smoothstep(0.5, 2.5, waves);
+}
+
 fn leafCoverage(uv: vec2f, lod: f32) -> f32 {
   let inside = all(uv >= vec2f(0.0)) && all(uv <= vec2f(1.0));
   return textureSampleLevel(foliage, linearSampler, uv, lod).r * select(0.0, 1.0, inside);
@@ -137,14 +157,25 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   // not expand its pinned region across the visible branches.
   let nearAnchor = smoothstep(0.0, 0.8, length(nearCenter - branchAnchor) * canopyScale);
   let farAnchor = smoothstep(0.0, 0.8, length(farCenter - branchAnchor) * canopyScale);
-  let pointerDistance = length((uv - vec2f(params.pointerX, params.pointerY)) * vec2f(params.aspect, 1.0));
-  let influence = 1.0 - smoothstep(0.05, 0.55, pointerDistance);
-  let gust = vec2f(params.breezeX, params.breezeY) * influence;
-  // Larger branches get a modest increase in wind travel; pointer gusts keep
-  // their original world-space displacement.
+  // Larger branches get a modest increase in wind travel.
   let windScale = sqrt(canopyScale);
-  let nearWind = (wind(nearCenter, params.time) * (0.032 * params.movement) / windScale + gust / canopyScale) * nearAnchor;
-  let farWind = (wind(farCenter + vec2f(0.7, 1.3), params.time * 0.79) * (0.021 * params.movement) / windScale + gust * 0.45 / canopyScale) * farAnchor;
+  let nearWind = wind(nearCenter, params.time) * (0.032 * params.movement) / windScale * nearAnchor;
+  let farWind = wind(farCenter + vec2f(0.7, 1.3), params.time * 0.79) * (0.021 * params.movement) / windScale * farAnchor;
+  // Pointer gusts: where the last stroke was, on each canopy. A branch swings most where it
+  // was pushed and still turns as a whole, so leaf shadows keep their shapes.
+  let pointerWall = vec3f((params.pointerX - 1.0) * params.aspect, params.pointerY, 0.0);
+  let nearPointer = (planeHit(pointerWall, source - pointerWall, nearOrigin, planeNormal).xy - nearOrigin.xy) / nearSize;
+  let farPointer = (planeHit(pointerWall, source - pointerWall, farOrigin, planeNormal).xy - farOrigin.xy) / farSize;
+  let nearPushed = exp(-dot(nearCenter - nearPointer, nearCenter - nearPointer) * 2.0);
+  let farPushed = exp(-dot(farCenter - farPointer, farCenter - farPointer) * 2.0);
+  let nearSwing = swing(params.nearSway * mix(0.55, 1.0, nearPushed));
+  let farSwing = swing(params.farSway * mix(0.55, 1.0, farPushed));
+  // Leaves near the stroke turn in the moving air, in a patch that spreads as it fades.
+  let rustleFalloff = -0.5 / (params.rustleSpread * params.rustleSpread);
+  let nearFlicker = params.rustle * 0.45 * flicker(nearSwing * (nearCenter - branchAnchor), params.rustlePhase)
+    * exp(dot(nearCenter - nearPointer, nearCenter - nearPointer) * rustleFalloff);
+  let farFlicker = params.rustle * 0.45 * flicker(farSwing * (farCenter - branchAnchor), params.rustlePhase + 1.3)
+    * exp(dot(farCenter - farPointer, farCenter - farPointer) * rustleFalloff);
   let centerBlind = planeHit(wall, centerRay, blindOrigin, blindNormal);
   let pixelWidth = max(fwidth(centerBlind.y), 0.0005);
   let railPixelWidth = max(fwidth(dot(centerBlind - blindOrigin, blindAxis)), 0.0005);
@@ -207,11 +238,14 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     let acrylicOpacity = mix(0.18, 0.78, smoothstep(0.1, 0.85, across / max(wandWidth, 0.0001)));
     let wandTransmission = (1.0 - bodyCoverage * acrylicOpacity) * (1.0 - wireCoverage);
     let foliageRay = source + vec3f(disk * foliageRadius, 0.0) - wall;
-    let nearUv = (planeHit(wall, foliageRay, nearOrigin, planeNormal).xy - nearOrigin.xy) / nearSize + nearWind;
-    let farUv = (planeHit(wall, foliageRay, farOrigin, planeNormal).xy - farOrigin.xy) / farSize + farWind;
+    let nearUv = branchAnchor + nearSwing * ((planeHit(wall, foliageRay, nearOrigin, planeNormal).xy
+      - nearOrigin.xy) / nearSize - branchAnchor) + nearWind;
+    let farUv = branchAnchor + farSwing * ((planeHit(wall, foliageRay, farOrigin, planeNormal).xy
+      - farOrigin.xy) / farSize - branchAnchor) + farWind;
     let transmission = blindTransmission * wandTransmission
-      * (1.0 - min(1.0, leafCoverage(nearUv, nearLod) * params.density * 1.12))
-      * (1.0 - min(1.0, leafCoverage(farUv, farLod) * params.density * mix(0.75, 1.5, params.night)));
+      * (1.0 - min(1.0, leafCoverage(nearUv, nearLod) * params.density * 1.12 * (1.0 - nearFlicker)))
+      * (1.0 - min(1.0, leafCoverage(farUv, farLod) * params.density * mix(0.75, 1.5, params.night)
+        * (1.0 - farFlicker)));
     // Lambert cosine and inverse-square falloff weight the finite emitter.
     let distanceSquared = dot(ray, ray);
     let outgoing = -normalize(ray);

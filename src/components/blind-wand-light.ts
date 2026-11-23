@@ -1,5 +1,5 @@
 import type { AmbientSettings } from '#/lib/ambient-settings'
-import { tiltSource } from '#/lib/device-tilt'
+import { sunSource } from '#/lib/sunlit-geometry'
 import type { SceneLight } from '#/lib/sunlit-scene'
 import { type Vec3, cross, dot, normalize, scale, sub } from '#/lib/vec3'
 
@@ -69,8 +69,7 @@ export function lightWand(
 ): WandLight {
   const { night } = scene
   const angle = settings.light.angle + scene.entrance * (scene.entranceNight ? -8 : 6)
-  const lightAngle = ((angle + night * 42) * Math.PI) / 180
-  const source = tiltSource([2.6, Math.tan(lightAngle) * 5, 5], scene.phoneTilt, aspect)
+  const source = sunSource(angle, night, scene.phoneTilt, aspect)
   const world = ([u, v]: readonly [number, number]): Vec3 => [(u - 1) * aspect, v, depth]
 
   const blindOrigin: Vec3 = [0, 0, settings.blinds.distance]

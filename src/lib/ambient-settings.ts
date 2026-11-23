@@ -32,9 +32,11 @@ export const ambientControls = {
     depth: [0.4, 0, 1, 0.01],
     scale: [1, 0.65, 1.5, 0.01],
   },
+  // Pointer gusts swing the branches and make the leaves near the stroke flicker.
   breeze: {
     strength: [0.7, 0, 1.5, 0.01],
     recovery: [1.3, 0.4, 3, 0.1],
+    rustle: [0.7, 0, 1, 0.01],
   },
   // Phone tilt turns the room against the sun. Range is the most it turns, in degrees.
   phoneTilt: {
@@ -81,7 +83,11 @@ export const defaultAmbientSettings: AmbientSettings = {
     depth: foliage.depth[0],
     scale: foliage.scale[0],
   },
-  breeze: { strength: breeze.strength[0], recovery: breeze.recovery[0] },
+  breeze: {
+    strength: breeze.strength[0],
+    recovery: breeze.recovery[0],
+    rustle: breeze.rustle[0],
+  },
   phoneTilt: {
     influence: phoneTilt.influence[0],
     range: phoneTilt.range[0],

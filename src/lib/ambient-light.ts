@@ -7,6 +7,8 @@ import type { AmbientSettings } from './ambient-settings'
 import { smoothStep, transitionTiming, transitionValue } from './ambient-transition'
 import { createTiltTracker } from './device-tilt'
 import { glowBackdrop } from './sunlit-backdrop'
+import { anchorShadow, canopies, sunSource } from './sunlit-geometry'
+import { createGust } from './sunlit-gust'
 import { sceneLight, wandPose } from './sunlit-scene'
 import { watchTilt } from './tilt-sensor'
 
@@ -116,10 +118,8 @@ export async function startAmbient(
     let pointerTime = 0
     let previousX = 0
     let previousY = 0
-    let breezeX = 0
-    let breezeY = 0
-    let bendX = 0
-    let bendY = 0
+    const gust = createGust()
+    let gustState = gust.step(0, settings.breeze)
     const restingAimX = 1.08
     const restingAimY = 0.45
     let aimX = restingAimX
@@ -203,12 +203,13 @@ export async function startAmbient(
         wandRadius: pose?.radius ?? 0,
       }
     }
+    const lightAngle = () => settings.light.angle + entrance * (entranceNight ? -8 : 6)
     const lightParams = () => ({
       ...wandParams(),
       time: ambientTime,
       night,
       aspect: width / Math.max(height, 1),
-      angle: settings.light.angle + entrance * (entranceNight ? -8 : 6),
+      angle: lightAngle(),
       softness: settings.light.softness,
       progressiveSoftness: settings.light.progressiveSoftness,
       opening: settings.blinds.opening,
@@ -222,8 +223,7 @@ export async function startAmbient(
       foliageScale: settings.foliage.scale,
       pointerX,
       pointerY,
-      breezeX: -bendX,
-      breezeY: -bendY,
+      ...gustState,
       aimX,
       aimY,
       beamWidth: settings.light.beamWidth,
@@ -292,7 +292,7 @@ export async function startAmbient(
       lastTime = 0
       pointerTime = 0
       pointerActive = false
-      breezeX = breezeY = bendX = bendY = 0
+      gust.reset()
       // The phone may be held differently on return; start from its new pose.
       tiltTracker.reset()
       wake()
@@ -307,13 +307,10 @@ export async function startAmbient(
       aimTargetX = Math.max(0, Math.min(1, x))
       aimTargetY = Math.max(0, Math.min(1, y))
       const elapsed = (event.timeStamp - pointerTime) / 1000
-      if (pointerTime && elapsed > 0 && elapsed < 0.15) {
-        const strength = settings.breeze.strength
-        breezeX = Math.max(-0.045, Math.min(0.045, breezeX + (x - previousX) * strength * 0.22))
-        breezeY = Math.max(-0.045, Math.min(0.045, breezeY + (y - previousY) * strength * 0.22))
-      }
-      // Retain the gust origin until it settles, avoiding a jump on pointer re-entry.
-      if (Math.hypot(bendX, bendY) < 0.001 || pointerTime) {
+      const stroking = pointerTime && elapsed > 0 && elapsed < 0.15
+      if (stroking) pushBranches(x, y, elapsed)
+      // Keep the last stroke's place while its gust settles, so re-entry doesn't jump it.
+      if (stroking || !gust.moving()) {
         pointerX = x
         pointerY = y
       }
@@ -321,6 +318,23 @@ export async function startAmbient(
       previousY = y
       pointerTime = event.timeStamp
       wake()
+    }
+
+    // Push the branches with a pointer stroke from the previous point to (x, y), in canvas UV.
+    function pushBranches(x: number, y: number, seconds: number) {
+      const aspect = width / Math.max(height, 1)
+      const source = sunSource(lightAngle(), night, tilt, aspect)
+      const { near, far } = canopies(settings.foliage.scale, settings.foliage.depth)
+      const wall = (u: number, v: number): [number, number] => [(u - 1) * aspect, v]
+      const [fromX, fromY] = wall(previousX, previousY)
+      const [toX, toY] = wall(x, y)
+      gust.push(
+        [toX, toY],
+        [toX - fromX, toY - fromY],
+        seconds,
+        { near: anchorShadow(near, source), far: anchorShadow(far, source) },
+        settings.breeze,
+      )
     }
 
     function leavePointer() {
@@ -357,16 +371,11 @@ export async function startAmbient(
         )
         ambientTime += delta * settings.foliage.speed
       }
-      const decay = Math.exp((-delta * 4) / settings.breeze.recovery)
-      breezeX *= decay
-      breezeY *= decay
-      const follow = 1 - Math.exp(-delta * 22)
-      bendX += (breezeX - bendX) * follow
-      bendY += (breezeY - bendY) * follow
       if (still || settings.breeze.strength === 0) {
-        breezeX = breezeY = bendX = bendY = 0
+        gust.reset()
         pointerTime = 0
       }
+      gustState = gust.step(delta, settings.breeze)
       const aimInfluence = pointerActive ? settings.light.pointerInfluence : 0
       const targetX = restingAimX + (aimTargetX - restingAimX) * aimInfluence
       const targetY = restingAimY + (aimTargetY - restingAimY) * aimInfluence
@@ -441,7 +450,7 @@ export async function startAmbient(
       }
       const moving =
         settings.foliage.speed > 0 && settings.foliage.movement > 0 && settings.foliage.density > 0
-      const gustMoving = Math.hypot(bendX, bendY, breezeX, breezeY) > 0.00001
+      const gustMoving = gust.moving()
       if (
         !still &&
         (moving || gustMoving || aimMoving || tiltMoving || night !== to || entrance > 0)
