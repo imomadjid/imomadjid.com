@@ -12,7 +12,7 @@ export function sunSource(angle: number, night: number, tilt: Vec3, aspect: numb
 }
 
 /** Where each branch is attached, in its canopy's texture coordinates. */
-export const BRANCH_ANCHOR = [1, 0.95] as const
+const BRANCH_ANCHOR = [1, 0.95] as const
 
 /** A canopy plane: its texture's top-left corner and its width in wall heights. */
 export type Canopy = { origin: Vec3; size: number }
