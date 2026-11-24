@@ -8,6 +8,7 @@ import material from '#/lib/live-glass-material.json'
 void test("the bevel profile fills the shader's ten knots and ends at no pull", () => {
   assert.equal(material.knots.length, 10)
   assert.equal(material.pulls.length, 10)
+  assert.equal(material.slopes.length, 10)
   assert.equal(material.pulls.at(-1), 0)
   for (const [i, knot] of material.knots.entries())
     if (i > 0) assert.ok(knot > material.knots[i - 1])

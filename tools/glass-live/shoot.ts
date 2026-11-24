@@ -1,6 +1,7 @@
 // 3x captures of /dev/live-glass?scene=<name>&icon=0 from the running dev server (bun run dev),
 // to diff against the simulator's (capture.sh) with diff.py.
 // Usage: bun tools/glass-live/shoot.ts <out-dir> [scene ...]   writes <out-dir>/web/<scene>-bare.png
+// A motion scene takes an offset as capture.sh's do: <scene>@<pt>.
 // Env: URL (default http://localhost:3000), CHROME (default Google Chrome).
 import { mkdirSync } from 'node:fs'
 
@@ -10,7 +11,9 @@ import file from './Scenes/scenes.json'
 
 const [out, ...only] = process.argv.slice(2)
 if (!out) throw new Error('Usage: shoot.ts <out-dir> [scene ...]')
-const names = only.length ? only : file.scenes.map((scene) => scene.name)
+const names = only.length
+  ? only
+  : file.scenes.filter((scene) => !('motion' in scene)).map((scene) => scene.name)
 const base = process.env.URL ?? 'http://localhost:3000'
 
 mkdirSync(`${out}/web`, { recursive: true })
@@ -28,7 +31,10 @@ page.on('console', (message) => {
     console.log('  page:', message.text())
 })
 for (const name of names) {
-  await page.goto(`${base}/dev/live-glass?scene=${name}&icon=0`, { waitUntil: 'load' })
+  const [scene, scroll = '0'] = name.split('@')
+  await page.goto(`${base}/dev/live-glass?scene=${scene}&icon=0&scroll=${scroll}`, {
+    waitUntil: 'load',
+  })
   // The live canvas fades in once its first frame is drawn; give the frame time to land.
   const live = await page
     .waitForSelector('canvas.opacity-100', { timeout: 10_000 })

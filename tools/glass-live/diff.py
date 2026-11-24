@@ -9,7 +9,7 @@ from PIL import Image
 DIR = sys.argv[1]
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCENES = json.load(open(f'{HERE}/Scenes/scenes.json'))
-names = sys.argv[2:] or [s['name'] for s in SCENES['scenes']]
+names = sys.argv[2:] or [s['name'] for s in SCENES['scenes'] if 'motion' not in s]
 button = SCENES['scenes'][0]['button']
 half = button['size'] / 2 + 12
 cx, cy = button['x'] + button['size'] / 2, button['y'] + button['size'] / 2

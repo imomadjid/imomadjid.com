@@ -23,4 +23,10 @@ export type LiveGlassSource = {
   scene: (near: DOMRectReadOnly) => LiveGlassScene
   /** Calls `wake` whenever the scene may have changed; returns the unsubscribe. */
   subscribe: (wake: () => void) => () => void
+  /**
+   * The photos move by scrolling the browser runs off the main thread (a person's touch, wheel
+   * or trackpad), so the screen shows them a frame past the rects the scene reads. While they
+   * keep moving, the glass draws them a frame ahead to match.
+   */
+  scrolls?: boolean
 }

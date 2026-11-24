@@ -1,6 +1,6 @@
 import { IconX } from '@tabler/icons-react'
 import { useLocation } from '@tanstack/react-router'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
 
 import { LiveGlassSourceProvider } from '#/components/live-glass'
@@ -35,6 +35,16 @@ function fileUrl(file: string) {
 export function LiveGlassFixture() {
   const params = new URLSearchParams(useLocation({ select: (location) => location.searchStr }))
   const capture = sceneFile.scenes.find((scene) => scene.name === params.get('scene'))
+  if (capture?.motion)
+    return (
+      <MotionScene
+        scene={capture}
+        motion={capture.motion}
+        icon={params.get('icon') !== '0'}
+        scroll={Number(params.get('scroll') ?? 0)}
+        run={params.get('run') === '1'}
+      />
+    )
   if (capture) return <CaptureScene scene={capture} icon={params.get('icon') !== '0'} />
 
   return (
@@ -69,6 +79,93 @@ function CaptureScene({ scene, icon }: { scene: Scene; icon: boolean }) {
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden" style={{ background: scene.background }}>
       <SceneFrame scene={scene} icon={icon} />
+    </div>
+  )
+}
+
+type Motion = NonNullable<Scene['motion']>
+
+/**
+ * A motion scene: its images in a real scroll container under the glass, so scrolling takes the
+ * same path to the live glass as the Gallery overlay's. `scroll` sets the offset; `run` scrolls
+ * at the scene's speed after its hold, as the SwiftUI app does, one step a frame.
+ */
+function MotionScene({
+  scene,
+  motion,
+  icon,
+  scroll,
+  run,
+}: {
+  scene: Scene
+  motion: Motion
+  icon: boolean
+  scroll: number
+  run: boolean
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  // Scrolled by hand it leads as the overlay does; `run` scrolls on the main thread, in step.
+  const source = useSceneSource(scrollerRef, true, !run)
+  const { button } = scene
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    scroller.scrollTop = scroll
+    if (!run) return
+    const start = performance.now()
+    const end = motion.height - sceneFile.height
+    let frame = requestAnimationFrame(function step(now) {
+      const t = (now - start) / 1000 - motion.hold
+      scroller.scrollTop = Math.min(end, Math.max(0, t * motion.speed))
+      frame = requestAnimationFrame(step)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [motion, run, scroll])
+
+  return (
+    <div
+      className={cn(
+        'fixed top-0 left-0 z-[100] overflow-hidden',
+        scene.scheme === 'dark' ? 'dark' : 'light',
+      )}
+      style={{ width: sceneFile.width, height: sceneFile.height, background: scene.background }}
+    >
+      <div
+        ref={scrollerRef}
+        data-background={scene.background}
+        className="absolute inset-0 [scrollbar-width:none] overflow-y-auto"
+      >
+        <div className="relative" style={{ height: motion.height }}>
+          {scene.images.map((image) => (
+            <img
+              key={`${image.file}@${image.x},${image.y}`}
+              src={fileUrl(image.file)}
+              alt=""
+              decoding="async"
+              className="absolute object-cover"
+              style={{
+                left: image.x,
+                top: image.y,
+                width: image.width,
+                height: image.height,
+                borderRadius: image.radius,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+      <LiveGlassSourceProvider source={source}>
+        <IconButton
+          aria-label="Close"
+          size="4xl"
+          glass="live"
+          className="absolute"
+          style={{ left: button.x, top: button.y }}
+        >
+          {icon && <IconX aria-hidden="true" />}
+        </IconButton>
+      </LiveGlassSourceProvider>
     </div>
   )
 }
@@ -144,7 +241,11 @@ function SceneFrame({
   )
 }
 
-function useSceneSource(frameRef: RefObject<HTMLDivElement | null>): LiveGlassSource {
+function useSceneSource(
+  frameRef: RefObject<HTMLDivElement | null>,
+  scrolls = false,
+  lead = false,
+): LiveGlassSource {
   return useMemo(
     () => ({
       scene() {
@@ -159,8 +260,14 @@ function useSceneSource(frameRef: RefObject<HTMLDivElement | null>): LiveGlassSo
           })),
         }
       },
-      subscribe: () => () => {},
+      subscribe(wake) {
+        const frame = frameRef.current
+        if (!scrolls || !frame) return () => {}
+        frame.addEventListener('scroll', wake, { passive: true })
+        return () => frame.removeEventListener('scroll', wake)
+      },
+      scrolls: lead,
     }),
-    [frameRef],
+    [frameRef, scrolls, lead],
   )
 }

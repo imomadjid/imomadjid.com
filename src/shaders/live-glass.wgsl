@@ -35,9 +35,11 @@ struct GlassParams {
   tableStep: f32,
   tableRows: f32,
   tableAngles: f32,
-  // The bevel's pull, pt inward, at 10 distances from the edge in pt (the last 0), four a slot.
+  // The bevel's pull, pt inward, at 10 distances from the edge in pt (the last 0), and its slope
+  // there, four a slot.
   knots: array<vec4f, 3>,
   pulls: array<vec4f, 3>,
+  slopes: array<vec4f, 3>,
 }
 @group(0) @binding(0) var<uniform> params: GlassParams;
 @group(0) @binding(1) var narrow: texture_2d<f32>;
@@ -59,15 +61,24 @@ fn pullAt(i: u32) -> f32 {
   return params.pulls[i / 4u][i % 4u];
 }
 
-// The pull at d pt from the edge, linear between knots, 0 past the last.
+fn slopeAt(i: u32) -> f32 {
+  return params.slopes[i / 4u][i % 4u];
+}
+
+// The pull at d pt from the edge: a cubic Hermite through the knots with fit.py's PCHIP slopes,
+// so the magnification changes smoothly around the rim. 0 past the last knot.
 fn pull(d: f32) -> f32 {
   if (d >= knot(9u)) {
     return 0.0;
   }
   for (var i = 1u; i < 10u; i++) {
     if (d <= knot(i)) {
-      let t = (d - knot(i - 1u)) / (knot(i) - knot(i - 1u));
-      return mix(pullAt(i - 1u), pullAt(i), clamp(t, 0.0, 1.0));
+      let h = knot(i) - knot(i - 1u);
+      let t = clamp((d - knot(i - 1u)) / h, 0.0, 1.0);
+      let t2 = t * t;
+      let t3 = t2 * t;
+      return (2.0 * t3 - 3.0 * t2 + 1.0) * pullAt(i - 1u) + (t3 - 2.0 * t2 + t) * h * slopeAt(i - 1u)
+        + (-2.0 * t3 + 3.0 * t2) * pullAt(i) + (t3 - t2) * h * slopeAt(i);
     }
   }
   return 0.0;

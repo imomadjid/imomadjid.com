@@ -107,6 +107,9 @@ export async function startLiveGlass(
     let frameId = 0
     let last = ''
     let still = 0
+    // Where each photo was last frame, and how far they moved the frame before, for the lead.
+    let placed = new Map<HTMLImageElement, DOMRectReadOnly>()
+    let stepped = false
     life.onDispose(() => cancelAnimationFrame(frameId))
 
     let drawn = false
@@ -175,6 +178,14 @@ export async function startLiveGlass(
         last = signature
       }
 
+      // Scrolled off the main thread, the screen is a frame past these rects. The photos lead by
+      // their last step while they keep moving, which matches it at a steady speed; when they
+      // stop, the glass is a step past for one frame, as it was a step behind before.
+      const step = movement(photos, placed)
+      const lead = source.scrolls && stepped && step ? step : { x: 0, y: 0 }
+      stepped = step !== null
+      placed = new Map(photos.map((photo) => [photo.image, photo.rect]))
+
       const layers = pool.place(photos.map((photo) => photo.image))
       const sharpScale = Math.min(output.dpr, 2)
       const sharpSize = texels(region, sharpScale)
@@ -192,7 +203,12 @@ export async function startLiveGlass(
         _pad2: [0, 0],
         background,
         rects: slots(
-          photos.map((photo) => [photo.rect.x, photo.rect.y, photo.rect.width, photo.rect.height]),
+          photos.map((photo) => [
+            photo.rect.x + lead.x,
+            photo.rect.y + lead.y,
+            photo.rect.width,
+            photo.rect.height,
+          ]),
         ),
         crops: slots(
           photos.map((photo) => {
@@ -236,6 +252,7 @@ export async function startLiveGlass(
           tableAngles: material.angles,
           knots: quads(material.knots),
           pulls: quads(material.pulls),
+          slopes: quads(material.slopes),
         },
       })
       frame(gpu, (now) => {
@@ -292,6 +309,21 @@ function nearest(photos: readonly LiveGlassPhoto[], region: DOMRectReadOnly, box
     .sort((a, b) => a.gap - b.gap)
     .slice(0, MAX_PHOTOS)
     .map(({ photo }) => photo)
+}
+
+/** How far the photos moved since `before`, read off the nearest one in both; null if none did. */
+function movement(
+  photos: readonly LiveGlassPhoto[],
+  before: ReadonlyMap<HTMLImageElement, DOMRectReadOnly>,
+) {
+  for (const photo of photos) {
+    const was = before.get(photo.image)
+    if (!was) continue
+    const x = photo.rect.x - was.x
+    const y = photo.rect.y - was.y
+    return x === 0 && y === 0 ? null : { x, y }
+  }
+  return null
 }
 
 /** Whole texels covering `region` at `scale` per CSS pixel. */

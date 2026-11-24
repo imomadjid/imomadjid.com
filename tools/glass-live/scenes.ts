@@ -26,12 +26,16 @@ type Scene = {
   background: string
   button: typeof BUTTON
   images: Image[]
+  // Motion scenes scroll their images up under the glass: `height` is the content's, `speed` in
+  // pt/s, starting `hold` s after launch so the glass has settled.
+  motion?: { height: number; speed: number; hold: number }
 }
 
 // The overlay's layout below the sm breakpoint: px-2 pt-2, gap-1.5, four columns, the first 16
 // photos round the columns in turn (src/components/gallery-overlay.tsx).
-function galleryImages(scroll = 0): Image[] {
-  const order = [...readFileSync(`${repo}src/lib/gallery.ts`, 'utf8').matchAll(/photo\('(\w+)'/g)]
+function galleryImages(scroll = 0, copies = 1, clip = true): Image[] {
+  const listed = [...readFileSync(`${repo}src/lib/gallery.ts`, 'utf8').matchAll(/photo\('(\w+)'/g)]
+  const order = Array.from({ length: copies }, () => listed).flat()
   const known = new Map(Object.entries(sizes))
   const photos = order.map(([, id]) => {
     const size = known.get(id)
@@ -52,7 +56,7 @@ function galleryImages(scroll = 0): Image[] {
     for (const index of indices) {
       const photo = photos[index]
       const height = (width * photo.height) / photo.width
-      if (y < HEIGHT && y + height > 0)
+      if (!clip || (y < HEIGHT && y + height > 0))
         images.push({
           file: `${photo.id}-640.webp`,
           x: pad + column * (width + gap),
@@ -188,6 +192,10 @@ const gallery = galleryImages()
 // The whole list fits one screen, so the scrolled scenes push it 150 pt down instead: the button
 // sits over two photos and the gap between their columns.
 const scrolled = galleryImages(-150)
+// Three copies of the list, for a run long enough to read the glass in motion.
+const strip = galleryImages(0, 3, false)
+const stripHeight = Math.ceil(Math.max(...strip.map((image) => image.y + image.height)) + 8)
+const motion = { height: stripHeight, speed: 400, hold: 2 }
 const scenes: Scene[] = [
   {
     name: 'gallery-light',
@@ -300,6 +308,22 @@ const scenes: Scene[] = [
     background: '#000000',
     button: BUTTON,
     images: [pattern('step.png')],
+  },
+  {
+    name: 'motion-light',
+    scheme: 'light',
+    background: surface.light,
+    button: BUTTON,
+    images: strip,
+    motion,
+  },
+  {
+    name: 'motion-dark',
+    scheme: 'dark',
+    background: surface.dark,
+    button: BUTTON,
+    images: strip,
+    motion,
   },
   { name: 'white', scheme: 'light', background: '#ffffff', button: BUTTON, images: [] },
   { name: 'grey', scheme: 'light', background: '#f2f1f6', button: BUTTON, images: [] },

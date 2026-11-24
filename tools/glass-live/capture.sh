@@ -2,13 +2,14 @@
 # Lossless 3x captures of the live-glass scenes in the iOS simulator.
 # Usage: capture.sh <out-dir> [scene ...]   (default: every scene in Scenes/scenes.json)
 #   capture.sh shots gallery-light grid-light
-# Writes <out-dir>/ref/<scene>.png with the close icon and <scene>-bare.png without it.
+# Writes <out-dir>/ref/<scene>.png with the close icon and <scene>-bare.png without it. A motion
+# scene takes an offset, <scene>@<pt>, and holds its images scrolled that far.
 # Env: SIM names the simulator (default "GlassTints", an iPhone 16 Pro); BUILD=0 skips the build.
 set -euo pipefail
 
 cd "${0:A:h}"
 out=${1:?out dir}; shift
-scenes=(${@:-$(python3 -c "import json;print(' '.join(s['name'] for s in json.load(open('Scenes/scenes.json'))['scenes']))")})
+scenes=(${@:-$(python3 -c "import json;print(' '.join(s['name'] for s in json.load(open('Scenes/scenes.json'))['scenes'] if 'motion' not in s))")})
 sim=${SIM:-GlassTints}
 app=build/Build/Products/Debug-iphonesimulator/GlassLive.app
 bundle=com.imomadjid.dev.GlassLive
@@ -24,11 +25,13 @@ xcrun simctl bootstatus "$sim" -b >/dev/null
 xcrun simctl install "$sim" "$app"
 mkdir -p "$out/ref"
 for scene in $scenes; do
-  scheme=$(python3 -c "import json;print(next(s['scheme'] for s in json.load(open('Scenes/scenes.json'))['scenes'] if s['name']=='$scene'))")
+  name=${scene%@*}
+  scroll=(); [[ $scene == *@* ]] && scroll=(-scroll ${scene#*@})
+  scheme=$(python3 -c "import json;print(next(s['scheme'] for s in json.load(open('Scenes/scenes.json'))['scenes'] if s['name']=='$name'))")
   xcrun simctl ui "$sim" appearance $scheme
   for icon in 1 0; do
     xcrun simctl terminate "$sim" $bundle 2>/dev/null || true
-    xcrun simctl launch "$sim" $bundle -scene "$scene" -icon $icon >/dev/null
+    xcrun simctl launch "$sim" $bundle -scene "$name" -icon $icon $scroll >/dev/null
     # Glass settles after its appear animation.
     sleep 2.5
     suffix=; [[ $icon == 0 ]] && suffix=-bare

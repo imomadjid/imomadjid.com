@@ -3,8 +3,8 @@
 #   uv run --with pillow --with numpy --with scipy python fit.py <dir> [--write]
 # The model, which src/shaders/live-glass.wgsl evaluates the same way, per pixel at distance d
 # inside the shape's edge (pt) with outward normal n:
-#   sample = p - n * pull(d)                               (refraction: pull is linear between
-#                                                           KNOTS, 0 from the last one in)
+#   sample = p - n * pull(d)                               (refraction: pull is a monotone cubic
+#                                                           through KNOTS, 0 from the last one in)
 #   base   = mix(gaussian(backdrop, blur), gaussian(backdrop, wideBlur), wide) at sample  (frost)
 #   base   = luma + saturation * (base - luma)              (vibrancy)
 #   out    = offset + gain * base + curve * base^2         (sRGB 0-1, tables over d and angle)
@@ -15,7 +15,7 @@
 import json, sys
 import numpy as np
 from PIL import Image
-from scipy import ndimage, optimize
+from scipy import interpolate, ndimage, optimize
 
 DIR = sys.argv[1]
 WRITE = '--write' in sys.argv
@@ -25,10 +25,10 @@ SCALE = 3
 BUTTON = SCENES['scenes'][0]['button']
 RADIUS = BUTTON['size'] / 2
 CX, CY = BUTTON['x'] + RADIUS, BUTTON['y'] + RADIUS
-# The crop: the button and 12 pt around it for the shadow; the backdrop gets 64 pt for the
+# The crop: the button and 12 pt around it for the shadow; the backdrop gets 100 pt for the
 # refraction and blur to reach into.
 CROP = RADIUS + 12
-PAD = RADIUS + 64
+PAD = RADIUS + 100
 # Lookup table: d from -12 to 12 pt in 1/3 pt steps (past 12 pt in, the material is flat), angle
 # of the outward normal in 32 steps.
 D_MIN, D_MAX, D_STEP = -12.0, 12.0, 1 / 3
@@ -95,14 +95,21 @@ def geometry():
 PX, PY, D, NX, NY, ANG = geometry()
 
 
-# The bevel's pull, pt inward, at these distances from the edge (pt); 0 from the last on.
-KNOTS = np.array([0, 0.75, 1.5, 2.5, 3.5, 5, 6.5, 8, 10, 12.0])
+# The bevel's pull, pt inward, at these distances from the edge (pt), out to the middle, where it
+# is 0: the whole disc is a lens, magnifying a little in the middle and folding hard at the rim.
+KNOTS = np.array([0, 1.5, 3, 4.5, 6, 8, 11, 15, 20, 28.0])
 PROFILE = None
+
+
+def bevel(profile):
+    """The pull as a monotone cubic through the knots (PCHIP): smooth, so the magnification it
+    gives changes without creases, and never overshooting the knots into a fold they don't have."""
+    return interpolate.PchipInterpolator(KNOTS, np.append(profile, 0.0))
 
 
 def pull():
     if PROFILE is not None:
-        return np.interp(np.maximum(D, 0), KNOTS, np.append(PROFILE, 0.0))
+        return bevel(PROFILE)(np.clip(D, 0, KNOTS[-1]))
     return None
 
 
@@ -228,8 +235,25 @@ def lookup(tab):
     )
 
 
+def motion_stills():
+    """Motion scenes held at an offset (capture.sh <scene>@<pt>), as plain scenes."""
+    import os
+
+    stills = []
+    for file in sorted(os.listdir(f'{DIR}/ref')):
+        if '@' not in file or not file.endswith('-bare.png'):
+            continue
+        name, scroll = file[: -len('-bare.png')].split('@')
+        scene = next(s for s in SCENES['scenes'] if s['name'] == name)
+        images = [{**i, 'y': i['y'] - float(scroll)} for i in scene['images']]
+        near = [i for i in images if i['y'] < CY + PAD and i['y'] + i['height'] > CY - PAD]
+        stills.append({**scene, 'name': f'{name}@{scroll}', 'images': near})
+    return stills
+
+
 def scheme_data(scheme):
-    names = [s for s in SCENES['scenes'] if s['scheme'] == scheme]
+    every = [s for s in SCENES['scenes'] if 'motion' not in s] + motion_stills()
+    names = [s for s in every if s['scheme'] == scheme]
     lo = int(round((PAD - CROP) * SCALE))
     data = []
     for scene in names:
@@ -271,7 +295,7 @@ def fit(scheme, start):
     data = scheme_data(scheme)
     for scene, _, _, err in data:
         print(f"  align {scene['name']:16s} {err:5.2f}")
-    bounds = [(0.05, 6), (0.5, 3), (0, 0.95), (3, 24)]
+    bounds = [(0.05, 6), (0.5, 3), (0, 0.95), (3, 32)]
 
     def full(q):
         q = np.clip(q, [b[0] for b in bounds], [b[1] for b in bounds])
@@ -294,38 +318,91 @@ def fit(scheme, start):
     return p, tables
 
 
-def fit_profile(start, frost, names):
-    """Fits the bevel's pull at KNOTS, shared by both schemes, with each scheme's frost fixed."""
-    global PROFILE
-    sets = {}
-    for scheme in frost:
-        data = scheme_data(scheme)
-        sets[scheme] = [x for x in data if x[0]['name'] in names]
+def edge_samples():
+    """(d, pull) pairs read off the motion stills where the column gap behind the glass (6 pt wide,
+    centred under it) separates cleanly from the photos: a pixel on the gap's boundary at p, r
+    from the centre, samples the gap's edge 3 pt across, radially inward, so
+    pull = r * (1 - 3 / |p.x|). Tone-free, and it reaches the rim, where the gap sweeps out."""
+    import os
 
-    def loss(knots):
-        global PROFILE
-        PROFILE = np.maximum(knots, 0)
-        # A light penalty on bends keeps the profile from kinking to chase single pixels.
-        bends = np.diff(np.append(PROFILE, 0.0), 2)
-        return np.mean([evaluate(sets[k], [0, 1, 1, *frost[k]]) for k in sets]) + 0.01 * (bends**2).sum()
+    n = int(2 * RADIUS * SCALE)
+    yy, xx = np.mgrid[0:n, 0:n]
+    px = (xx + 0.5) / SCALE - RADIUS
+    py = (yy + 0.5) / SCALE - RADIUS
+    r = np.hypot(px, py)
+    d = RADIUS - r
+    x0, y0 = int(round((CX - RADIUS) * SCALE)), int(round((CY - RADIUS) * SCALE))
+    c, band = n // 2, slice(int(n * 0.32), int(n * 0.68))
+    pts = []
+    for file in sorted(os.listdir(f'{DIR}/ref')):
+        if '@' not in file or not file.endswith('-bare.png'):
+            continue
+        luma = (load(f'{DIR}/ref/{file}') @ [0.299, 0.587, 0.114])[y0 : y0 + n, x0 : x0 + n]
+        gap = luma[band, c - 3 : c + 3].mean()
+        photo = np.median(np.r_[luma[band, c - 44 : c - 24].ravel(), luma[band, c + 24 : c + 44].ravel()])
+        if abs(gap - photo) < 15:
+            continue
+        inside = (luma - (gap + photo) / 2) * np.sign(gap - photo) > 0
+        labels, _ = ndimage.label(inside & (d > 0.7))
+        region = labels == labels[c, c]
+        # Only where the gap stands alone: its own width through the flat middle and no wider
+        # than its cap anywhere, so a photo as light as the gap can't leak into the trace.
+        widths = region[band].sum(1) / SCALE
+        if labels[c, c] == 0 or widths.min() < 5 or widths.max() > 8 or (region & (abs(px) > 16)).any():
+            continue
+        # The cap, where the edges sweep out: whole boundary pixels are precise enough there.
+        edge = region & ~ndimage.binary_erosion(region)
+        edge &= ndimage.binary_dilation(~region & (d > 0.7)) & (abs(px) > 3.4) & (d < 7)
+        pts += [(d[y, x], r[y, x] * (1 - 3 / abs(px[y, x]))) for y, x in zip(*np.nonzero(edge))]
+        # The straight middle, where the pull is small and 3 / |p.x| needs sub-pixel edges: each
+        # row's crossings of the half level, either side.
+        level = (gap + photo) / 2
+        for y in range(n):
+            row = (luma[y] - level) * np.sign(gap - photo)
+            for side in (1, -1):
+                x = c
+                while 0 < x < n - 1 and row[x] > 0 and region[y, x]:
+                    x += side
+                if not (0 < x < n - 1) or row[x] > 0:
+                    continue
+                inner = x - side
+                cross = inner + side * row[inner] / (row[inner] - row[x])
+                ex, ey = abs((cross + 0.5) / SCALE - RADIUS), (y + 0.5) / SCALE - RADIUS
+                er = np.hypot(ex, ey)
+                if RADIUS - er >= 7 and ex > 3:
+                    pts.append((RADIUS - er, er * (1 - 3 / ex)))
+    return np.array(pts)
 
-    res = optimize.minimize(loss, start, method='Powell', options={'xtol': 0.05, 'ftol': 0.002, 'maxfev': 700})
-    PROFILE = np.maximum(res.x, 0)
-    print('profile', np.round(PROFILE, 2).tolist(), '->', round(res.fun, 3))
-    return PROFILE
+
+def edge_profile():
+    """The bevel's pull at KNOTS, fitted to the gap edges' geometry with a robust loss: the
+    rim's few pixels hardly move a tone-weighted error, so it can't place them."""
+    pts = edge_samples()
+    pts = pts[pts[:, 0] <= KNOTS[-1]]
+
+    def residual(knots):
+        # A light bend penalty keeps it smooth where samples are few.
+        bends = np.diff(np.append(knots, 0.0), 2)
+        return np.r_[bevel(knots)(pts[:, 0]) - pts[:, 1], 3 * bends]
+
+    start = np.interp(KNOTS[:-1], [0, 4, 8, 16, KNOTS[-1]], [18, 7, 3.5, 1.2, 0])
+    res = optimize.least_squares(residual, start, loss='soft_l1', f_scale=1.0, bounds=(0, 30))
+    print(f'profile from {len(pts)} edge samples', np.round(res.x, 2).tolist())
+    return res.x
 
 
 if __name__ == '__main__':
-    # Alternates the frost (per scheme) and the bevel profile (shared). The frost starts from the
-    # step captures' line spread: about 30% passes nearly sharp, the rest blurs ~14 pt wide.
-    PROFILE = 6.5 * np.clip(1 - KNOTS[:-1] / 10, 0, 1) ** 1.8
+    # The bevel from the motion stills' gap edges, then the frost (per scheme) around it. The frost
+    # starts from the step captures' line spread: about 30% passes nearly sharp, the rest blurs
+    # ~14 pt wide; --resume starts it from the material already written instead.
+    PROFILE = edge_profile()
     frost = {'light': [0.5, 1.7, 0.71, 14.9], 'dark': [0.3, 1.5, 0.66, 12.7]}
-    bevel_scenes = {f'{k}-{s}' for k in ('grid', 'step', 'scrolled', 'saw-x') for s in ('light', 'dark')}
-    for round_ in range(2):
-        for scheme in frost:
-            p, _ = fit(scheme, frost[scheme])
-            frost[scheme] = p[3:]
-        PROFILE = fit_profile(PROFILE, frost, bevel_scenes)
+    if '--resume' in sys.argv:
+        last = json.load(open(f'{HERE}/../../src/lib/live-glass-material.json'))
+        frost = {k: [last[k][p] for p in ('blur', 'saturation', 'wide', 'wideBlur')] for k in frost}
+    for scheme in frost:
+        p, _ = fit(scheme, frost[scheme])
+        frost[scheme] = p[3:]
     out = {
         'dMin': D_MIN,
         'dStep': D_STEP,
@@ -333,6 +410,7 @@ if __name__ == '__main__':
         'size': BUTTON['size'],
         'knots': KNOTS.tolist(),
         'pulls': np.round(np.append(PROFILE, 0.0), 3).tolist(),
+        'slopes': np.round(bevel(PROFILE).derivative()(KNOTS), 4).tolist(),
     }
     for scheme in frost:
         errs, (o, g, q), _ = evaluate(scheme_data(scheme), [0, 1, 1, *frost[scheme]], detail=True)

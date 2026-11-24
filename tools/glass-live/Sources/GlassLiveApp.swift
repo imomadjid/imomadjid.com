@@ -24,11 +24,16 @@ struct GlassScene: Decodable, Identifiable, Hashable {
         let x, y, size: Double
     }
 
+    struct Motion: Decodable, Hashable {
+        let height, speed, hold: Double
+    }
+
     let name: String
     let scheme: String
     let background: String
     let button: Frame
     let images: [Placed]
+    let motion: Motion?
 
     var id: String { name }
     var colorScheme: ColorScheme { scheme == "dark" ? .dark : .light }
@@ -75,11 +80,35 @@ extension Image {
     }
 }
 
+// A motion scene's images scroll up at its speed after its hold, through the whole strip, then
+// stop; -scroll <pt> holds them at one offset instead.
+struct MotionView: View {
+    let scene: GlassScene
+    let icon: Bool
+    let motion: GlassScene.Motion
+    @State private var start = Date()
+
+    var body: some View {
+        if let fixed = UserDefaults.standard.object(forKey: "scroll") as? Double
+            ?? Double(UserDefaults.standard.string(forKey: "scroll") ?? "")
+        {
+            SceneView(scene: scene, icon: icon, scroll: fixed)
+        } else {
+            TimelineView(.animation) { context in
+                let t = context.date.timeIntervalSince(start) - motion.hold
+                let end = motion.height - sceneFile.height
+                SceneView(scene: scene, icon: icon, scroll: min(end, max(0, t * motion.speed)))
+            }
+        }
+    }
+}
+
 // One screen: the backdrop, then the close button's glass, a 56 pt circle as on the web. With
 // `icon` off the glass is empty, so diffs measure the material alone.
 struct SceneView: View {
     let scene: GlassScene
     let icon: Bool
+    var scroll: Double = 0
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -91,7 +120,7 @@ struct SceneView: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: placed.width, height: placed.height)
                         .clipShape(RoundedRectangle(cornerRadius: placed.radius, style: .circular))
-                        .offset(x: placed.x, y: placed.y)
+                        .offset(x: placed.x, y: placed.y - scroll)
                 }
             }
             ZStack {
@@ -119,7 +148,14 @@ struct RootView: View {
         if let name = defaults.string(forKey: "scene"),
            let scene = sceneFile.scenes.first(where: { $0.name == name })
         {
-            SceneView(scene: scene, icon: defaults.object(forKey: "icon") == nil || defaults.bool(forKey: "icon"))
+            let icon = defaults.object(forKey: "icon") == nil || defaults.bool(forKey: "icon")
+            Group {
+                if let motion = scene.motion {
+                    MotionView(scene: scene, icon: icon, motion: motion)
+                } else {
+                    SceneView(scene: scene, icon: icon)
+                }
+            }
                 .ignoresSafeArea()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(Color(hex: scene.background).ignoresSafeArea())
