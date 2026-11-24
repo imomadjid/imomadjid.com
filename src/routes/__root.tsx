@@ -56,8 +56,10 @@ function NotFound() {
   )
 }
 
+// DialRoot renders nothing in production builds unless told otherwise. dev.imomadjid.com is one,
+// and DEV_TOOLS already keeps this out of the real production site.
 function ThemedDialKit() {
-  return <DialRoot theme={useTheme()} defaultOpen={false} />
+  return <DialRoot theme={useTheme()} defaultOpen={false} productionEnabled />
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
