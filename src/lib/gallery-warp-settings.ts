@@ -1,16 +1,39 @@
-import type { DialConfig } from 'dialkit'
+import type { DialConfig, ResolvedValues } from 'dialkit'
 
-import type { WarpTuning } from './gallery-warp'
-
-export const galleryWarpControls = {
-  motion: { type: 'easing', duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-  /** Seconds the corners start after the middle. */
-  lead: [0.15, 0, 0.6, 0.01],
-  /** Extra magnification of the middle halfway through a move. */
-  bulge: [0, 0, 0.5, 0.01],
+export const galleryControls = {
+  /** The See more tile's zoom out to the whole grid. */
+  seeMore: {
+    motion: { type: 'easing', duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+    /** Seconds the corners start after the middle. */
+    lead: [0.15, 0, 0.6, 0.01],
+    /** Extra magnification of the middle halfway through a move. */
+    bulge: [0, 0, 0.5, 0.01],
+  },
+  /** A featured photo's zoom inside its tile on hover. */
+  photo: {
+    motion: { type: 'easing', duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    lead: [0.12, 0, 0.5, 0.01],
+    /** How far the photo zooms in: 0.06 is 6%. */
+    zoom: [0.06, 0, 0.2, 0.005],
+  },
+  /** A featured photo expanding to full screen, one corner at a time. */
+  expand: {
+    motion: { type: 'easing', duration: 0.55, ease: [0.32, 0.72, 0, 1] },
+    /** Seconds between one corner starting and the next. */
+    stagger: [0.06, 0, 0.25, 0.005],
+  },
 } satisfies DialConfig
 
-const { motion, lead, bulge } = galleryWarpControls
+export type GalleryTuning = ResolvedValues<typeof galleryControls>
 
-// Production values; /dev/gallery-warp tunes these in DialKit.
-export const defaultWarpTuning: WarpTuning = { motion, lead: lead[0], bulge: bulge[0] }
+const { seeMore, photo, expand } = galleryControls
+
+// Production values; DialKit's Gallery panel tunes these in development.
+export const defaultGalleryTuning: GalleryTuning = {
+  seeMore: { motion: seeMore.motion, lead: seeMore.lead[0], bulge: seeMore.bulge[0] },
+  photo: { motion: photo.motion, lead: photo.lead[0], zoom: photo.zoom[0] },
+  expand: { motion: expand.motion, stagger: expand.stagger[0] },
+}
+
+/** The See more tile's controls alone, for /dev/gallery-warp. */
+export const galleryWarpControls = seeMore

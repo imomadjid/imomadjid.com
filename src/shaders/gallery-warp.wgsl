@@ -1,6 +1,6 @@
 // The See more tile's 4x4 grid of photos, zoomed by a radial profile so the middle can lead the
-// edges. src/dev/gallery-warp.ts computes the profile on the CPU; this shader only looks it up.
-const RING_COUNT = 48u;
+// edges. src/lib/gallery-warp.ts computes the profile on the CPU; this shader only looks it up.
+import { ringScale, roundedBox } from "./rings.wgsl";
 
 struct WarpParams {
   // Tile size in CSS pixels, and device pixels per CSS pixel.
@@ -14,31 +14,12 @@ struct WarpParams {
   // Edge length of each square photo layer, in texels at mip 0.
   texSize: f32,
   mipCount: f32,
-  // Grid pixels per screen pixel, sampled at RING_COUNT radii from the middle (0) to a corner
-  // (RING_COUNT - 1). The CPU keeps radius times this nondecreasing, so the image never folds.
+  // Grid pixels per screen pixel at RING_COUNT radii, from src/lib/ring-motion.ts.
   rings: array<vec4f, 12>,
 }
 @group(0) @binding(0) var<uniform> params: WarpParams;
 @group(0) @binding(1) var photos: texture_2d_array<f32>;
 @group(0) @binding(2) var photoSampler: sampler;
-
-fn ring(index: u32) -> f32 {
-  let i = min(index, RING_COUNT - 1u);
-  return params.rings[i / 4u][i % 4u];
-}
-
-// Grid pixels per screen pixel at a normalized radius (0 in the middle, 1 at a corner).
-fn inverseZoom(radius: f32) -> f32 {
-  let x = clamp(radius, 0.0, 1.0) * f32(RING_COUNT - 1u);
-  let i = u32(floor(x));
-  return mix(ring(i), ring(i + 1u), fract(x));
-}
-
-// Signed distance to a box with rounded corners, centred on the origin.
-fn roundedBox(p: vec2f, halfSize: vec2f, radius: f32) -> f32 {
-  let q = abs(p) - halfSize + radius;
-  return length(max(q, vec2f(0.0))) + min(max(q.x, q.y), 0.0) - radius;
-}
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
@@ -46,7 +27,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   // Screen position from the tile's middle, in CSS pixels.
   let screen = (uv - 0.5) * size;
   let radius = length(screen) / length(size * 0.5);
-  let scale = inverseZoom(radius);
+  let scale = ringScale(params.rings, radius);
   // Device pixels per grid pixel, for antialiasing and mip selection.
   let pixelsPerGrid = params.dpr / scale;
 
