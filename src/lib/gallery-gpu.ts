@@ -210,7 +210,7 @@ export function ringLoop<T extends RingTuning>(options: {
  * level, so minified photos don't alias. The first level is filtered from the source, and each
  * one after from the level before, so each costs a quarter of the last.
  */
-export function uploadMips(
+function uploadMips(
   gpu: Gpu,
   texture: GPUTexture,
   image: HTMLImageElement,
@@ -240,7 +240,7 @@ export function uploadMips(
 }
 
 /** Mip levels down to about `smallest` texels on the longer side. */
-export function mipLevels(width: number, height: number, smallest = 16) {
+function mipLevels(width: number, height: number, smallest = 16) {
   return Math.max(1, Math.floor(Math.log2(Math.max(width, height) / smallest)) + 1)
 }
 
