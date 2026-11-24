@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FocusEvent as ReactFocusEvent, PointerEvent as ReactPointerEvent } from 'react'
 
 import { useGalleryRenderer } from '#/components/use-gallery-renderer'
+import { transitionTiming } from '#/lib/ambient-transition'
 import type { GalleryPhoto } from '#/lib/gallery'
 import { decodedImage } from '#/lib/gallery-images'
 import type { PhotoZoom, PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
+import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
 // The CSS fallback's hover zoom, left off while the canvas draws the photo.
@@ -14,7 +16,8 @@ const photoZoomClass =
 /**
  * A photo that zooms in a little inside its frame on hover or keyboard focus, the middle first
  * (src/lib/gallery-photo-zoom.ts). Its renderer starts as it nears the viewport, or with `lazy`,
- * on the first hover or focus, so a long list only spends canvases on photos someone points at.
+ * on hover or focus, and lets go of its canvas once the photo has zoomed back out, so a long list
+ * only holds canvases for the photos being pointed at.
  */
 function useZoomingPhoto({
   photo,
@@ -30,45 +33,47 @@ function useZoomingPhoto({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const zoomedInRef = useRef(false)
   const [active, setActive] = useState(!lazy)
-  const [failed, setFailed] = useState(false)
+  // Without WebGPU no canvas starts, so the CSS zoom stays.
+  const [unsupported, setUnsupported] = useState(false)
+  const releaseTimer = useRef(0)
+  useEffect(() => () => clearTimeout(releaseTimer.current), [])
 
-  const { rendererRef, ready } = useGalleryRenderer<PhotoZoom, PhotoZoomTuning>(
+  const { rendererRef, ready, failed } = useGalleryRenderer<PhotoZoom, PhotoZoomTuning>(
     canvasRef,
-    // An inactive photo has no canvas, so nothing starts until it turns active.
-    active ? photo.small : '',
+    photo.small,
     tuning,
     async (canvas, initialTuning, signal, onFail) => {
-      const fail = (error: Error) => {
-        setFailed(true)
-        onFail(error)
-      }
-      try {
-        const { startPhotoZoom } = await import('#/lib/gallery-photo-zoom')
-        const zoom = await startPhotoZoom(canvas, photo.small, initialTuning, signal, fail, radius)
-        zoom.setZoomedIn(zoomedInRef.current)
-        return zoom
-      } catch (error) {
-        if (!signal.aborted) setFailed(true)
-        throw error
-      }
+      const { startPhotoZoom } = await import('#/lib/gallery-photo-zoom')
+      const zoom = await startPhotoZoom(canvas, photo.small, initialTuning, signal, onFail, radius)
+      zoom.setZoomedIn(zoomedInRef.current)
+      return zoom
     },
+    canvasRef,
+    active,
   )
 
   const zoomIn = (zoomedIn: boolean) => {
     zoomedInRef.current = zoomedIn
     rendererRef.current?.setZoomedIn(zoomedIn)
+    clearTimeout(releaseTimer.current)
     if (zoomedIn) {
       setActive(true)
-      // Without WebGPU no canvas starts, so the CSS zoom stays.
-      if (!('gpu' in navigator)) setFailed(true)
+      setUnsupported(!('gpu' in navigator))
       // Warm up the full-screen photo while the pointer is on its way to pressing.
       decodedImage(photo.large).catch(() => {})
+    } else if (lazy) {
+      // Once zoomed back out, the photo at rest is the image beneath, so the canvas can go.
+      const { duration } = transitionTiming(tuning.motion)
+      releaseTimer.current = window.setTimeout(
+        () => setActive(false),
+        (duration + tuning.lead) * 1000 + 100,
+      )
     }
   }
 
   // Until its canvas draws, the photo zooms in CSS. A lazy one waits instead while its canvas
   // starts, so the canvas doesn't begin its zoom behind the CSS one's.
-  const cssZoom = !ready && (!lazy || failed || !active)
+  const cssZoom = !ready && (!lazy || !active || failed || unsupported)
   const handlers = {
     onPointerEnter: (event: ReactPointerEvent) => event.pointerType !== 'touch' && zoomIn(true),
     onPointerLeave: () => zoomIn(false),
@@ -96,7 +101,7 @@ export function FeaturedPhoto({
   tuning: PhotoZoomTuning
   onOpen: (photo: GalleryPhoto, tile: HTMLElement) => void
 }) {
-  const zoom = useZoomingPhoto({ photo, tuning, radius: 12, lazy: false })
+  const zoom = useZoomingPhoto({ photo, tuning, radius: TILE_RADIUS, lazy: false })
 
   return (
     <button
@@ -148,7 +153,7 @@ export function OverlayPhoto({
   className?: string
   onOpen: (photo: GalleryPhoto, tile: HTMLElement) => void
 }) {
-  const zoom = useZoomingPhoto({ photo, tuning, radius: 8, lazy: true })
+  const zoom = useZoomingPhoto({ photo, tuning, radius: 8 /* rounded-lg */, lazy: true })
 
   return (
     <button

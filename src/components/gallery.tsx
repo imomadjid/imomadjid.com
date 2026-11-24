@@ -5,7 +5,7 @@ import { useLayoutEffect, useRef } from 'react'
 import cameraPhoto from '#/assets/camera/fujifilm-x-t30-iii.webp'
 import { useFlightStage } from '#/components/gallery-flight-stage'
 import { useGalleryLightbox } from '#/components/gallery-lightbox'
-import { GalleryOverlay, useSeeMoreOverlay } from '#/components/gallery-overlay'
+import { GalleryOverlay, HERO_CELLS, useSeeMoreOverlay } from '#/components/gallery-overlay'
 import { FeaturedPhoto } from '#/components/gallery-photo-tile'
 import { SeeMoreTile } from '#/components/gallery-see-more'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
@@ -46,7 +46,7 @@ function Gallery({
   // The overlay's order: the photos past the featured ones first, so the See more tile can
   // preview what the page doesn't show yet. Its 16 are the overlay's first.
   const overlayPhotos = [...photos.slice(featuredCount), ...featured]
-  const preview = overlayPhotos.slice(0, 16)
+  const preview = overlayPhotos.slice(0, HERO_CELLS)
   const tuning = useGalleryTuning()
   const sectionRef = useRef<HTMLDivElement>(null)
   const tileRef = useRef<HTMLSpanElement>(null)
@@ -121,7 +121,7 @@ function Gallery({
         photos={overlayPhotos}
         photoTuning={tuning.photo}
         listRef={overlay.listRef}
-        flies={stage.ready}
+        flies={overlay.flies}
         cellsLifted={overlay.cellsLifted}
         closing={overlay.closing}
         onClose={overlay.close}

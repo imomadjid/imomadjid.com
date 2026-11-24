@@ -1,5 +1,8 @@
 import type { Rect } from '#/lib/gallery-flight-geometry'
 
+// The Gallery tiles' and the full-screen photo's rounded-xl corners, in CSS pixels.
+export const TILE_RADIUS = 12
+
 // The See more tile's 4x4 grid at 1x, in CSS pixels: gap-0.5 and rounded-md cells.
 export const SEE_MORE_GAP = 2
 export const SEE_MORE_CELL_RADIUS = 6

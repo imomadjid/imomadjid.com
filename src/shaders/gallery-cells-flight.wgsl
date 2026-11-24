@@ -18,6 +18,7 @@ struct CellsFlightParams {
   // outward by half the margin: cells the tile's 2x crop leaves out slide under its rim, fading,
   // as they land, and at the margin's 0 the edge is the tile's own.
   clipRadius: f32,
+  clipMargin: f32,
   clip: vec4f,
   // Cell i's corners in CSS pixels: corners[2i] holds top left and top right, corners[2i + 1]
   // bottom right and bottom left.
@@ -25,8 +26,7 @@ struct CellsFlightParams {
   // Each corner's texture coordinate in the same layout. A layer holds its whole photo squeezed
   // square, so these are the photo's own coordinates.
   texels: array<vec4f, 32>,
-  // Cell i's corner radius in CSS pixels, its opacity, the clip margin, then how far it has
-  // turned into the photo it becomes.
+  // Cell i's corner radius in CSS pixels, then how far it has turned into the photo it becomes.
   styles: array<vec4f, 16>,
   // Cell i's layer, the layer of the photo it becomes, and that photo's aspect.
   layers: array<vec4f, 16>,
@@ -57,6 +57,20 @@ fn coverCrop(imageAspect: f32, boxAspect: f32) -> vec4f {
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let p = uv * params.size;
+  // The clip is the same for every cell, so pixels outside it skip the cells altogether.
+  let margin = params.clipMargin;
+  let clipHalf = params.clip.zw * 0.5 + margin;
+  let clipEdge = roundedBox(
+    p - params.clip.xy - params.clip.zw * 0.5,
+    clipHalf,
+    min(params.clipRadius + margin, min(clipHalf.x, clipHalf.y)),
+  );
+  let pixel = 1.0 / params.dpr;
+  let soft = max(margin * 0.5, pixel);
+  let clipCover = 1.0 - smoothstep(-0.5 * pixel, soft - 0.5 * pixel, clipEdge);
+  if (clipCover <= 0.0) {
+    return vec4f(0.0);
+  }
   var color = vec4f(0.0);
   for (var i = 0u; i < u32(params.count); i += 1u) {
     let top = params.corners[2u * i];
@@ -76,16 +90,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     let style = params.styles[i];
     let radius = min(style.x, 0.5 * min(size.x, size.y));
     let edge = roundedBox((q - 0.5) * size, size * 0.5, radius);
-    let clipHalf = params.clip.zw * 0.5 + style.z;
-    let clipEdge = roundedBox(
-      p - params.clip.xy - params.clip.zw * 0.5,
-      clipHalf,
-      min(params.clipRadius + style.z, min(clipHalf.x, clipHalf.y)),
-    );
-    let pixel = 1.0 / params.dpr;
-    let soft = max(style.z * 0.5, pixel);
-    let clipCover = 1.0 - smoothstep(-0.5 * pixel, soft - 0.5 * pixel, clipEdge);
-    let coverage = clamp(0.5 - edge * params.dpr, 0.0, 1.0) * clipCover * style.y;
+    let coverage = clamp(0.5 - edge * params.dpr, 0.0, 1.0) * clipCover;
     if (coverage <= 0.0) {
       continue;
     }
@@ -111,7 +116,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     ).rgb;
     // Crossfades into the photo it becomes, cropped to the cell's shape now as object-fit: cover
     // would crop it, over the middle of the flight, so the double exposure is brief.
-    if (layers.y != layers.x && style.w > 0.0) {
+    if (layers.y != layers.x && style.y > 0.0) {
       let crop = coverCrop(layers.z, size.x / max(size.y, 1e-4));
       let turned = textureSampleLevel(
         photos,
@@ -120,7 +125,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
         u32(layers.y),
         mipLevel(crop.zw * params.texSize, pixels),
       ).rgb;
-      rgb = mix(rgb, turned, smoothstep(0.2, 0.8, style.w));
+      rgb = mix(rgb, turned, smoothstep(0.2, 0.8, style.y));
     }
     color = vec4f(rgb * coverage, coverage) + color * (1.0 - coverage);
   }

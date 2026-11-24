@@ -9,14 +9,17 @@ import type { FlightPose } from '#/lib/gallery-flight'
 import {
   containRect,
   cornerLags,
+  cornerRadius,
   coverCrop,
   diagonal,
   quadOf,
+  viewportRect,
   wholeImage,
 } from '#/lib/gallery-flight-geometry'
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import { fullScaleRect } from '#/lib/page-recede'
+import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
 type Phase = 'opening' | 'open' | 'closing'
@@ -30,14 +33,12 @@ type Shown = {
   airborne: boolean
 }
 
-// The layout viewport without scrollbars: the box the fixed flight canvas fills. The flight and
-// the full-screen photo both measure it here, so the photo lands where the image shows.
-const readViewport = (): Rect => ({
-  x: 0,
-  y: 0,
-  width: document.documentElement.clientWidth,
-  height: document.documentElement.clientHeight,
-})
+/** The backdrop both Gallery dialogs dim the page with, thin enough for the page's shrink to show. */
+export const galleryBackdropClass =
+  'fixed inset-0 z-50 bg-surface-1/60 backdrop-blur-md transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none'
+
+// The full-screen photo follows the viewport the flight measures (viewportRect), so it lands
+// where the image shows.
 const viewportWidth = () => document.documentElement.clientWidth
 const viewportHeight = () => document.documentElement.clientHeight
 const serverSize = () => 0
@@ -67,15 +68,12 @@ function fullScreenRect(viewport: Rect, photo: GalleryPhoto): Rect {
   })
 }
 
-// The full-screen photo's rounded-xl corners.
-const FULL_SCREEN_RADIUS = 12
-
 /** The whole photo in its full-screen rect. */
 function fullScreenPose(viewport: Rect, photo: GalleryPhoto): FlightPose {
   return {
     corners: quadOf(fullScreenRect(viewport, photo)),
     texels: quadOf(wholeImage),
-    radius: FULL_SCREEN_RADIUS,
+    radius: TILE_RADIUS,
   }
 }
 
@@ -87,7 +85,7 @@ function tilePose(photo: GalleryPhoto, tile: HTMLElement, rect: Rect): FlightPos
   return {
     corners: quadOf(rect),
     texels: quadOf(coverCrop(photo.width / photo.height, rect.width / rect.height)),
-    radius: Number.parseFloat(getComputedStyle(tile).borderTopLeftRadius) || 0,
+    radius: cornerRadius(tile),
   }
 }
 
@@ -128,8 +126,14 @@ export function useGalleryLightbox(stage: FlightStage) {
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
     if (!flight) return
     const from = tilePose(photo, tile, tile.getBoundingClientRect())
-    const screen = readViewport()
+    const screen = viewportRect()
     const current = () => flightToken.current === token
+    // The full-screen photo takes over from the flight, or replaces it if it fails.
+    const settle = () => {
+      if (!current()) return
+      setShown((shown) => (shown ? { ...shown, phase: 'open' } : shown))
+      stage.hide(false)
+    }
     // The sharp photo if hovering already decoded it; otherwise the tile's own, until the sharp one
     // decodes, which starts now and takes over mid-flight.
     const image = decodedNow(photo.large) ?? decodedNow(photo.small)
@@ -159,18 +163,14 @@ export function useGalleryLightbox(stage: FlightStage) {
       })
       .then(async (landed) => {
         if (!landed) return
-        // Keep the flight's last frame up until the full-screen photo can replace it.
+        // Keep the flight's last frame up until the full-screen photo can replace it, then swap
+        // them in one commit.
         await imageRef.current?.decode().catch(() => {})
-        if (!current()) return
-        // One commit: the full-screen photo shows as the canvas hides.
-        setShown((shown) => (shown ? { ...shown, phase: 'open' } : shown))
-        stage.hide(false)
+        settle()
       })
       .catch((error) => {
         console.warn('The Gallery photo opened without its expand:', error)
-        if (!current()) return
-        setShown((shown) => (shown ? { ...shown, phase: 'open' } : shown))
-        stage.hide(false)
+        settle()
       })
   }
 
@@ -186,8 +186,9 @@ export function useGalleryLightbox(stage: FlightStage) {
       setShown(null)
       return
     }
-    const screen = readViewport()
-    const from = flight.pose() ?? fullScreenPose(screen, photo)
+    const screen = viewportRect()
+    // A photo still flying out turns around where it is instead (Flight.fly).
+    const from = fullScreenPose(screen, photo)
     // Where the tile will be once the page behind the photo has grown back.
     const to = tilePose(photo, tile, fullScaleRect(tile))
     const landing = flight.fly({
@@ -227,10 +228,7 @@ export function useGalleryLightbox(stage: FlightStage) {
         {/* Nested in the See more dialog, which Base UI would leave without a backdrop. */}
         <Dialog.Backdrop
           forceRender
-          className={cn(
-            'fixed inset-0 z-50 bg-surface-1/60 backdrop-blur-md transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
-            shown?.phase === 'closing' && 'opacity-0',
-          )}
+          className={cn(galleryBackdropClass, shown?.phase === 'closing' && 'opacity-0')}
         />
         <Dialog.Popup
           className="fixed inset-0 z-50 cursor-zoom-out outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"

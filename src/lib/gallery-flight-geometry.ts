@@ -76,3 +76,22 @@ export function cornerLags(
 export function diagonal(rect: Rect) {
   return Math.hypot(rect.width, rect.height)
 }
+
+/** A loaded image's width over its height. */
+export function imageAspect(image: HTMLImageElement) {
+  return image.naturalWidth / Math.max(1, image.naturalHeight)
+}
+
+/** An element's top left corner radius, in CSS pixels, as its computed style has it. */
+export function cornerRadius(element: Element) {
+  return Number.parseFloat(getComputedStyle(element).borderTopLeftRadius) || 0
+}
+
+/**
+ * The layout viewport without scrollbars: the box the fixed flight canvas fills, which every
+ * flight measures its moves against.
+ */
+export function viewportRect(): Rect {
+  const { clientWidth: width, clientHeight: height } = document.documentElement
+  return { x: 0, y: 0, width, height }
+}

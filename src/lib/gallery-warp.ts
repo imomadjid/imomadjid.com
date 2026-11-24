@@ -1,7 +1,6 @@
 import { effect } from 'vgpu'
 
 import {
-  TILE_RADIUS,
   acquireGalleryGpu,
   gallerySurface,
   photoSampler,
@@ -12,7 +11,12 @@ import {
 import type { RingTuning } from '#/lib/gallery-gpu'
 import { decodedImage } from '#/lib/gallery-images'
 import { ringUniforms } from '#/lib/ring-motion'
-import { SEE_MORE_CELL_RADIUS, SEE_MORE_GAP, seeMoreRestZoom } from '#/lib/see-more-grid'
+import {
+  SEE_MORE_CELL_RADIUS,
+  SEE_MORE_GAP,
+  TILE_RADIUS,
+  seeMoreRestZoom,
+} from '#/lib/see-more-grid'
 import warpSource from '#/shaders/gallery-warp.wgsl'
 
 // Photo layers are as large as the smallest square crop, up to this.
@@ -53,7 +57,6 @@ export async function startGalleryWarp(
     life.assertLive()
     const { layers: photos, size: textureSize } = squarePhotoLayers(gpu, loaded, {
       maxSize: MAX_TEXTURE_SIZE,
-      fit: 'crop',
       label: 'gallery-warp-photos',
     })
     life.onDispose(() => photos.destroy())

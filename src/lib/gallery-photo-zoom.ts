@@ -2,7 +2,6 @@ import { effect } from 'vgpu'
 
 import { coverCrop } from '#/lib/gallery-flight-geometry'
 import {
-  TILE_RADIUS,
   acquireGalleryGpu,
   gallerySurface,
   photoSampler,
@@ -13,6 +12,7 @@ import {
 import type { RingTuning } from '#/lib/gallery-gpu'
 import { decodedImage } from '#/lib/gallery-images'
 import { ringUniforms } from '#/lib/ring-motion'
+import { TILE_RADIUS } from '#/lib/see-more-grid'
 import photoSource from '#/shaders/gallery-photo.wgsl'
 
 // Enough for a ~180px tile at 3x zoomed in a little.

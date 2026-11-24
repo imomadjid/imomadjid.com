@@ -10,9 +10,6 @@ import type { RingMotion } from '#/lib/ring-motion'
 // full-screen expand. A page with a dozen devices would hit browser limits and compile every
 // pipeline once per device.
 
-// The tiles' and the full-screen photo's rounded-xl corners, in CSS pixels.
-export const TILE_RADIUS = 12
-
 type Entry = { gpu: Promise<Gpu>; users: number; failed?: Promise<Error> }
 let shared: Entry | null = null
 
@@ -205,6 +202,22 @@ export function ringLoop<T extends RingTuning>(options: {
   }
 }
 
+// Two scratch canvases, reused by every upload: each mip level is drawn into one from the level
+// before in the other.
+let scratch: [HTMLCanvasElement, HTMLCanvasElement] | null = null
+
+function scratchCanvas(index: number, width: number, height: number) {
+  scratch ??= [document.createElement('canvas'), document.createElement('canvas')]
+  const canvas = scratch[index]
+  if (canvas.width < width) canvas.width = width
+  if (canvas.height < height) canvas.height = height
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('Cannot prepare a Gallery photo')
+  context.imageSmoothingQuality = 'high'
+  context.clearRect(0, 0, width, height)
+  return { canvas, context }
+}
+
 /**
  * Uploads `source` (a region of `image`, in its pixels) into one layer of `texture`, at every mip
  * level, so minified photos don't alias. The first level is filtered from the source, and each
@@ -217,25 +230,21 @@ function uploadMips(
   source: { x: number; y: number; width: number; height: number },
   layer = 0,
 ) {
-  let previous: HTMLCanvasElement | null = null
+  let previous: { canvas: HTMLCanvasElement; width: number; height: number } | null = null
   for (let mipLevel = 0; mipLevel < texture.mipLevelCount; mipLevel += 1) {
     const width = Math.max(1, texture.width >> mipLevel)
     const height = Math.max(1, texture.height >> mipLevel)
-    const level = document.createElement('canvas')
-    level.width = width
-    level.height = height
-    const context = level.getContext('2d')
-    if (!context) throw new Error('Cannot prepare a Gallery photo')
-    context.imageSmoothingQuality = 'high'
-    if (previous) context.drawImage(previous, 0, 0, width, height)
+    const { canvas, context } = scratchCanvas(mipLevel % 2, width, height)
+    if (previous)
+      context.drawImage(previous.canvas, 0, 0, previous.width, previous.height, 0, 0, width, height)
     else
       context.drawImage(image, source.x, source.y, source.width, source.height, 0, 0, width, height)
     gpu.gpu.queue.copyExternalImageToTexture(
-      { source: level },
+      { source: canvas },
       { texture, mipLevel, origin: [0, 0, layer] },
       [width, height],
     )
-    previous = level
+    previous = { canvas, width, height }
   }
 }
 
@@ -245,18 +254,16 @@ function mipLevels(width: number, height: number, smallest = 16) {
 }
 
 /**
- * One photo per layer of a square 2D array texture with mips: each photo's middle square
- * (`crop`), or the whole photo squeezed square (`squeeze`), for a shader that maps its own
- * coordinates. Layers are as large as the smallest source, up to `maxSize`.
+ * One photo per layer of a square 2D array texture with mips: each photo's middle square. Layers
+ * are as large as the smallest source, up to `maxSize`.
  */
 export function squarePhotoLayers(
   gpu: Gpu,
   images: readonly HTMLImageElement[],
-  { maxSize, fit, label }: { maxSize: number; fit: 'crop' | 'squeeze'; label: string },
+  { maxSize, label }: { maxSize: number; label: string },
 ) {
   const sources = images.map((image) => {
     const { naturalWidth: width, naturalHeight: height } = image
-    if (fit === 'squeeze') return { x: 0, y: 0, width, height, side: Math.max(width, height) }
     const side = Math.min(width, height)
     return { x: (width - side) / 2, y: (height - side) / 2, width: side, height: side, side }
   })
@@ -280,24 +287,72 @@ export function photoTexture(gpu: Gpu, image: HTMLImageElement, maxSize: number,
   const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight))
   const width = Math.max(1, Math.round(image.naturalWidth * scale))
   const height = Math.max(1, Math.round(image.naturalHeight * scale))
-  const texture = gpu.gpu.createTexture({
-    label,
+  const photo = texture(gpu, {
+    kind: '2d',
     size: [width, height],
     format: 'rgba8unorm',
     mipLevelCount: mipLevels(width, height),
-    usage:
-      GPUTextureUsage.TEXTURE_BINDING |
-      GPUTextureUsage.COPY_DST |
-      GPUTextureUsage.RENDER_ATTACHMENT,
-  })
-  uploadMips(gpu, texture, image, {
+    usage: ['texture_binding', 'copy_dst', 'render_attachment'],
+    label,
+  }).gpu
+  uploadMips(gpu, photo, image, {
     x: 0,
     y: 0,
     width: image.naturalWidth,
     height: image.naturalHeight,
   })
-  return texture
+  return photo
 }
+
+/**
+ * A square 2D array texture of `count` layers, each holding a whole photo squeezed square, that
+ * keeps the photos it was given: `place` returns each photo's layer, uploading only photos it
+ * doesn't hold yet, over the ones used least recently.
+ */
+export function photoLayerPool(gpu: Gpu, { size, count, label }: PoolOptions) {
+  const layers = texture(gpu, {
+    kind: '2d-array',
+    size: [size, size],
+    layers: count,
+    format: 'rgba8unorm',
+    mipLevelCount: mipLevels(size, size),
+    usage: ['texture_binding', 'copy_dst', 'render_attachment'],
+    label,
+  })
+  const held = new Map<HTMLImageElement, number>()
+  // Least recently used first.
+  let order: HTMLImageElement[] = []
+  return {
+    layers,
+    size,
+    place(images: readonly HTMLImageElement[]) {
+      if (images.length > count) throw new Error(`A photo pool holds at most ${count} photos`)
+      const wanted = new Set(images)
+      const placed = images.map((image) => {
+        let layer = held.get(image)
+        if (layer === undefined) {
+          if (held.size < count) layer = held.size
+          else {
+            const evicted = order.find((old) => !wanted.has(old))
+            if (!evicted) throw new Error('A photo pool ran out of layers')
+            layer = held.get(evicted) ?? 0
+            held.delete(evicted)
+            order = order.filter((old) => old !== evicted)
+          }
+          const { naturalWidth: width, naturalHeight: height } = image
+          uploadMips(gpu, layers.gpu, image, { x: 0, y: 0, width, height }, layer)
+          held.set(image, layer)
+        }
+        return layer
+      })
+      order = [...order.filter((old) => !wanted.has(old)), ...images]
+      return placed
+    },
+    destroy: () => layers.destroy(),
+  }
+}
+
+type PoolOptions = { size: number; count: number; label: string }
 
 /**
  * Calls `redraw` whenever the canvas's backing store needs a new size: its box resized, or the
