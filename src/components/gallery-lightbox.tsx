@@ -1,9 +1,10 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
-import { ExposureReadout, READOUT_SPACE } from '#/components/gallery-exposure'
+import { ExposureReadout, readoutSpace } from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
+import { springOf } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
 import {
@@ -18,6 +19,7 @@ import {
 } from '#/lib/gallery-flight-geometry'
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
+import type { GalleryTuning } from '#/lib/gallery-settings'
 import { playRelease, playShutter } from '#/lib/gallery-sounds'
 import { fullScaleRect } from '#/lib/page-recede'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
@@ -32,6 +34,8 @@ type Shown = {
   phase: Phase
   /** True once the flight canvas has drawn the photo, so the tile can let go of it. */
   airborne: boolean
+  /** True once the exposure readout comes up: before the photo lands, so the two overlap. */
+  readout: boolean
 }
 
 /**
@@ -79,7 +83,7 @@ function fullScreenRect(viewport: Rect, photo: GalleryPhoto): Rect {
   return containRect(viewport, photo.width / photo.height, {
     top: side,
     right: side,
-    bottom: side + READOUT_SPACE,
+    bottom: side + readoutSpace(viewport.width),
     left: side,
   })
 }
@@ -119,7 +123,10 @@ function tilePose(photo: GalleryPhoto, tile: HTMLElement, rect: Rect): FlightPos
  * inside the See more dialog's root, so a photo opened from its grid nests in it and closes back
  * to the grid.
  */
-export function useGalleryLightbox(stage: FlightStage) {
+export function useGalleryLightbox(
+  stage: FlightStage,
+  tuning: Pick<GalleryTuning, 'expand' | 'readout'>,
+) {
   const imageRef = useRef<HTMLImageElement>(null)
   const [shown, setShown] = useState<Shown | null>(null)
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
@@ -145,7 +152,7 @@ export function useGalleryLightbox(stage: FlightStage) {
     playShutter(photo.exposure.shutter)
     const flight = flightRef.current
     const token = ++flightToken.current
-    setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
+    setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false, readout: !flight })
     if (!flight) return
     const from = tilePose(photo, tile, tile.getBoundingClientRect())
     const screen = viewportRect()
@@ -153,7 +160,7 @@ export function useGalleryLightbox(stage: FlightStage) {
     // The full-screen photo takes over from the flight, or replaces it if it fails.
     const settle = () => {
       if (!current()) return
-      setShown((shown) => (shown ? { ...shown, phase: 'open' } : shown))
+      setShown((shown) => (shown ? { ...shown, phase: 'open', readout: true } : shown))
       stage.hide(false)
     }
     // The sharp photo if hovering already decoded it; otherwise the tile's own, until the sharp one
@@ -176,6 +183,14 @@ export function useGalleryLightbox(stage: FlightStage) {
         })
         setShown((shown) => (shown && current() ? { ...shown, airborne: true } : shown))
         stage.show()
+        // The readout comes up while the photo settles, not once it has.
+        const response = (2 * Math.PI) / springOf(tuning.expand.open).omega
+        window.setTimeout(
+          () => {
+            if (current()) setShown((shown) => (shown ? { ...shown, readout: true } : shown))
+          },
+          response * tuning.readout.start * 1000,
+        )
         sharp
           .then((sharpImage) => {
             if (current()) flight.sharpen(photoImage, sharpImage)
@@ -291,8 +306,8 @@ export function useGalleryLightbox(stage: FlightStage) {
               <ExposureReadout
                 photo={photo}
                 rect={target}
-                margin={screenMargin(viewport)}
-                shown={shown.phase === 'open'}
+                shown={shown.readout && shown.phase !== 'closing'}
+                tuning={tuning.readout}
               />
             </>
           )}

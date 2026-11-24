@@ -1,68 +1,83 @@
-import { exposureReadouts, formatLens } from '#/lib/exposure-format'
+import { exposureReadouts } from '#/lib/exposure-format'
 import { figuresClass } from '#/lib/figures'
+import { cssSpring } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { Rect } from '#/lib/gallery-flight-geometry'
+import type { GalleryTuning } from '#/lib/gallery-settings'
 import { cn } from '#/lib/utils'
 
 /** The gap between the full-screen photo and the readout under it. */
-const READOUT_GAP = 8
-/** The readout's height: h-14. */
-const READOUT_HEIGHT = 56
-/** What the full-screen photo leaves free under it for the readout. */
-export const READOUT_SPACE = READOUT_GAP + READOUT_HEIGHT
+const READOUT_GAP = 12
+/** The readout's line height (leading-5) and the gap between its lines on a phone (gap-y-1). */
+const LINE_HEIGHT = 20
+const LINE_GAP = 4
 
 /**
- * The photo's exposure under it, set like a camera's info display: yellow labels over white
- * readouts on a dark strip, in Allo's tabular figures with a slashed zero. As wide as the photo,
- * or wider, centred under it, if the readouts need more room. It comes up once the photo has
- * landed and goes as its close starts.
+ * What the full-screen photo leaves free under it for the readout: a line, or on a phone (below
+ * sm) two, since the five readouts don't fit across one.
+ */
+export function readoutSpace(viewportWidth: number) {
+  const lines = viewportWidth < 640 ? 2 : 1
+  return READOUT_GAP + lines * LINE_HEIGHT + (lines - 1) * LINE_GAP
+}
+
+/**
+ * The photo's exposure under it, on one line or two on a phone, set like a camera's info
+ * display: each yellow label beside its readout, in Allo's tabular figures with a slashed zero.
+ * The readouts come up one after another, each rising a little out of a blur on `tuning.motion`'s
+ * spring, and go together as the photo's close starts.
  */
 export function ExposureReadout({
   photo,
   rect,
-  margin,
   shown,
+  tuning,
 }: {
   photo: GalleryPhoto
   /** The full-screen photo's rect. */
   rect: Rect
-  /** The photo's margin from the viewport's sides, which the strip keeps too. */
-  margin: number
   shown: boolean
+  tuning: GalleryTuning['readout']
 }) {
-  const readouts = [
-    ...exposureReadouts(photo.exposure),
-    { label: 'Lens', value: formatLens(photo.exposure.lens) },
-  ]
+  const enter = cssSpring(tuning.motion)
 
   return (
     <dl
-      className={cn(
-        'fixed flex h-14 -translate-x-1/2 cursor-auto items-center justify-between gap-x-4 rounded-xl bg-neutral-950 px-4 text-white ring-1 ring-white/10 sm:gap-x-6',
-        'transition-[opacity,translate,filter] motion-reduce:transition-none',
-        // Without the flight the photo fades in at once, and the strip with it.
-        'starting:translate-y-1 starting:opacity-0 starting:blur-xs',
-        shown
-          ? 'duration-250 ease-out'
-          : 'pointer-events-none translate-y-1 opacity-0 blur-xs duration-150 ease-in',
-      )}
-      style={{
-        left: rect.x + rect.width / 2,
-        top: rect.y + rect.height + READOUT_GAP,
-        minWidth: rect.width,
-        maxWidth: `calc(100vw - ${2 * margin}px)`,
-      }}
+      // Across the viewport, the lines centred under the photo, which the viewport centres too.
+      // A click on it closes the photo, as one beside it does.
+      className="pointer-events-none fixed inset-x-3 flex flex-wrap items-baseline justify-center gap-x-4 gap-y-1 sm:gap-x-6"
+      style={{ top: rect.y + rect.height + READOUT_GAP }}
     >
-      {readouts.map(({ label, value }) => (
+      {exposureReadouts(photo.exposure).map(({ label, value }, index) => (
         <div
           key={label}
-          // Phones keep the room for the exposure.
-          className={cn('grid gap-0.5', label === 'Lens' && 'text-right max-sm:hidden')}
+          className={cn(
+            'flex items-baseline gap-1.5 whitespace-nowrap transition-[opacity,translate,filter] motion-reduce:transition-none',
+            // Without the flight the photo fades in at once, and the readouts with it.
+            'starting:translate-y-1.5 starting:opacity-0 starting:blur-xs',
+            !shown && 'translate-y-1.5 opacity-0 blur-xs',
+          )}
+          style={
+            shown
+              ? {
+                  transitionDuration: `${enter.duration}s`,
+                  transitionTimingFunction: enter.easing,
+                  transitionDelay: `${index * tuning.stagger}s`,
+                }
+              : { transitionDuration: '150ms', transitionTimingFunction: 'ease-in' }
+          }
         >
-          <dt className="text-[10px] leading-3 font-semibold tracking-[0.08em] text-yellow-400 uppercase">
+          <dt className="text-[10px] font-semibold tracking-[0.08em] text-amber-700 uppercase dark:text-yellow-400">
             {label}
           </dt>
-          <dd className={cn('text-sm leading-5 font-medium', figuresClass)}>{value}</dd>
+          <dd
+            className={cn(
+              'text-sm leading-5 font-medium text-neutral-950 dark:text-white',
+              figuresClass,
+            )}
+          >
+            {value}
+          </dd>
         </div>
       ))}
     </dl>
