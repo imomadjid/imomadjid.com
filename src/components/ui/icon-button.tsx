@@ -3,11 +3,14 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button'
 import { glassSurface } from '#/lib/glass'
 import { cn } from '#/lib/utils'
 
-// FF's control ladder stops at 36px (default); 2xl is this site's own step past it, for a
-// control that floats on its own, such as the Gallery overlay's close button.
+// FF's control ladder stops at 36px (default). Past it, this site steps 4px a size (lg 40px up
+// to 4xl 56px); 4xl is for a control that floats on its own, such as the Gallery overlay's close
+// button. Its stroked icon scales with it, 24px, and thickens on hover as FF's icon buttons do;
+// default leaves its icon's size and stroke to the caller.
 const sizeClasses = {
   default: 'size-9',
-  '2xl': 'size-12',
+  '4xl':
+    'size-14 [&_svg]:size-6 [&_svg]:stroke-2 [&_svg]:transition-[stroke-width] [&_svg]:duration-80 hover:[&_svg]:stroke-[2.5]',
 } as const
 
 type IconButtonSize = keyof typeof sizeClasses

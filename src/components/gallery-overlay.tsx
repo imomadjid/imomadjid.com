@@ -429,18 +429,13 @@ export function GalleryOverlay({
           render={
             <IconButton
               aria-label="Close gallery"
-              size="2xl"
+              size="4xl"
               glass
               className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2"
             />
           }
         >
-          <IconX
-            size={20}
-            stroke={1.5}
-            aria-hidden="true"
-            className="transition-[stroke-width] duration-80 group-hover:stroke-2"
-          />
+          <IconX aria-hidden="true" />
         </Dialog.Close>
       </Dialog.Popup>
     </Dialog.Portal>
