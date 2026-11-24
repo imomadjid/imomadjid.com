@@ -95,9 +95,10 @@ function tilePose(photo: GalleryPhoto, tile: HTMLElement, rect: Rect): FlightPos
  * Opens a featured photo full screen. Where WebGPU runs, the photo lifts out of its tile and
  * expands corner by corner, each on its own spring (src/lib/gallery-flight.ts): the corner
  * farthest from its corner of the viewport leads on the quickest spring, and each other one
- * follows by how much shorter its way is (cornerLags). Closing flies it back the same way, against
- * its place in the tile, turning around with its speed if the open is still under way. Without
- * WebGPU the photo fades in and out.
+ * follows on a slower one by how much shorter its way is (cornerLags). Closing flies it back
+ * into its tile the other way round, as Apple's app close does: the corner nearest its place lands
+ * first and the far side trails in. A close while the open is under way turns the corners around
+ * with their speed. Without WebGPU the photo fades in and out.
  *
  * Flies on the Gallery's shared `stage` (src/components/gallery-flight-stage.tsx). Returns
  * `openPhoto` for the featured tiles and the See more grid, and the dialog to render. Render it
@@ -193,8 +194,8 @@ export function useGalleryLightbox(stage: FlightStage) {
       photo: image,
       from,
       to,
-      // The corner farthest from its place in the tile leads.
-      lags: cornerLags(from.corners, to.corners, diagonal(screen)),
+      // The corner nearest its place in the tile lands first, and the far side trails in.
+      lags: cornerLags(from.corners, to.corners, diagonal(screen), 'nearest'),
       direction: 'close',
     })
     setShown({ ...shown, phase: 'closing', airborne: true })

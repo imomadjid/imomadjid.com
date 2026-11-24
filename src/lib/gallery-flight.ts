@@ -25,13 +25,14 @@ const MAX_CELL_TEXTURE_SIZE = 512
 const MAX_CELLS = 16
 
 export type FlightTuning = {
-  /** The spring out of a tile, for the corner that lands last. */
+  /** The spring out of a tile, at the corners' average pace. */
   open: TransitionConfig
   /** The spring back into a tile, quicker than the open. */
   close: TransitionConfig
   /**
-   * How much quicker the leading corner's spring is than the last one's, as a fraction of its
-   * response; each corner between gets its share by its lag (see cornerLags).
+   * How far the corners' springs spread either side of the response, as a fraction of it, for
+   * the most lopsided move: the leading corner's that much quicker, the last one's that much
+   * slower. A move with every corner as far to go stays together on the response itself.
    */
   spread: number
   /** Seconds a photo landed back in its tile takes to fade into the lit tile beneath. */
@@ -48,9 +49,9 @@ type Direction = 'open' | 'close'
 
 export type Flight = {
   /**
-   * Moves `photo` from `from` to `to` on the open or the close spring, each corner on its own:
-   * one with a lag of 0 leads, quicker by the spread, and one with a lag of 1 takes the whole
-   * response (see cornerLags). A flight that interrupts another of the same kind turns its
+   * Moves `photo` from `from` to `to` on the open or the close spring, each corner on its own,
+   * spread about the response by its lag (see cornerLags and `spread`), as Apple spreads the rows
+   * of its app-open mesh. A flight that interrupts another of the same kind turns its
    * corners around from where they are, keeping their speed, and ignores `from`. Resolves true
    * when it lands, holding the last frame until `clear`, or false when a newer flight or a
    * failure ends it first.
@@ -132,11 +133,11 @@ function poseAt(values: readonly number[], index: number): FlightPose {
 }
 
 /**
- * Each value's spring: a corner and its texel share the corner's, quickened by the spread for a
- * leading corner; the radius and opacity keep the response itself, on their own clock.
+ * Each value's spring: a corner and its texel share the corner's, its response scaled by
+ * `scales`; the radius and opacity keep the response itself, on their own clock.
  */
-function poseSprings(config: TransitionConfig, spread: number, lags: readonly number[]): Spring[] {
-  const corners = lags.map((lag) => springOf(config, 1 - spread * (1 - lag)))
+function poseSprings(config: TransitionConfig, scales: readonly number[]): Spring[] {
+  const corners = scales.map((scale) => springOf(config, scale))
   const own = springOf(config)
   return Array.from({ length: POSE_VALUES }, (_, value) =>
     value < 16 ? corners[Math.floor((value % 8) / 2)] : own,
@@ -307,7 +308,16 @@ export async function startGalleryFlight(
         }
       }
       const config = direction === 'open' ? tuning.open : tuning.close
-      const springs = lags.flatMap((cornerLags) => poseSprings(config, tuning.spread, cornerLags))
+      // The lags spread about their middle, so a move whose corners all lag alike keeps the
+      // response, and the leader is as much quicker as the last corner is slower.
+      const all = lags.flat()
+      const middle = (Math.min(...all) + Math.max(...all)) / 2
+      const springs = lags.flatMap((cornerLags) =>
+        poseSprings(
+          config,
+          cornerLags.map((lag) => Math.max(0.1, 1 + 2 * tuning.spread * (lag - middle))),
+        ),
+      )
       return new Promise<boolean>((land) => {
         const targets = to.flatMap(poseValues)
         const tolerances = targets.map((_, index) => POSE_TOLERANCES[index % POSE_VALUES])

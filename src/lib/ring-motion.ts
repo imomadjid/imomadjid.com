@@ -18,6 +18,8 @@ export type RingMotion = {
   readonly progress: Float32Array
   /** Starts a move toward `target` from wherever each ring is; false if it is already the target. */
   retarget: (target: number, now: number) => boolean
+  /** Puts every ring at `target` at once, with nothing left to move. */
+  jump: (target: number) => void
   /** Advances every ring to `now`; true once all of them have arrived. */
   step: (now: number, timing: RingTiming) => boolean
 }
@@ -36,6 +38,12 @@ export function createRingMotion(): RingMotion {
       target = next
       moveStart = now
       return true
+    },
+    jump(next) {
+      target = next
+      progress.fill(next)
+      start.fill(next)
+      moveStart = Number.NEGATIVE_INFINITY
     },
     step(now, { duration, lead, ease }) {
       const elapsed = (now - moveStart) / 1000

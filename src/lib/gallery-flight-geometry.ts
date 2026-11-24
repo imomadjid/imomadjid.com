@@ -50,34 +50,29 @@ export function coverCrop(imageAspect: number, boxAspect: number): Rect {
 export const wholeImage: Rect = { x: 0, y: 0, width: 1, height: 1 }
 
 /**
- * How far each corner lags the one farthest from its partner in `toward`, from 0 (it leads) to 1:
- * its distance short of the farthest one's, over `scale` (the viewport's diagonal), up to 1.
- * Corners as far as each other move together, so a tile centred across the screen moves its top
- * or bottom edge as one, and the lead grows the more lopsided the move is.
+ * How far each corner lags the one that leads, from 0 (it leads) to 1: how much farther or nearer
+ * than the leader it is from its partner in `toward`, over `scale` (the viewport's diagonal), up
+ * to 1. Opening, the corner with the farthest to go leads and stretches the photo out; closing,
+ * the nearest leads and the far side trails in behind it, funnelling the photo home, as Apple's
+ * app open and close do. Corners as far as each other move together, so a tile centred across the
+ * screen moves its top or bottom edge as one, and the lag grows the more lopsided the move is.
  */
 export function cornerLags(
   from: readonly Point[],
   toward: readonly Point[],
   scale: number,
+  lead: 'farthest' | 'nearest' = 'farthest',
 ): number[] {
   const distances = from.map((point, i) =>
     Math.hypot(toward[i][0] - point[0], toward[i][1] - point[1]),
   )
-  const farthest = Math.max(...distances)
-  return distances.map((distance) => (scale > 0 ? Math.min(1, (farthest - distance) / scale) : 0))
+  const leader = lead === 'farthest' ? Math.max(...distances) : Math.min(...distances)
+  return distances.map((distance) =>
+    scale > 0 ? Math.min(1, Math.abs(leader - distance) / scale) : 0,
+  )
 }
 
 /** The length of a rect's diagonal. */
 export function diagonal(rect: Rect) {
   return Math.hypot(rect.width, rect.height)
-}
-
-/**
- * How far each point lags when a group opens from its middle, from 0 (it leads) to 1: its
- * distance from `center` over the farthest point's, so the middle leads and the rim follows.
- */
-export function centerOutLags(points: readonly Point[], center: Point): number[] {
-  const distances = points.map((point) => Math.hypot(point[0] - center[0], point[1] - center[1]))
-  const farthest = Math.max(...distances)
-  return distances.map((distance) => (farthest > 0 ? distance / farthest : 0))
 }

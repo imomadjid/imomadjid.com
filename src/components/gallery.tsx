@@ -8,6 +8,7 @@ import { useGalleryLightbox } from '#/components/gallery-lightbox'
 import { GalleryOverlay, useSeeMoreOverlay } from '#/components/gallery-overlay'
 import { FeaturedPhoto } from '#/components/gallery-photo-tile'
 import { SeeMoreTile } from '#/components/gallery-see-more'
+import type { SeeMoreTileControl } from '#/components/gallery-see-more'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
 import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-settings'
@@ -53,7 +54,14 @@ function Gallery({
   const zoomedOutRef = useRef(false)
   const stage = useFlightStage(tuning.expand, sectionRef)
   const lightbox = useGalleryLightbox(stage)
-  const overlay = useSeeMoreOverlay({ stage, photos: preview, tileRef, zoomedOutRef })
+  const tileControlRef = useRef<SeeMoreTileControl>(null)
+  const overlay = useSeeMoreOverlay({
+    stage,
+    photos: preview,
+    tileRef,
+    zoomedOutRef,
+    tileControlRef,
+  })
 
   // The page shrinks behind an open photo or the overlay, and grows back as either starts to
   // close, so a photo flying home lands on a page already on its way back. A photo opened from
@@ -112,6 +120,7 @@ function Gallery({
               tileRef={tileRef}
               zoomedOutRef={zoomedOutRef}
               onIntent={overlay.prepare}
+              controlRef={tileControlRef}
             />
           </li>
         </ul>

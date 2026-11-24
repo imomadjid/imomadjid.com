@@ -24,6 +24,8 @@ export type WarpTuning = RingTuning & {
 }
 export type GalleryWarp = {
   setZoomedOut: (zoomedOut: boolean) => void
+  /** Shows the whole grid or the 2x crop at once, for a tile hidden while its photos are out. */
+  jumpZoomedOut: (zoomedOut: boolean) => void
   update: (tuning: WarpTuning) => void
   dispose: () => void
 }
@@ -100,7 +102,12 @@ export async function startGalleryWarp(
       },
     })
 
-    return { setZoomedOut: loop.setTarget, update: loop.update, dispose: life.dispose }
+    return {
+      setZoomedOut: loop.setTarget,
+      jumpZoomedOut: loop.jumpTo,
+      update: loop.update,
+      dispose: life.dispose,
+    }
   } catch (error) {
     life.dispose()
     throw error

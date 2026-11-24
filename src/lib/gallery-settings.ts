@@ -18,15 +18,18 @@ export const galleryControls = {
   },
   /**
    * A photo flying out of its tile, or the See more grid into the overlay, and back: a spring per
-   * corner without bounce, its visual duration the response of the corner that lands last. It
-   * settles in about one and a half responses.
+   * corner without bounce, its visual duration the corners' average response. It settles in about
+   * one and a half responses.
    */
   expand: {
     open: { type: 'spring', visualDuration: 0.55, bounce: 0 },
     /** Back into the tile: quicker than the open. */
     close: { type: 'spring', visualDuration: 0.38, bounce: 0 },
-    /** How much quicker the leading corner's spring is than the last one's: 0.45 is 45%. */
-    spread: [0.45, 0, 0.9, 0.01],
+    /**
+     * How far the corners' responses spread either side of it on the most lopsided move: 0.5 is
+     * half, as Apple spreads the rows of its app open.
+     */
+    spread: [0.5, 0, 0.9, 0.01],
     /** Seconds a closed photo takes to fade into its tile, bringing the Sunlit light back in. */
     relight: [0.3, 0, 1, 0.05],
   },
