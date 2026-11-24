@@ -60,70 +60,70 @@ function Gallery({
   const lightbox = useGalleryLightbox(tuning.expand, sectionRef)
 
   return (
-    <>
-      {/* Outside the See more dialog's root: inside it, Base UI would nest the lightbox in that
-          dialog and leave out its backdrop. */}
+    <Dialog.Root>
+      {/* Inside the See more dialog's root, so a photo opened from its grid nests in it: closing
+          the photo returns to the grid. */}
       {lightbox.element}
-      <Dialog.Root>
-        <div ref={sectionRef} className="flex flex-col gap-10">
-          <div className="flex items-center justify-between gap-6 sm:gap-8">
-            <img
-              src={cameraPhoto}
-              alt="FUJIFILM X-T30 III camera"
-              width={270}
-              height={175}
-              className="h-auto w-[17%] max-w-22.5 shrink-0"
-            />
-            <p className="grid gap-y-1.5 text-right text-xs font-semibold">
-              <span className="text-neutral-900 dark:text-neutral-100">
-                <Figures text="FUJIFILM X-T30 III" />
-              </span>
-              <span className="text-neutral-500">
-                <Figures text="FUJINON XC13-33mmF3.5-6.3 OIS" />
-              </span>
-            </p>
-          </div>
-          <ul className="grid w-full grid-cols-3 gap-2">
-            {featured.map((photo) => (
-              <li key={photo.id}>
-                <FeaturedPhoto
-                  photo={photo}
-                  tuning={tuning.photo}
-                  lifted={lightbox.liftedId === photo.id}
-                  onOpen={lightbox.openPhoto}
-                />
-              </li>
-            ))}
-            <li>
-              <SeeMoreTile
-                photos={previewPhotos(photos, featuredCount)}
-                total={photos.length}
-                tuning={tuning.seeMore}
-              />
-            </li>
-          </ul>
+      <div ref={sectionRef} className="flex flex-col gap-10">
+        <div className="flex items-center justify-between gap-6 sm:gap-8">
+          <img
+            src={cameraPhoto}
+            alt="FUJIFILM X-T30 III camera"
+            width={270}
+            height={175}
+            className="h-auto w-[17%] max-w-22.5 shrink-0"
+          />
+          <p className="grid gap-y-1.5 text-right text-xs font-semibold">
+            <span className="text-neutral-900 dark:text-neutral-100">
+              <Figures text="FUJIFILM X-T30 III" />
+            </span>
+            <span className="text-neutral-500">
+              <Figures text="FUJINON XC13-33mmF3.5-6.3 OIS" />
+            </span>
+          </p>
         </div>
+        <ul className="grid w-full grid-cols-3 gap-2">
+          {featured.map((photo) => (
+            <li key={photo.id}>
+              <FeaturedPhoto photo={photo} tuning={tuning.photo} onOpen={lightbox.openPhoto} />
+            </li>
+          ))}
+          <li>
+            <SeeMoreTile
+              photos={previewPhotos(photos, featuredCount)}
+              total={photos.length}
+              tuning={tuning.seeMore}
+            />
+          </li>
+        </ul>
+      </div>
 
-        {/* Portalled to the body, outside main's stacking context, so it covers the Sunlit light
+      {/* Portalled to the body, outside main's stacking context, so it covers the Sunlit light
           and the blind wand. */}
-        <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none" />
-          <Dialog.Popup className="fixed inset-0 z-50 overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none">
-            <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
-              <div className="sticky top-0 z-10 -mx-4 mb-1 flex items-center justify-between bg-surface-1/80 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
-                <Dialog.Title className="text-base font-semibold text-neutral-950 dark:text-neutral-50">
-                  Gallery
-                </Dialog.Title>
-                <Dialog.Close render={<IconButton aria-label="Close gallery" />}>
-                  <IconX size={18} stroke={1.75} aria-hidden="true" />
-                </Dialog.Close>
-              </div>
-              <ul className="columns-2 gap-3 sm:columns-3">
-                {photos.map((photo, index) => (
-                  <li
-                    key={photo.id}
-                    className="mb-3 animate-enter break-inside-avoid [--enter-step:30ms]"
-                    style={enterIndex(index)}
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none" />
+        <Dialog.Popup className="fixed inset-0 z-50 overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none">
+          <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
+            <div className="sticky top-0 z-10 -mx-4 mb-1 flex items-center justify-between bg-surface-1/80 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
+              <Dialog.Title className="text-base font-semibold text-neutral-950 dark:text-neutral-50">
+                Gallery
+              </Dialog.Title>
+              <Dialog.Close render={<IconButton aria-label="Close gallery" />}>
+                <IconX size={18} stroke={1.75} aria-hidden="true" />
+              </Dialog.Close>
+            </div>
+            <ul className="columns-2 gap-3 sm:columns-3">
+              {photos.map((photo, index) => (
+                <li
+                  key={photo.id}
+                  className="mb-3 animate-enter break-inside-avoid [--enter-step:30ms]"
+                  style={enterIndex(index)}
+                >
+                  <button
+                    type="button"
+                    aria-haspopup="dialog"
+                    className="block w-full cursor-zoom-in overflow-hidden rounded-lg bg-neutral-200 data-lifted:invisible dark:bg-neutral-800"
+                    onClick={(event) => lightbox.openPhoto(photo, event.currentTarget)}
                   >
                     <img
                       src={photo.small}
@@ -134,16 +134,16 @@ function Gallery({
                       height={photo.height}
                       loading="lazy"
                       decoding="async"
-                      className="h-auto w-full rounded-lg bg-neutral-200 dark:bg-neutral-800"
+                      className="block h-auto w-full"
                     />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 

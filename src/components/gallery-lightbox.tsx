@@ -1,6 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { RefObject } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -23,7 +23,7 @@ type Phase = 'opening' | 'open' | 'closing'
 
 type Shown = {
   photo: GalleryPhoto
-  /** The tile the photo lifts out of and lands back in. */
+  /** The tile or grid cell the photo lifts out of and lands back in. */
   tile: HTMLElement
   phase: Phase
   /** True once the flight canvas has drawn the photo, so the tile can let go of it. */
@@ -92,16 +92,25 @@ function fullScreenRect(viewport: Rect, photo: GalleryPhoto): Rect {
   })
 }
 
+// The full-screen photo's rounded-xl corners.
+const FULL_SCREEN_RADIUS = 12
+
 /** The whole photo in its full-screen rect. */
 function fullScreenPose(viewport: Rect, photo: GalleryPhoto): FlightPose {
-  return { corners: quadOf(fullScreenRect(viewport, photo)), texels: quadOf(wholeImage) }
+  return {
+    corners: quadOf(fullScreenRect(viewport, photo)),
+    texels: quadOf(wholeImage),
+    radius: FULL_SCREEN_RADIUS,
+  }
 }
 
-/** A photo filling its tile, as object-fit: cover shows it. */
-function tilePose(photo: GalleryPhoto, tile: DOMRect): FlightPose {
+/** A photo filling its tile, as object-fit: cover shows it, with the tile's own corners. */
+function tilePose(photo: GalleryPhoto, tile: HTMLElement): FlightPose {
+  const rect = tile.getBoundingClientRect()
   return {
-    corners: quadOf(tile),
-    texels: quadOf(coverCrop(photo.width / photo.height, tile.width / tile.height)),
+    corners: quadOf(rect),
+    texels: quadOf(coverCrop(photo.width / photo.height, rect.width / rect.height)),
+    radius: Number.parseFloat(getComputedStyle(tile).borderTopLeftRadius) || 0,
   }
 }
 
@@ -112,8 +121,9 @@ function tilePose(photo: GalleryPhoto, tile: DOMRect): FlightPose {
  * same way, the corner farthest from its place in the tile first. Without WebGPU the photo fades
  * in and out.
  *
- * Returns `openPhoto` for the tiles, the photo currently lifted out of its tile, and the elements
- * to render: the dialog, and the canvas the flight is drawn on, above it.
+ * Returns `openPhoto` for the featured tiles and the See more grid, and the elements to render: the
+ * dialog, and the canvas the flight is drawn on, above it. Render them inside the See more
+ * dialog's root, so a photo opened from its grid nests in it and closes back to the grid.
  */
 export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Element | null>) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -143,12 +153,21 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
     if (!flying) flightRef.current?.clear()
   }, [flying, flightRef])
 
+  // The photo has lifted out of its tile or grid cell while the flight or the full-screen view
+  // shows it: `data-lifted` hides the tile (data-lifted:invisible), before paint, in the commit
+  // that shows the canvas.
+  const lifted = shown?.airborne ? shown.tile : null
+  useLayoutEffect(() => {
+    lifted?.setAttribute('data-lifted', '')
+    return () => lifted?.removeAttribute('data-lifted')
+  }, [lifted])
+
   const openPhoto = (photo: GalleryPhoto, tile: HTMLElement) => {
     const flight = flightRef.current
     const token = ++flightToken.current
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
     if (!flight) return
-    const tileRect = tile.getBoundingClientRect()
+    const from = tilePose(photo, tile)
     const screen = readViewport()
     const current = () => flightToken.current === token
     // The sharp photo if hovering already decoded it; otherwise the tile's own, swapped on landing.
@@ -158,7 +177,6 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
       .then((photoImage) => {
         // Closed before the photo was ready: it never takes off.
         if (!current()) return false
-        const from = tilePose(photo, tileRect)
         const landing = flight.fly({
           photo: photoImage,
           from,
@@ -194,7 +212,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
       return
     }
     const from = flight.pose() ?? fullScreenPose(readViewport(), photo)
-    const to = tilePose(photo, tile.getBoundingClientRect())
+    const to = tilePose(photo, tile)
     const landing = flight.fly({
       photo: image,
       from,
@@ -225,7 +243,9 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
       >
         {/* Portalled to the body at z-50, so it covers the Sunlit light and the blind wand. */}
         <Dialog.Portal>
+          {/* Nested in the See more dialog, which Base UI would leave without a backdrop. */}
           <Dialog.Backdrop
+            forceRender
             className={cn(
               'fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
               shown?.phase === 'closing' && 'opacity-0',
@@ -276,5 +296,5 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
     </>
   )
 
-  return { openPhoto, liftedId: shown?.airborne ? shown.photo.id : null, element }
+  return { openPhoto, element }
 }

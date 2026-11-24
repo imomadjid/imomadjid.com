@@ -5,7 +5,6 @@ import { transitionTiming } from '#/lib/ambient-transition'
 import { mixPoint } from '#/lib/gallery-flight-geometry'
 import type { Quad } from '#/lib/gallery-flight-geometry'
 import {
-  TILE_RADIUS,
   acquireGalleryGpu,
   drawPass,
   gallerySurface,
@@ -27,8 +26,8 @@ export type FlightTuning = {
   stagger: number
 }
 
-/** Where a photo is: its corners on screen, and the texture coordinate at each. */
-export type FlightPose = { corners: Quad; texels: Quad }
+/** Where a photo is: its corners on screen, the texture coordinate at each, and its corner radius. */
+export type FlightPose = { corners: Quad; texels: Quad; radius: number }
 
 export type Flight = {
   /**
@@ -102,7 +101,7 @@ export async function startGalleryFlight(
           params: {
             size: [canvas.clientWidth, canvas.clientHeight],
             dpr: output.dpr,
-            radius: TILE_RADIUS,
+            radius: pose.radius,
             topCorners: [...a, ...b],
             bottomCorners: [...c, ...d],
             topTexels: [...ta, ...tb],
@@ -129,9 +128,12 @@ export async function startGalleryFlight(
       const { from, to } = leg
       const corner = (i: 0 | 1 | 2 | 3) => mixPoint(from.corners[i], to.corners[i], amounts[i])
       const texel = (i: 0 | 1 | 2 | 3) => mixPoint(from.texels[i], to.texels[i], amounts[i])
+      // The corners round over the whole move, at the corners' average pace.
+      const rounding = amounts.reduce((sum, amount) => sum + amount, 0) / amounts.length
       current = {
         corners: [corner(0), corner(1), corner(2), corner(3)],
         texels: [texel(0), texel(1), texel(2), texel(3)],
+        radius: from.radius + (to.radius - from.radius) * rounding,
       }
       render(current)
       if (life.disposed()) return

@@ -12,18 +12,15 @@ const photoZoomClass =
 
 /**
  * A featured photo. Hover or focus zooms it in a little inside its frame, the middle first
- * (src/lib/gallery-photo-zoom.ts), and a press opens it full screen. While it is open the tile
- * stays empty, as if the photo had lifted out of it.
+ * (src/lib/gallery-photo-zoom.ts), and a press opens it full screen.
  */
 export function FeaturedPhoto({
   photo,
   tuning,
-  lifted,
   onOpen,
 }: {
   photo: GalleryPhoto
   tuning: PhotoZoomTuning
-  lifted: boolean
   onOpen: (photo: GalleryPhoto, tile: HTMLElement) => void
 }) {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -54,10 +51,7 @@ export function FeaturedPhoto({
       ref={buttonRef}
       type="button"
       aria-haspopup="dialog"
-      className={cn(
-        'group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-neutral-200 outline-none dark:bg-neutral-800',
-        lifted && 'invisible',
-      )}
+      className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-neutral-200 outline-none data-lifted:invisible dark:bg-neutral-800"
       onPointerEnter={(event) => event.pointerType !== 'touch' && zoomIn(true)}
       onPointerLeave={() => zoomIn(false)}
       onFocus={(event) => zoomIn(event.currentTarget.matches(':focus-visible'))}
