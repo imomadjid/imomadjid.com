@@ -1,0 +1,27 @@
+name: GlassLive
+options:
+  bundleIdPrefix: com.imomadjid.dev
+  deploymentTarget:
+    iOS: '26.0'
+    macOS: '26.0'
+targets:
+  GlassLive:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - Sources
+      - path: Scenes
+        type: folder
+        buildPhase: resources
+      # The Gallery's own 640 px photos, the files the overlay shows below sm.
+      - path: ../../src/assets/gallery
+        includes: ['*-640.webp']
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.imomadjid.dev.GlassLive
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        CODE_SIGN_IDENTITY: '-'
+        CODE_SIGN_STYLE: Manual
+        SWIFT_VERSION: '6.0'

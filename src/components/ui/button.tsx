@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 
+import { LiveGlassLayer } from '#/components/live-glass'
 import { glassSurface } from '#/lib/glass'
 import type { IconComponent } from '#/lib/icon-context.tsx'
 import { KeyCaps, ariaKeyShortcuts } from '#/lib/key-cap.tsx'
@@ -119,18 +120,21 @@ interface ButtonProps
    *  drop shadow, drawn from the --glass-* tokens. A tint-* class lays a
    *  color over it, as SwiftUI's .glassEffect(.regular.tint()) does. The
    *  label takes the foreground color in place of the variant's, or the
-   *  tint's label color (white on darker tints). */
+   *  tint's label color (white on darker tints). `live` refracts, frosts
+   *  and tones what a LiveGlassSourceProvider above lists behind it
+   *  (#/lib/live-glass), and is static glass wherever that can't run. It
+   *  has no tint yet: with a tint-* class on the button it draws static. */
   glass?: ButtonGlass
 }
 
-// TODO: Add 'live' (refracts the backdrop) once the static material is settled.
-type ButtonGlass = 'static'
+type ButtonGlass = 'static' | 'live'
 
 /* Static glass carries the whole material in two theme tokens, so the shadow can't
    hold the press spread the variants use; see #/lib/glass for the edge-inset press.
    The layer's transition durations (180ms, 80ms) map onto inset and color. */
 const glassClasses: Record<ButtonGlass, typeof glassSurface> = {
   static: glassSurface,
+  live: glassSurface,
 }
 
 /* Press effect: the surface layer sits 1px inside the button and a
@@ -276,15 +280,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ? loadingBgVariants[variant ?? 'primary']
         : bgVariants[variant ?? 'primary']
 
+    const surface = (
+      <span
+        aria-hidden
+        className={cn(
+          'absolute inset-px rounded-[inherit] transition-[box-shadow,background-color] [transition-duration:180ms,80ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease,ease] group-active:[transition-duration:80ms,80ms,80ms]',
+          glass ? glassClasses[glass][held ? 'held' : loading ? 'loading' : 'rest'] : bgClass,
+        )}
+      />
+    )
+    // Live glass has no tint model yet; a tint-* class on the button keeps it static.
+    const tinted = /(^|\s)tint-/.test(className ?? '')
+
     const internals = (
       <>
-        <span
-          aria-hidden
-          className={cn(
-            'absolute inset-px rounded-[inherit] transition-[box-shadow,background-color] [transition-duration:180ms,80ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease,ease] group-active:[transition-duration:80ms,80ms,80ms]',
-            glass ? glassClasses[glass][held ? 'held' : loading ? 'loading' : 'rest'] : bgClass,
-          )}
-        />
+        {glass === 'live' && !tinted ? <LiveGlassLayer fallback={surface} /> : surface}
         <span className="relative inline-flex items-center justify-center gap-[inherit]">
           {loading ? (
             <>

@@ -1,12 +1,13 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import { galleryBackdropClass, returnFocus } from '#/components/gallery-lightbox'
 import { OverlayPhoto } from '#/components/gallery-photo-tile'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
+import { LiveGlassSourceProvider } from '#/components/live-glass'
 import { IconButton } from '#/components/ui/icon-button'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
@@ -25,6 +26,7 @@ import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import { masonryColumns } from '#/lib/gallery-masonry'
 import type { PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
 import { playGalleryClose, playGalleryOpen } from '#/lib/gallery-sounds'
+import type { LiveGlassSource } from '#/lib/live-glass-source'
 import { fullScaleRect, recedeClass } from '#/lib/page-recede'
 import { SEE_MORE_CELL_RADIUS, seeMoreCellRect, seeMoreRestZoom } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
@@ -366,6 +368,7 @@ export function GalleryOverlay({
   )
   const gap = 'gap-1.5 sm:gap-2'
   const popupRef = useRef<HTMLDivElement>(null)
+  const glassBackdrop = useOverlayGlassBackdrop(listRef, popupRef)
 
   return (
     // Portalled to the body, outside main's stacking context, so it covers the Sunlit light and
@@ -445,11 +448,56 @@ export function GalleryOverlay({
               'pointer-events-none scale-90 opacity-0 duration-150 motion-reduce:scale-100',
           )}
         >
-          <Dialog.Close render={<IconButton aria-label="Close gallery" size="4xl" glass />}>
-            <IconX aria-hidden="true" />
-          </Dialog.Close>
+          {/* Live glass refracts the photos scrolling under it. */}
+          <LiveGlassSourceProvider source={glassBackdrop}>
+            <Dialog.Close
+              render={<IconButton aria-label="Close gallery" size="4xl" glass="live" />}
+            >
+              <IconX aria-hidden="true" />
+            </Dialog.Close>
+          </LiveGlassSourceProvider>
         </div>
       </Dialog.Popup>
     </Dialog.Portal>
+  )
+}
+
+/**
+ * What the close button's live glass sees: the overlay's photos near it, on the dialog's
+ * backdrop, read as --surface-1 (the backdrop is that colour at 60% over the blurred page).
+ * A photo lifted out for a flight is left out, as it is hidden.
+ */
+function useOverlayGlassBackdrop(
+  listRef: RefObject<HTMLDivElement | null>,
+  popupRef: RefObject<HTMLDivElement | null>,
+): LiveGlassSource {
+  return useMemo(
+    () => ({
+      scene(near) {
+        const photos = []
+        for (const image of listRef.current?.querySelectorAll('img') ?? []) {
+          if (image.closest('[data-lifted]')) continue
+          const rect = image.getBoundingClientRect()
+          if (
+            rect.right < near.left ||
+            rect.left > near.right ||
+            rect.bottom < near.top ||
+            rect.top > near.bottom
+          )
+            continue
+          photos.push({ image, rect, radius: 8 /* rounded-lg */ })
+        }
+        const background = getComputedStyle(document.documentElement)
+          .getPropertyValue('--surface-1')
+          .trim()
+        return { background: background || 'white', photos }
+      },
+      subscribe(wake) {
+        const popup = popupRef.current
+        popup?.addEventListener('scroll', wake, { passive: true })
+        return () => popup?.removeEventListener('scroll', wake)
+      },
+    }),
+    [listRef, popupRef],
   )
 }
