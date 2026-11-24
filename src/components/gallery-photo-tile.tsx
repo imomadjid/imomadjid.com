@@ -6,6 +6,7 @@ import { transitionTiming } from '#/lib/ambient-transition'
 import type { GalleryPhoto } from '#/lib/gallery'
 import { decodedImage } from '#/lib/gallery-images'
 import type { PhotoZoom, PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
+import { playGalleryHover } from '#/lib/gallery-sounds'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
@@ -78,10 +79,17 @@ function useZoomingPhoto({
   // starts, so the canvas doesn't begin its zoom behind the CSS one's.
   const cssZoom = !ready && (!lazy || !active || failed || unsupported)
   const handlers = {
-    onPointerEnter: (event: ReactPointerEvent) => event.pointerType !== 'touch' && zoomIn(true),
+    onPointerEnter: (event: ReactPointerEvent) => {
+      if (event.pointerType === 'touch') return
+      playGalleryHover()
+      zoomIn(true)
+    },
     onPointerLeave: () => zoomIn(false),
-    onFocus: (event: ReactFocusEvent<HTMLElement>) =>
-      zoomIn(event.currentTarget.matches(':focus-visible')),
+    onFocus: (event: ReactFocusEvent<HTMLElement>) => {
+      const keyboard = event.currentTarget.matches(':focus-visible')
+      if (keyboard) playGalleryHover()
+      zoomIn(keyboard)
+    },
     onBlur: () => zoomIn(false),
   }
   const canvas = active && (
