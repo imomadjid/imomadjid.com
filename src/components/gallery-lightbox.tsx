@@ -3,16 +3,10 @@ import { play } from 'cuelume'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 
-import {
-  ExposureReadout,
-  measureReadout,
-  readoutGap,
-  readoutRow,
-  readoutSpace,
-} from '#/components/gallery-exposure'
+import { ExposureReadout, measureReadout } from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
-import { springOf } from '#/lib/flight-springs'
+import { springResponse } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
 import {
@@ -29,6 +23,7 @@ import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import type { GalleryTuning } from '#/lib/gallery-settings'
 import { fullScaleRect } from '#/lib/page-recede'
+import { readoutRow, readoutSpace } from '#/lib/readout-layout'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
@@ -41,10 +36,8 @@ type Shown = {
   phase: Phase
   /** True once the flight canvas has drawn the photo, so the tile can let go of it. */
   airborne: boolean
-  /** True once the exposure readout comes up: before the photo lands, so the two overlap. */
-  readout: boolean
-  /** The readout's items' widths, which set how many lines it needs; null until measured. */
-  readoutWidths: readonly number[] | null
+  /** The readout's items' widths, which set how many lines it needs; empty until measured. */
+  readoutWidths: readonly number[]
 }
 
 /**
@@ -84,40 +77,27 @@ function useViewport(active: boolean): Rect {
 const screenMargin = (viewport: Rect) => (viewport.width < 640 ? 12 : 24)
 
 /**
- * Where the full-screen photo sits, as large as fits an even margin from the edges, and its
- * exposure readout under it, with room for as many lines as the readout's items
- * (`readoutWidths`) wrap onto (readoutRow). A smaller photo can need another line, which makes
- * it smaller again, so it tries again with that many until they fit.
+ * Where the full-screen photo sits, as large as fits an even margin from the edges and the room
+ * its exposure readout's lines take under it, and the readout's row. The readout wraps only where
+ * the viewport is too narrow for its line, so its lines are known before the photo is placed.
  */
-function fullScreenLayout(
-  viewport: Rect,
-  photo: GalleryPhoto,
-  readoutWidths: readonly number[] | null,
-) {
+function fullScreenLayout(viewport: Rect, photo: GalleryPhoto, readoutWidths: readonly number[]) {
   const side = screenMargin(viewport)
-  const gap = readoutGap(viewport.width)
-  let lines = 1
-  for (;;) {
-    const rect = containRect(viewport, photo.width / photo.height, {
-      top: side,
-      right: side,
-      bottom: side + readoutSpace(lines),
-      left: side,
-    })
-    const readout = readoutRow(rect, viewport, side, readoutWidths, gap)
-    // Each pass adds a line, and the items can't take more lines than there are of them.
-    if (readout.lines <= lines || lines >= (readoutWidths?.length ?? 1)) {
-      return { photo: rect, readout }
-    }
-    lines = readout.lines
-  }
+  const { lines } = readoutRow(viewport, side, readoutWidths)
+  const rect = containRect(viewport, photo.width / photo.height, {
+    top: side,
+    right: side,
+    bottom: side + readoutSpace(lines),
+    left: side,
+  })
+  return { photo: rect, readout: readoutRow(viewport, side, readoutWidths, rect) }
 }
 
 /** The whole photo in its full-screen rect. */
 function fullScreenPose(
   viewport: Rect,
   photo: GalleryPhoto,
-  readoutWidths: readonly number[] | null,
+  readoutWidths: readonly number[],
 ): FlightPose {
   return {
     corners: quadOf(fullScreenLayout(viewport, photo, readoutWidths).photo),
@@ -158,6 +138,7 @@ export function useGalleryLightbox(
 ) {
   const imageRef = useRef<HTMLImageElement>(null)
   const readoutRef = useRef<HTMLDListElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
   const [shown, setShown] = useState<Shown | null>(null)
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
   const flightToken = useRef(0)
@@ -181,17 +162,17 @@ export function useGalleryLightbox(
     returnTo.current = { tile, keyboard }
     const flight = flightRef.current
     const token = ++flightToken.current
-    const opened = {
+    const opened: Shown = {
       photo,
       tile,
-      phase: flight ? ('opening' as const) : ('open' as const),
+      phase: flight ? 'opening' : 'open',
       airborne: false,
-      readout: !flight,
+      readoutWidths: [],
     }
     // Render the readout first, hidden, to measure how many lines it takes, which the photo's
     // full-screen rect, and so the flight's landing, leaves room for.
-    flushSync(() => setShown({ ...opened, readoutWidths: null }))
-    const readoutWidths = readoutRef.current ? measureReadout(readoutRef.current) : null
+    flushSync(() => setShown(opened))
+    const readoutWidths = readoutRef.current ? measureReadout(readoutRef.current) : []
     setShown({ ...opened, readoutWidths })
     if (!flight) return
     const from = tilePose(photo, tile, tile.getBoundingClientRect())
@@ -200,7 +181,7 @@ export function useGalleryLightbox(
     // The full-screen photo takes over from the flight, or replaces it if it fails.
     const settle = () => {
       if (!current()) return
-      setShown((shown) => (shown ? { ...shown, phase: 'open', readout: true } : shown))
+      setShown((shown) => (shown ? { ...shown, phase: 'open' } : shown))
       stage.hide(false)
     }
     // The sharp photo if hovering already decoded it; otherwise the tile's own, until the sharp one
@@ -223,14 +204,6 @@ export function useGalleryLightbox(
         })
         setShown((shown) => (shown && current() ? { ...shown, airborne: true } : shown))
         stage.show()
-        // The readout comes up while the photo settles, not once it has.
-        const response = (2 * Math.PI) / springOf(tuning.expand.open).omega
-        window.setTimeout(
-          () => {
-            if (current()) setShown((shown) => (shown ? { ...shown, readout: true } : shown))
-          },
-          response * tuning.readout.start * 1000,
-        )
         sharp
           .then((sharpImage) => {
             if (current()) flight.sharpen(photoImage, sharpImage)
@@ -310,6 +283,10 @@ export function useGalleryLightbox(
           className={cn(galleryBackdropClass, shown?.phase === 'closing' && 'opacity-0')}
         />
         <Dialog.Popup
+          ref={popupRef}
+          // The popup, not its first tabbable element: that's the recipe's link, hidden until
+          // the readout comes up.
+          initialFocus={popupRef}
           finalFocus={() => returnFocus(returnTo.current)}
           className="fixed inset-0 z-50 cursor-zoom-out outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
           onClick={(event) => {
@@ -348,8 +325,15 @@ export function useGalleryLightbox(
                 ref={readoutRef}
                 photo={photo}
                 row={layout.readout}
-                gap={readoutGap(viewport.width)}
-                shown={shown.readout && shown.phase !== 'closing'}
+                // Up once the photo takes off or opens without a flight; gone as it closes.
+                shown={(shown.airborne || shown.phase === 'open') && shown.phase !== 'closing'}
+                // Flying, it waits `readout.start` of the open's response: it comes up while the
+                // photo settles, so the two overlap rather than run one after the other.
+                delay={
+                  shown.phase === 'opening'
+                    ? springResponse(tuning.expand.open) * tuning.readout.start
+                    : 0
+                }
                 tuning={tuning.readout}
               />
             </>

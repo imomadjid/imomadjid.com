@@ -16,6 +16,7 @@ void test('sets the aperture with ƒ and a decimal comma', () => {
 
 void test('keeps fractions of a second and marks whole seconds with a double prime', () => {
   assert.equal(formatShutter('1/4000'), '1/4000')
+  assert.equal(formatShutter('1/2.5'), '1/2,5')
   assert.equal(formatShutter('0.8'), '0,8″')
   assert.equal(formatShutter('2'), '2″')
 })
