@@ -65,17 +65,27 @@ function FlightCanvas({
   ref,
   body,
   visible,
+  fadeSeconds,
 }: {
   ref: RefObject<HTMLCanvasElement | null>
   body: HTMLElement
   visible: boolean
+  /** Fading out over this many seconds, or null while it shows. */
+  fadeSeconds: number | null
 }) {
+  const fading = fadeSeconds !== null
   return createPortal(
     // Above the dialog (z-50) and below tooltips (z-70); it never takes the pointer.
     <canvas
       ref={ref}
       aria-hidden
-      className={cn('pointer-events-none fixed inset-0 z-60 size-full', !visible && 'invisible')}
+      className={cn(
+        'pointer-events-none fixed inset-0 z-60 size-full',
+        !visible && !fading && 'invisible',
+        // Only while fading, so a new flight shows at once.
+        fading && 'opacity-0 transition-opacity ease-out motion-reduce:transition-none',
+      )}
+      style={fading ? { transitionDuration: `${fadeSeconds}s` } : undefined}
     />,
     body,
   )
@@ -147,12 +157,20 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
     nearRef,
   )
 
-  // The canvas shows the photo only while it flies. The full-screen photo or the tile takes over
-  // in the same commit that hides it; then the flight's last frame can go.
+  // The canvas shows the photo only while it flies. The full-screen photo takes over in the same
+  // commit that hides it. A photo landing back in its tile fades out over the tile instead: the
+  // flight above the page is unlit, and the tile beneath is lit by the Sunlit layer, so the fade
+  // brings its light and shadows in rather than snapping them on. Then the last frame can go.
   const flying = shown !== null && shown.airborne && shown.phase !== 'open'
+  const [relighting, setRelighting] = useState(false)
   useEffect(() => {
-    if (!flying) flightRef.current?.clear()
-  }, [flying, flightRef])
+    if (!relighting) return
+    const timer = setTimeout(() => setRelighting(false), tuning.relight * 1000)
+    return () => clearTimeout(timer)
+  }, [relighting, tuning.relight])
+  useEffect(() => {
+    if (!flying && !relighting) flightRef.current?.clear()
+  }, [flying, relighting, flightRef])
 
   // The photo has lifted out of its tile or grid cell while the flight or the full-screen view
   // shows it: `data-lifted` hides the tile (data-lifted:invisible), before paint, in the commit
@@ -166,6 +184,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
   const openPhoto = (photo: GalleryPhoto, tile: HTMLElement) => {
     const flight = flightRef.current
     const token = ++flightToken.current
+    setRelighting(false)
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
     if (!flight) return
     const from = tilePose(photo, tile)
@@ -226,10 +245,13 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
     })
     setShown({ ...shown, phase: 'closing', airborne: true })
     // Landed or not (a lost device ends the flight early), the dialog closes.
-    const close = () => {
-      if (flightToken.current === token) setShown(null)
+    const close = (landed: boolean) => {
+      if (flightToken.current !== token) return
+      setShown(null)
+      // A landed photo fades into its lit tile; one cut short by a failure just goes.
+      setRelighting(landed && tuning.relight > 0)
     }
-    landing.then(close, close)
+    landing.then(close, () => close(false))
   }
 
   const photo = shown?.photo
@@ -296,7 +318,14 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
           </Dialog.Popup>
         </Dialog.Portal>
       </Dialog.Root>
-      {body && <FlightCanvas ref={canvasRef} body={body} visible={flying} />}
+      {body && (
+        <FlightCanvas
+          ref={canvasRef}
+          body={body}
+          visible={flying}
+          fadeSeconds={relighting ? tuning.relight : null}
+        />
+      )}
     </>
   )
 

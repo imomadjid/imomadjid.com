@@ -23,6 +23,8 @@ export const galleryControls = {
     close: { type: 'easing', duration: 0.55, ease: [0.32, 0.72, 0, 1] },
     /** Seconds the nearest corner can trail the farthest, for a move across the whole screen. */
     spread: [0.12, 0, 0.5, 0.005],
+    /** Seconds a closed photo takes to fade into its tile, bringing the Sunlit light back in. */
+    relight: [0.3, 0, 1, 0.05],
   },
 } satisfies DialConfig
 
@@ -34,5 +36,10 @@ const { seeMore, photo, expand } = galleryControls
 export const defaultGalleryTuning: GalleryTuning = {
   seeMore: { motion: seeMore.motion, lead: seeMore.lead[0], bulge: seeMore.bulge[0] },
   photo: { motion: photo.motion, lead: photo.lead[0], zoom: photo.zoom[0] },
-  expand: { open: expand.open, close: expand.close, spread: expand.spread[0] },
+  expand: {
+    open: expand.open,
+    close: expand.close,
+    spread: expand.spread[0],
+    relight: expand.relight[0],
+  },
 }

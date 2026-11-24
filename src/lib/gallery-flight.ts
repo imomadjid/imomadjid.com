@@ -26,6 +26,8 @@ export type FlightTuning = {
   close: TransitionConfig
   /** Seconds the nearest corner can trail the farthest; each lags by its share of it. */
   spread: number
+  /** Seconds a photo landed back in its tile takes to fade into the lit tile beneath. */
+  relight: number
 }
 
 /** Where a photo is: its corners on screen, the texture coordinate at each, and its corner radius. */
