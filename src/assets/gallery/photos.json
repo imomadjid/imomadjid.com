@@ -1,134 +1,992 @@
 {
   "dscf0016": {
+    "exposure": {
+      "aperture": 7.1,
+      "exposureCompensation": 0.33,
+      "focalLength": 33,
+      "iso": 160,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/7"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": 0,
+      "color": 2,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Weak",
+      "dynamicRange": "Auto",
+      "filmSimulation": "Provia",
+      "grain": "Weak, Small",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -1.5,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -5,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0055": {
+    "exposure": {
+      "aperture": 5,
+      "exposureCompensation": 0,
+      "focalLength": 21.4,
+      "iso": 160,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/60"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": 0,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "Auto",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Weak, Small",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -1,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0086": {
+    "exposure": {
+      "aperture": 4.1,
+      "exposureCompensation": 0,
+      "focalLength": 17.7,
+      "iso": 640,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/4000"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": 0,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "Auto",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Weak, Small",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -1,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0093": {
+    "exposure": {
+      "aperture": 4.5,
+      "exposureCompensation": 0,
+      "focalLength": 13,
+      "iso": 640,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/640"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0095": {
+    "exposure": {
+      "aperture": 4.5,
+      "exposureCompensation": 0,
+      "focalLength": 13,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/500"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0102": {
+    "exposure": {
+      "aperture": 5.3,
+      "exposureCompensation": 0,
+      "focalLength": 24.7,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/400"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0104": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 32.1,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/400"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0111": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 32.1,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/40"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0112": {
+    "exposure": {
+      "aperture": 5,
+      "exposureCompensation": 0,
+      "focalLength": 13,
+      "iso": 640,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/100"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0119": {
+    "exposure": {
+      "aperture": 5,
+      "exposureCompensation": 0,
+      "focalLength": 18.9,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/250"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0121": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 33,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/180"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0127": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 32.1,
+      "iso": 5000,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/200"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0131": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 32.1,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/500"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0136": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 33,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/640"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0142": {
+    "exposure": {
+      "aperture": 5,
+      "exposureCompensation": 0,
+      "focalLength": 19.9,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/320"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0157": {
+    "exposure": {
+      "aperture": 3.8,
+      "exposureCompensation": 0,
+      "focalLength": 14.5,
+      "iso": 2000,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/1600"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0186": {
+    "exposure": {
+      "aperture": 3.5,
+      "exposureCompensation": 0,
+      "focalLength": 13,
+      "iso": 5000,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/640"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0215": {
+    "exposure": {
+      "aperture": 5.7,
+      "exposureCompensation": -0.33,
+      "focalLength": 27.1,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/320"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -2,
+      "color": 2,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Off",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Small",
+      "highlight": 0,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": -2,
+      "whiteBalance": "5200K",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 1
+      }
+    },
     "width": 1600
   },
   "dscf0235": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": -0.33,
+      "focalLength": 33,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/200"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -2,
+      "color": 2,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Off",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Small",
+      "highlight": 0,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": -2,
+      "whiteBalance": "5200K",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 1
+      }
+    },
     "width": 1067
   },
   "dscf0319": {
+    "exposure": {
+      "aperture": 22,
+      "exposureCompensation": 0,
+      "focalLength": 33,
+      "iso": 160,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/10"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": 0,
+      "color": 2,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Off",
+      "dynamicRange": "Auto",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Weak, Small",
+      "highlight": -1,
+      "noiseReduction": -4,
+      "shadow": -1,
+      "sharpness": -2,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -4,
+        "red": 2
+      }
+    },
     "width": 1600
   },
   "dscf0355": {
+    "exposure": {
+      "aperture": 22,
+      "exposureCompensation": 0,
+      "focalLength": 20.9,
+      "iso": 640,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "0.8"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0359": {
+    "exposure": {
+      "aperture": 13,
+      "exposureCompensation": 0,
+      "focalLength": 20.9,
+      "iso": 640,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/4"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0370": {
+    "exposure": {
+      "aperture": 20,
+      "exposureCompensation": 0,
+      "focalLength": 20.4,
+      "iso": 640,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/6"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0403": {
+    "exposure": {
+      "aperture": 5,
+      "exposureCompensation": 0,
+      "focalLength": 18.9,
+      "iso": 640,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/500"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0405": {
+    "exposure": {
+      "aperture": 5.3,
+      "exposureCompensation": 0,
+      "focalLength": 24.1,
+      "iso": 2500,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/500"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0620": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 33,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/20"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Provia",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0623": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 33,
+      "iso": 5000,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/20"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Provia",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0634": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 33,
+      "iso": 640,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/20"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0664": {
+    "exposure": {
+      "aperture": 5.7,
+      "exposureCompensation": 0,
+      "focalLength": 26.5,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/400"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0679": {
+    "exposure": {
+      "aperture": 5.8,
+      "exposureCompensation": 0,
+      "focalLength": 27.8,
+      "iso": 4000,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/160"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0703": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 33,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/250"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   },
   "dscf0737": {
+    "exposure": {
+      "aperture": 10,
+      "exposureCompensation": 0,
+      "focalLength": 30.6,
+      "iso": 1250,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/4000"
+    },
     "height": 1600,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1067
   },
   "dscf0747": {
+    "exposure": {
+      "aperture": 6.3,
+      "exposureCompensation": 0,
+      "focalLength": 33,
+      "iso": 6400,
+      "lens": "XC13-33mmF3.5-6.3 OIS",
+      "shutter": "1/640"
+    },
     "height": 1067,
+    "settings": {
+      "clarity": -4,
+      "color": 4,
+      "colorChromeEffect": "Strong",
+      "colorChromeFxBlue": "Strong",
+      "dynamicRange": "DR400",
+      "filmSimulation": "Classic Chrome",
+      "grain": "Strong, Large",
+      "highlight": -2,
+      "noiseReduction": -4,
+      "shadow": -2,
+      "sharpness": 0,
+      "whiteBalance": "Auto",
+      "whiteBalanceShift": {
+        "blue": -6,
+        "red": 5
+      }
+    },
     "width": 1600
   }
 }

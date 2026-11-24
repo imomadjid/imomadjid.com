@@ -4,8 +4,9 @@
 # Usage: tools/gallery/import.sh DSCF0123.JPG DSCF0456.HIF ...
 #
 # Each photo becomes <stem>-240.webp, -640.webp and -1600.webp, rotated upright and stripped of
-# all metadata (EXIF can carry GPS). photos.json records every imported photo's size for layout.
-# Needs rclone with the `mhmmadjid@gmail.com:` remote, ImageMagick with HEIF, and jq.
+# all metadata (EXIF can carry GPS). photos.json records every imported photo's size for layout,
+# and metadata.ts adds its exposure and Fujifilm settings from the original's EXIF.
+# Needs rclone with the `mhmmadjid@gmail.com:` remote, ImageMagick with HEIF, jq, and exiftool.
 # GALLERY_SRC=<dir> reads already downloaded originals from <dir> instead of Drive.
 set -euo pipefail
 
@@ -57,3 +58,7 @@ for file in "$@"; do
   jq -S . "$work/manifest.json" >"$manifest"
   echo "$stem ${w}x$h"
 done
+
+originals=()
+for file in "$@"; do originals+=("$src_dir/$file"); done
+bun "$root/tools/gallery/metadata.ts" "${originals[@]}"

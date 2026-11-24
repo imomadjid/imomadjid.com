@@ -1,7 +1,9 @@
 import sizes from '#/assets/gallery/photos.json'
+import { matchRecipe } from '#/lib/fuji-settings'
+import type { Exposure, FujiRecipe, FujiSettings } from '#/lib/fuji-settings'
 
-// tools/gallery/import.sh writes <stem>-240, -640 and -1600.webp per photo plus their size
-// in photos.json. Vite fingerprints the files into /assets/; only the URLs are bundled.
+// tools/gallery/import.sh writes <stem>-240, -640 and -1600.webp per photo plus their size,
+// exposure and Fujifilm settings in photos.json. Vite fingerprints the files into /assets/; only the URLs are bundled.
 const files = import.meta.glob<string>('../assets/gallery/*.webp', {
   query: '?url',
   import: 'default',
@@ -17,6 +19,10 @@ export type GalleryPhoto = {
   thumb: string
   small: string
   large: string
+  exposure: Exposure
+  settings: FujiSettings
+  /** The published recipe the settings match, or null when they match none. */
+  recipe: FujiRecipe | null
 }
 
 function file(name: string) {
@@ -26,7 +32,7 @@ function file(name: string) {
 }
 
 function photo(id: keyof typeof sizes, alt: string): GalleryPhoto {
-  const { width, height } = sizes[id]
+  const { width, height, exposure, settings } = sizes[id]
   return {
     id,
     alt,
@@ -35,6 +41,9 @@ function photo(id: keyof typeof sizes, alt: string): GalleryPhoto {
     thumb: file(`${id}-240.webp`),
     small: file(`${id}-640.webp`),
     large: file(`${id}-1600.webp`),
+    exposure,
+    settings,
+    recipe: matchRecipe(settings),
   }
 }
 
