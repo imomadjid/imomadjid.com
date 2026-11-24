@@ -55,7 +55,7 @@ export function createRingMotion(): RingMotion {
  * How far along an eased move that starts `delay` seconds in and lasts `duration` is at `elapsed`,
  * and whether it is still moving. Clamped before the ease, so a spring may overshoot.
  */
-export function delayedEase(
+function delayedEase(
   elapsed: number,
   delay: number,
   duration: number,

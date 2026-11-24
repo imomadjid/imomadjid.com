@@ -72,11 +72,6 @@ export function diagonal(rect: Rect) {
   return Math.hypot(rect.width, rect.height)
 }
 
-/** `from` moved toward `to` by `amount` (0 stays, 1 arrives). */
-export function mixPoint(from: Point, to: Point, amount: number): Point {
-  return [from[0] + (to[0] - from[0]) * amount, from[1] + (to[1] - from[1]) * amount]
-}
-
 /**
  * How far each point lags when a group opens from its middle, from 0 (it leads) to 1: its
  * distance from `center` over the farthest point's, so the middle leads and the rim follows.
