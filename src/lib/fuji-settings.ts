@@ -238,7 +238,7 @@ const scalarSettings = [
 ] as const satisfies readonly ScalarSetting[]
 
 /** Whether every setting the recipe states equals the photo's. */
-export function matchesRecipe(settings: FujiSettings, recipe: FujiRecipe) {
+function matchesRecipe(settings: FujiSettings, recipe: FujiRecipe) {
   const shift = recipe.settings.whiteBalanceShift
   // Compared by field: photos.json sorts keys, so the shift's key order can differ.
   const shiftMatches =
