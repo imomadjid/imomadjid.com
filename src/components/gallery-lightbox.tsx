@@ -233,6 +233,9 @@ export function useGalleryLightbox(stage: FlightStage) {
         <Dialog.Popup
           className="fixed inset-0 z-50 cursor-zoom-out outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
           onClick={(event) => {
+            // Not while the photo is still flying out: a second click where it was would turn it
+            // straight back. Escape and the close button still can.
+            if (shown?.phase === 'opening') return
             if (event.target === event.currentTarget) requestClose()
           }}
         >

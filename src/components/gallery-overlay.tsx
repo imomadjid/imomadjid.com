@@ -354,6 +354,9 @@ export function GalleryOverlay({
           closing && 'pointer-events-none opacity-0 duration-200',
         )}
         onClick={(event) => {
+          // Not while the tile's photos are still flying in: a second click where See more was
+          // would turn them straight back. Escape and the close button still can.
+          if (cellsLifted) return
           if (event.target instanceof Element && !event.target.closest('button, header')) onClose()
         }}
       >
@@ -370,7 +373,13 @@ export function GalleryOverlay({
           <div
             ref={listRef}
             data-recede
-            className={cn('grid grid-cols-4 items-start', gap, recedeClass)}
+            className={cn(
+              'grid grid-cols-4 items-start',
+              gap,
+              recedeClass,
+              // Its photos open only once the tile's have landed, so a click can't cut the flight.
+              cellsLifted && 'pointer-events-none',
+            )}
           >
             {columns.map((column) => (
               <ul key={column[0]} className={cn('grid', gap)}>
