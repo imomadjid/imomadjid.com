@@ -12,9 +12,12 @@ export function formatAperture(aperture: number) {
   return `ƒ${decimal(aperture)}`
 }
 
-/** `1/250` stays a fraction; a time of a second or less without one, such as `0.8`, reads `0,8″`. */
+/**
+ * `1/250` stays a fraction, with a decimal comma (`1/2,5`); a time without one, such as `0.8`,
+ * reads `0,8″`.
+ */
 export function formatShutter(shutter: string) {
-  if (shutter.includes('/')) return shutter
+  if (shutter.includes('/')) return shutter.replace('.', ',')
   const seconds = Number(shutter)
   return Number.isNaN(seconds) ? shutter : `${decimal(seconds)}″`
 }

@@ -22,6 +22,9 @@ export function springOf(config: TransitionConfig, scale = 1): Spring {
   }
 }
 
+/** How long `config`'s spring takes to respond, in seconds: what it looks like it takes. */
+export const springResponse = (config: TransitionConfig) => (2 * Math.PI) / springOf(config).omega
+
 function responseSpring(response: number, ratio: number): Spring {
   return { omega: (2 * Math.PI) / Math.max(response, 1e-3), zeta: Math.max(0.05, ratio) }
 }

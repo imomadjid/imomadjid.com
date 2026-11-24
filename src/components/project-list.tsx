@@ -3,6 +3,7 @@ import type { PointerEvent } from 'react'
 
 import { PreviewMedia } from '#/components/project-preview-media'
 import type { ProjectPreview } from '#/components/project-preview-media'
+import { figuresClass } from '#/lib/figures'
 import { cn } from '#/lib/utils'
 
 export type Project = {
@@ -80,7 +81,8 @@ function ProjectRow({
               height, and the figures are cap height, so they center on the title's first line. */}
           <span
             className={cn(
-              "[font-feature-settings:'ss03'] text-xs leading-6 slashed-zero tabular-nums transition-colors duration-200 motion-reduce:transition-none",
+              figuresClass,
+              'text-xs leading-6 transition-colors duration-200 motion-reduce:transition-none',
               muted ? 'text-neutral-300 dark:text-neutral-700' : 'text-neutral-500',
             )}
           >
