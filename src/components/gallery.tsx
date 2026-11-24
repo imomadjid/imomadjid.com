@@ -1,11 +1,14 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import cameraPhoto from '#/assets/camera/fujifilm-x-t30-iii.webp'
 import { IconButton } from '#/components/ui/icon-button'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
+import type { GalleryWarp } from '#/lib/gallery-warp'
+import { defaultWarpTuning } from '#/lib/gallery-warp-settings'
 import { cn } from '#/lib/utils'
 
 const tileClass = 'aspect-square w-full rounded-xl bg-neutral-200 dark:bg-neutral-800'
@@ -40,22 +43,85 @@ function previewPhotos(photos: readonly GalleryPhoto[], featuredCount: number) {
 
 /**
  * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
- * out to the whole grid and shows the label. At 2x the grid overhangs the tile by half a gap on
- * each side, so the crop's edges land on cell edges; cells have half the tiles' radius for the same
- * reason. The overhang shrinks to nothing as it zooms out, or the tile would clip the edge cells'
- * corners at 1x. While zoomed out, will-change keeps the grid on its own layer, so Chrome doesn't
- * repaint it snapped to whole pixels as the zoom ends, a visible settle when the tile sits at a
- * fractional offset. Cells are squares sized by width: a 100% height fills its row in Chrome
- * but takes the image's own proportions in Safari.
+ * out to the whole grid and shows the label. Where WebGPU runs, a canvas draws the grid instead
+ * (src/lib/gallery-warp.ts) and the middle zooms ahead of the edges; it starts as the tile nears
+ * the viewport and takes over after its first frame, so the CSS grid below is the fallback.
+ *
+ * In the CSS grid, at 2x the grid overhangs the tile by half a gap on each side, so the crop's
+ * edges land on cell edges; cells have half the tiles' radius for the same reason. The overhang
+ * shrinks to nothing as it zooms out, or the tile would clip the edge cells' corners at 1x. While
+ * zoomed out, will-change keeps the grid on its own layer, so Chrome doesn't repaint it snapped to
+ * whole pixels as the zoom ends, a visible settle when the tile sits at a fractional offset. Cells
+ * are squares sized by width: a 100% height fills its row in Chrome but takes the image's own
+ * proportions in Safari.
  */
 function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const warpRef = useRef<GalleryWarp | null>(null)
+  const zoomedOutRef = useRef(false)
+  const [warped, setWarped] = useState(false)
+  // A string, so the effect restarts only when the photos change, not on every new array.
+  const photoUrls = photos.map((photo) => photo.thumb).join(' ')
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !('gpu' in navigator)) return
+    const abort = new AbortController()
+    const start = () => {
+      void import('#/lib/gallery-warp')
+        .then(({ startGalleryWarp }) =>
+          startGalleryWarp(canvas, photoUrls.split(' '), defaultWarpTuning, abort.signal),
+        )
+        .then((warp) => {
+          warpRef.current = warp
+          warp.setZoomedOut(zoomedOutRef.current)
+          // The renderer draws its first frame in the next animation frame, before this callback.
+          requestAnimationFrame(() => {
+            if (!abort.signal.aborted) setWarped(true)
+          })
+        })
+        .catch((error) => {
+          if (!abort.signal.aborted) console.warn('The See more tile is using its CSS zoom:', error)
+        })
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return
+        observer.disconnect()
+        start()
+      },
+      { rootMargin: '50% 0px' },
+    )
+    observer.observe(canvas)
+    return () => {
+      observer.disconnect()
+      abort.abort()
+      warpRef.current = null
+    }
+  }, [photoUrls])
+
+  const zoomOut = (zoomedOut: boolean) => {
+    zoomedOutRef.current = zoomedOut
+    warpRef.current?.setZoomedOut(zoomedOut)
+  }
+
   return (
     <Dialog.Trigger
       aria-label={`See all ${total} photos`}
       className="group relative block w-full cursor-pointer rounded-xl outline-none"
+      // Touch has no hover; a tap opens the overlay.
+      onPointerEnter={(event) => event.pointerType !== 'touch' && zoomOut(true)}
+      onPointerLeave={() => zoomOut(false)}
+      onFocus={(event) => zoomOut(event.currentTarget.matches(':focus-visible'))}
+      onBlur={() => zoomOut(false)}
     >
       <span className="relative block aspect-square w-full overflow-hidden rounded-xl">
-        <span className="absolute -inset-px grid scale-200 grid-cols-4 content-start gap-0.5 transition-[scale,inset] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:inset-0 group-hover:scale-100 group-hover:will-change-transform group-focus-visible:inset-0 group-focus-visible:scale-100 group-focus-visible:will-change-transform motion-reduce:transition-none">
+        <span
+          className={cn(
+            'absolute -inset-px grid scale-200 grid-cols-4 content-start gap-0.5 transition-[scale,inset] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:inset-0 group-hover:scale-100 group-hover:will-change-transform group-focus-visible:inset-0 group-focus-visible:scale-100 group-focus-visible:will-change-transform motion-reduce:transition-none',
+            warped && 'invisible',
+          )}
+        >
           {photos.map((photo) => (
             <img
               key={photo.id}
@@ -67,6 +133,11 @@ function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total
             />
           ))}
         </span>
+        <canvas
+          ref={canvasRef}
+          aria-hidden
+          className={cn('absolute inset-0 size-full', !warped && 'invisible')}
+        />
       </span>
       <span className="pointer-events-none absolute inset-x-0 top-full mt-2 translate-y-1 text-center text-sm text-neutral-600 opacity-0 transition-[opacity,translate] duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:transition-none dark:text-neutral-400 pointer-coarse:translate-y-0 pointer-coarse:opacity-100">
         See more

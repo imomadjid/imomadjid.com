@@ -18,7 +18,7 @@ export const devPages = [
     to: '/dev/gallery-warp',
     label: 'Gallery warp',
     icon: Grid2x2,
-    description: 'The See more tile in WebGPU, zooming from the middle out.',
+    description: "Tune the See more tile's WebGPU warp, which zooms from the middle out.",
   },
   {
     to: '/dev/glass',

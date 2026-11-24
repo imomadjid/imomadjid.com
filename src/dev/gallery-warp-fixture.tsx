@@ -2,16 +2,13 @@ import { useDialKit } from 'dialkit'
 import type { DialConfig } from 'dialkit'
 import { useEffect, useRef, useState } from 'react'
 
-import { startGalleryWarp } from '#/dev/gallery-warp'
-import type { GalleryWarp, WarpTuning } from '#/dev/gallery-warp'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
+import { startGalleryWarp } from '#/lib/gallery-warp'
+import type { GalleryWarp, WarpTuning } from '#/lib/gallery-warp'
+import { galleryWarpControls } from '#/lib/gallery-warp-settings'
 
 const warpControls = {
-  motion: { type: 'easing', duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-  /** Seconds the corners start after the middle. */
-  lead: [0.15, 0, 0.6, 0.01],
-  /** Extra magnification of the middle halfway through a move. */
-  bulge: [0, 0, 0.5, 0.01],
+  ...galleryWarpControls,
   /** Holds every tile zoomed out, to inspect the grid. */
   zoomedOut: false,
 } satisfies DialConfig
@@ -19,7 +16,7 @@ const warpControls = {
 // The See more tile's preview order: the photos past the grid, then from the top.
 const photoUrls = [...galleryPhotos.slice(featuredCount), ...galleryPhotos.slice(0, featuredCount)]
   .slice(0, 16)
-  .map((photo) => photo.small)
+  .map((photo) => photo.thumb)
 
 const sizes = [176, 352] as const
 
@@ -90,9 +87,9 @@ export function GalleryWarpFixture() {
       <header className="space-y-1">
         <h1 className="text-display font-medium">Gallery warp</h1>
         <p className="text-body text-muted-foreground">
-          The See more tile drawn with WebGPU. Hover a tile: the middle of the grid zooms before the
-          edges, ring by ring. Tune it in the Warp panel; at zero lead and bulge it matches the CSS
-          tile on the homepage.
+          The homepage's See more tile, drawn with WebGPU. Hover a tile: the middle of the grid
+          zooms before the edges, ring by ring. Tune it in the Warp panel, then copy the values into
+          src/lib/gallery-warp-settings.ts; at zero lead and bulge it moves like the CSS fallback.
         </p>
       </header>
 

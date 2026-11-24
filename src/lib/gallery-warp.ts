@@ -6,8 +6,8 @@ import warpSource from '#/shaders/gallery-warp.wgsl'
 
 // Must match RING_COUNT in src/shaders/gallery-warp.wgsl.
 const RING_COUNT = 48
-const TEXTURE_SIZE = 256
-const MIP_COUNT = 5
+// Photo layers are as large as the smallest square crop, up to this.
+const MAX_TEXTURE_SIZE = 256
 // The CSS tile's geometry: gap-0.5, rounded-md cells at 1x, and a rounded-xl tile.
 const GAP = 2
 const CELL_RADIUS = 6
@@ -76,12 +76,17 @@ export async function startGalleryWarp(
   signal.addEventListener('abort', dispose, { once: true })
 
   const output = surface(gpu, canvas, { clearColor: [0, 0, 0, 0] })
+  const loaded = await squares
+  if (disposed) throw aborted()
+  const textureSize = Math.min(MAX_TEXTURE_SIZE, ...loaded.map((square) => Math.floor(square.side)))
+  // Down to a 16-texel level, past which nothing on the tile is small enough to need it.
+  const mipCount = Math.max(1, Math.floor(Math.log2(textureSize / 16)) + 1)
   const photos = texture(gpu, {
     kind: '2d-array',
-    size: [TEXTURE_SIZE, TEXTURE_SIZE],
+    size: [textureSize, textureSize],
     layers: 16,
     format: 'rgba8unorm',
-    mipLevelCount: MIP_COUNT,
+    mipLevelCount: mipCount,
     usage: ['texture_binding', 'copy_dst', 'render_attachment'],
     label: 'gallery-warp-photos',
   })
@@ -89,11 +94,11 @@ export async function startGalleryWarp(
   const context = scratch.getContext('2d')
   if (!context) throw new Error('Cannot prepare the warp photos')
   context.imageSmoothingQuality = 'high'
-  for (const [layer, square] of (await squares).entries()) {
+  for (const [layer, square] of loaded.entries()) {
     if (disposed) throw aborted()
     // Filter each mip from the source, so the zoomed-out grid doesn't alias.
-    for (let mipLevel = 0; mipLevel < MIP_COUNT; mipLevel += 1) {
-      const size = TEXTURE_SIZE >> mipLevel
+    for (let mipLevel = 0; mipLevel < mipCount; mipLevel += 1) {
+      const size = Math.max(1, textureSize >> mipLevel)
       scratch.width = size
       scratch.height = size
       context.drawImage(
@@ -170,8 +175,8 @@ export async function startGalleryWarp(
         gap: GAP,
         cellRadius: CELL_RADIUS,
         tileRadius: TILE_RADIUS,
-        texSize: TEXTURE_SIZE,
-        mipCount: MIP_COUNT,
+        texSize: textureSize,
+        mipCount,
         rings: ringVectors,
       },
     })
