@@ -76,3 +76,13 @@ export function diagonal(rect: Rect) {
 export function mixPoint(from: Point, to: Point, amount: number): Point {
   return [from[0] + (to[0] - from[0]) * amount, from[1] + (to[1] - from[1]) * amount]
 }
+
+/**
+ * How long each point waits, as a fraction of the spread, when a group opens from its middle:
+ * its distance from `center` over the farthest point's, so the middle leads and the rim follows.
+ */
+export function centerOutLags(points: readonly Point[], center: Point): number[] {
+  const distances = points.map((point) => Math.hypot(point[0] - center[0], point[1] - center[1]))
+  const farthest = Math.max(...distances)
+  return distances.map((distance) => (farthest > 0 ? distance / farthest : 0))
+}

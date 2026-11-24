@@ -1,7 +1,14 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 
-import { containRect, cornerLags, coverCrop, diagonal, quadOf } from './gallery-flight-geometry'
+import {
+  centerOutLags,
+  containRect,
+  cornerLags,
+  coverCrop,
+  diagonal,
+  quadOf,
+} from './gallery-flight-geometry'
 
 const viewport = { x: 0, y: 0, width: 1000, height: 800 }
 const noInsets = { top: 0, right: 0, bottom: 0, left: 0 }
@@ -65,4 +72,18 @@ void test('cornerLags spreads a tile near the edge more than one near the middle
   const nearMiddle = quadOf({ x: 400, y: 300, width: 100, height: 100 })
   const atBottom = quadOf({ x: 450, y: 690, width: 100, height: 100 })
   assert.ok(spread(atBottom) > spread(nearMiddle))
+})
+
+void test('centerOutLags leads with the middle and ends with the rim', () => {
+  assert.deepEqual(
+    centerOutLags(
+      [
+        [50, 50],
+        [60, 50],
+        [100, 50],
+      ],
+      [50, 50],
+    ),
+    [0, 0.2, 1],
+  )
 })

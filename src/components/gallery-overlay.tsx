@@ -7,7 +7,7 @@ import type { FlightStage } from '#/components/gallery-flight-stage'
 import { IconButton } from '#/components/ui/icon-button'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
-import { cornerLags, coverCrop, quadOf, wholeImage } from '#/lib/gallery-flight-geometry'
+import { centerOutLags, coverCrop, quadOf, wholeImage } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import { masonryColumns } from '#/lib/gallery-masonry'
 import {
@@ -37,9 +37,6 @@ type Shown = {
   /** True once the tile's photos have flown out of it, until they land back. */
   lifted: boolean
 }
-
-const viewportDiagonal = () =>
-  Math.hypot(document.documentElement.clientWidth, document.documentElement.clientHeight)
 
 /** The overlay's first cells, in order, once its popup has mounted. */
 async function heroCells(list: RefObject<HTMLElement | null>): Promise<HTMLElement[]> {
@@ -79,20 +76,24 @@ function tilePoses(photos: readonly GalleryPhoto[], tile: HTMLElement, zoomedOut
   })
 }
 
-/** Each cell's corner lags, led by the corner with the farthest to go across all of them. */
-function cellLags(from: readonly FlightPose[], to: readonly FlightPose[]) {
-  const lags = cornerLags(
-    from.flatMap((pose) => pose.corners),
-    to.flatMap((pose) => pose.corners),
-    viewportDiagonal(),
-  )
-  return from.map((_, index) => lags.slice(index * 4, index * 4 + 4))
+/**
+ * Each cell's corner lags, from where its corners sit in the tile: opening, the corners nearest
+ * the tile's middle lead and the rim follows, so the grid morphs open from its centre (as the
+ * tile's own zoom does); closing runs the other way, the rim first and the middle landing last.
+ */
+function cellLags(inTile: readonly FlightPose[], tile: HTMLElement, direction: 'open' | 'close') {
+  const rect = tile.getBoundingClientRect()
+  const lags = centerOutLags(
+    inTile.flatMap((pose) => pose.corners),
+    [rect.x + rect.width / 2, rect.y + rect.height / 2],
+  ).map((lag) => (direction === 'open' ? lag : 1 - lag))
+  return inTile.map((_, index) => lags.slice(index * 4, index * 4 + 4))
 }
 
 /**
  * Opens and closes the See more overlay. Where WebGPU runs, the tile's 16 photos fly out of its
  * cells into the first row of each masonry column and the four below, each corner on its own
- * clock (src/lib/gallery-flight.ts), led by the corner with the farthest to go. Closing flies them
+ * clock (src/lib/gallery-flight.ts), the tile's middle first. Closing flies them
  * back into the tile, which takes them in as the canvas fades. Without WebGPU it fades.
  *
  * `photos` are the tile's, in its order; `tileRef` is its grid's box, and `zoomedOutRef` whether
@@ -150,7 +151,7 @@ export function useSeeMoreOverlay({
           photos: images,
           from,
           to,
-          lags: cellLags(from, to),
+          lags: cellLags(from, tile, 'open'),
           direction: 'open',
         })
         setShown((shown) => (shown && current() ? { ...shown, lifted: true } : shown))
@@ -198,7 +199,7 @@ export function useSeeMoreOverlay({
       photos: images.filter((image) => image !== undefined),
       from,
       to,
-      lags: cellLags(from, to),
+      lags: cellLags(to, tile, 'close'),
       direction: 'close',
     })
     setShown({ phase: 'closing', lifted: true })
