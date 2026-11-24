@@ -84,7 +84,7 @@ function Gallery({
   return (
     <Dialog.Root>
       <div className="flex flex-col gap-10">
-        <div className="flex items-center gap-6 sm:gap-8">
+        <div className="flex items-center justify-between gap-6 sm:gap-8">
           <img
             src={cameraPhoto}
             alt="FUJIFILM X-T30 III camera"
@@ -92,7 +92,7 @@ function Gallery({
             height={175}
             className="h-auto w-[17%] max-w-22.5 shrink-0"
           />
-          <p className="grid gap-y-1.5 text-xs font-semibold">
+          <p className="grid gap-y-1.5 text-right text-xs font-semibold">
             <span className="text-neutral-900 dark:text-neutral-100">
               <Figures text="FUJIFILM X-T30 III" />
             </span>
