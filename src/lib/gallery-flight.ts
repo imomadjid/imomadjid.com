@@ -73,6 +73,11 @@ export type Flight = {
     lags: readonly (readonly number[])[]
     direction: Direction
   }) => Promise<boolean>
+  /**
+   * Swaps the photo being flown, `from`, for a sharper copy of it, `to`, mid-flight or landed, so
+   * the full-size file can take over as soon as it decodes. Does nothing once `from` is gone.
+   */
+  sharpen: (from: HTMLImageElement, to: HTMLImageElement) => void
   /** Where the photo is now, mid-flight or landed; null when cleared or flying cells. */
   pose: () => FlightPose | null
   /** Where the cells are now, mid-flight or landed; null when cleared or flying a photo. */
@@ -313,6 +318,13 @@ export async function startGalleryFlight(
       })
     }
 
+    function loadPhoto(photo: HTMLImageElement) {
+      if (photoTextureFor?.photo === photo) return
+      photoTextureFor?.gpu.destroy()
+      photoTextureFor = { photo, gpu: photoTexture(gpu, photo, MAX_TEXTURE_SIZE, 'gallery-flight') }
+      photoFlight.set({ photo: photoTextureFor.gpu, photoSampler: sampler })
+    }
+
     // Keeps a landed flight in place through resizes until it is cleared.
     watchCanvasPixels(
       canvas,
@@ -325,14 +337,7 @@ export async function startGalleryFlight(
     return {
       fly({ photo, from, to, lags, direction }) {
         life.assertLive()
-        if (photoTextureFor?.photo !== photo) {
-          photoTextureFor?.gpu.destroy()
-          photoTextureFor = {
-            photo,
-            gpu: photoTexture(gpu, photo, MAX_TEXTURE_SIZE, 'gallery-flight'),
-          }
-          photoFlight.set({ photo: photoTextureFor.gpu, photoSampler: sampler })
-        }
+        loadPhoto(photo)
         return start('photo', [photo], { from: [from], to: [to], lags: [lags], direction })
       },
       flyCells({ photos, from, to, lags, direction }) {
@@ -353,6 +358,13 @@ export async function startGalleryFlight(
           cellsFlight.set({ photos: layers, photoSampler: sampler })
         }
         return start('cells', photos, { from, to, lags, direction })
+      },
+      sharpen(from, to) {
+        if (life.disposed() || motion?.kind !== 'photo' || motion.photos[0] !== from) return
+        loadPhoto(to)
+        motion.photos = [to]
+        // A landed photo stays put, so draw it sharp now; a flying one draws on its next frame.
+        if (!leg) render()
       },
       pose: () => (motion?.kind === 'photo' ? poseAt(motion.state.values, 0) : null),
       cellPoses: () => (motion?.kind === 'cells' ? posesOf(motion) : null),

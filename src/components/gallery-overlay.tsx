@@ -319,6 +319,11 @@ export function GalleryOverlay({
                           'block w-full cursor-zoom-in overflow-hidden rounded-lg bg-neutral-200 data-lifted:invisible dark:bg-neutral-800',
                           flown && cellsLifted && 'invisible',
                         )}
+                        // Warms the full-size file a click would open, as the featured photos do.
+                        onPointerEnter={(event) => {
+                          if (event.pointerType !== 'touch')
+                            decodedImage(photo.large).catch(() => {})
+                        }}
                         onClick={(event) => onOpenPhoto(photo, event.currentTarget)}
                       >
                         <img

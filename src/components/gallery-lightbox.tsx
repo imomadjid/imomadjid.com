@@ -129,8 +129,11 @@ export function useGalleryLightbox(stage: FlightStage) {
     const from = tilePose(photo, tile, tile.getBoundingClientRect())
     const screen = readViewport()
     const current = () => flightToken.current === token
-    // The sharp photo if hovering already decoded it; otherwise the tile's own, swapped on landing.
+    // The sharp photo if hovering already decoded it; otherwise the tile's own, until the sharp one
+    // decodes, which starts now and takes over mid-flight.
     const image = decodedNow(photo.large) ?? decodedNow(photo.small)
+    const sharp = decodedImage(photo.large)
+    sharp.catch(() => {})
     const photoReady = image ? Promise.resolve(image) : decodedImage(photo.small)
     photoReady
       .then((photoImage) => {
@@ -146,6 +149,11 @@ export function useGalleryLightbox(stage: FlightStage) {
         })
         setShown((shown) => (shown && current() ? { ...shown, airborne: true } : shown))
         stage.show()
+        sharp
+          .then((sharpImage) => {
+            if (current()) flight.sharpen(photoImage, sharpImage)
+          })
+          .catch(() => {})
         return landing
       })
       .then(async (landed) => {
