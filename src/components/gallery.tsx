@@ -40,8 +40,9 @@ function previewPhotos(photos: readonly GalleryPhoto[], featuredCount: number) {
 
 /**
  * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
- * out to the whole grid and shows the label. Half-gap padding puts the 2x crop's edges in the
- * middle of the gaps, so the 2x2 keeps even spacing.
+ * out to the whole grid and shows the label. The grid overhangs the tile by half a gap on each
+ * side, so the 2x crop's edges land on cell edges; cells have half the tiles' radius for the same
+ * reason.
  */
 function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total: number }) {
   return (
@@ -49,8 +50,8 @@ function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total
       aria-label={`See all ${total} photos`}
       className="group relative block w-full cursor-pointer rounded-xl outline-none"
     >
-      <span className={cn(tileClass, 'block overflow-hidden')}>
-        <span className="grid size-full scale-200 grid-cols-4 grid-rows-4 gap-0.5 p-px transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:transition-none">
+      <span className="relative block aspect-square w-full overflow-hidden rounded-xl">
+        <span className="absolute -inset-px grid scale-200 grid-cols-4 grid-rows-4 gap-0.5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:transition-none">
           {photos.map((photo) => (
             <img
               key={photo.id}
@@ -58,7 +59,7 @@ function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total
               alt=""
               loading="lazy"
               decoding="async"
-              className="size-full rounded-[3px] object-cover"
+              className="size-full rounded-md bg-neutral-200 object-cover dark:bg-neutral-800"
             />
           ))}
         </span>
