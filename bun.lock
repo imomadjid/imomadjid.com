@@ -45,6 +45,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "cuelume@./vendor/cuelume-0.2.9.tgz": "patches/cuelume@.%2Fvendor%2Fcuelume-0.2.9.tgz.patch",
+  },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8000",
     "vitest": "5.1.0",

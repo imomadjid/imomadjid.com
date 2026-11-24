@@ -62,6 +62,24 @@ export async function setSoundOn(on: boolean) {
   if (started) play('toggle')
 }
 
+/** See more's run: four opens this far apart. */
+const RUN_STEP_MS = 90
+
+/**
+ * Opening every photo at once is grander than opening one: four opens in a quick run, which
+ * cuelume walks up a step each, A, C#, E and the A above (`open`'s walk is patched to reach the
+ * octave, patches/cuelume@*.patch). Played from code, since one press makes all four. Call it in
+ * the click: cuelume lets audio sleep a second after the last cue, and a note asked for while it
+ * wakes waits for it while the next may not, so the run starts once `unlock` has it running.
+ */
+export function playOpenRun() {
+  if (!getSoundOn()) return
+  void unlock().then((running) => {
+    if (!running) return
+    for (let note = 0; note < 4; note++) setTimeout(() => play('open'), note * RUN_STEP_MS)
+  })
+}
+
 /** Sets cuelume up for the site: the press theme, the visitor's choice, and the bindings. */
 export function startSounds() {
   setTheme('press')

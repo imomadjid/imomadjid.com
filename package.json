@@ -85,5 +85,8 @@
       "@tanstack/router-plugin",
       "@tanstack/virtual-file-routes"
     ]
+  },
+  "patchedDependencies": {
+    "cuelume@./vendor/cuelume-0.2.9.tgz": "patches/cuelume@.%2Fvendor%2Fcuelume-0.2.9.tgz.patch"
   }
 }

@@ -29,6 +29,7 @@ import type { PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
 import type { LiveGlassSource } from '#/lib/live-glass-source'
 import { fullScaleRect, recedeClass } from '#/lib/page-recede'
 import { SEE_MORE_CELL_RADIUS, seeMoreCellRect, seeMoreRestZoom } from '#/lib/see-more-grid'
+import { playOpenRun } from '#/lib/sound'
 import { cn } from '#/lib/utils'
 
 // The overlay's columns, and the See more tile's rows and columns: the tile's cell in row r and
@@ -305,6 +306,7 @@ export function useSeeMoreOverlay({
         const keyboard = event instanceof MouseEvent ? event.detail === 0 : true
         const trigger = tileRef.current?.closest('button')
         returnTo.current = trigger ? { tile: trigger, keyboard } : null
+        playOpenRun()
         openOverlay()
       }
       // The tile sits under the overlay once it opens, so a press on it can only be the second

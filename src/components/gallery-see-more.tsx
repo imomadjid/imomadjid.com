@@ -89,7 +89,6 @@ export function SeeMoreTile({
   return (
     <Dialog.Trigger
       aria-label={`See all ${total} photos`}
-      data-cuelume-open
       className="group relative block w-full cursor-pointer rounded-xl outline-none"
       // Touch has no hover; a tap opens the overlay.
       onPointerEnter={(event) => {
