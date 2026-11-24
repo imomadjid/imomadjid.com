@@ -1,16 +1,10 @@
 import { bind, play, setEnabled, setTheme, unlock } from 'cuelume'
 
-// Every interface sound on the site is a cuelume cue (github.com/danielwh2/cuelume, MIT) in its
-// `press` theme: a click over a deep note that rings, letting go with a lighter click. Used as
-// cuelume intends: controls carry a `data-cuelume-*` attribute, so `bind()` plays them as the
-// press goes down and lets go as it lifts; `play()` is only for what code decides, like a dialog
-// closed by Escape. Pick each cue by its job from cuelume's "Which cue?" table. No hover cues.
-// cuelume 0.2.9 is vendored as vendor/cuelume-0.2.9.tgz, built from its v0.2.9 tag, because npm
-// has only 0.2.8, which keeps the audio device open and doesn't recover after a Safari lock.
-// Depend on the npm release once 0.2.9 is published.
+// Interface sound is cuelume's `press` theme, used as cuelume intends (see AGENTS.md): controls
+// carry `data-cuelume-*` attributes for `bind()`, and `play()` is only for what code decides.
 
 /** Where the visitor's choice lives. Only "off" is stored: sound is on until they turn it off. */
-const STORAGE_KEY = 'sound'
+const STORAGE_KEY = 'imomadjid:sound'
 
 const listeners = new Set<() => void>()
 let soundOn: boolean | null = null
@@ -51,12 +45,7 @@ function store(on: boolean) {
  * itself plays, so the visitor hears it worked. Turning it off is silent.
  */
 export async function setSoundOn(on: boolean) {
-  setEnabled(on)
-  if (!on) {
-    store(false)
-    return
-  }
-  const started = await unlock()
+  const started = on && (await unlock())
   setEnabled(started)
   store(started)
   if (started) play('toggle')
@@ -66,11 +55,9 @@ export async function setSoundOn(on: boolean) {
 const RUN_STEP_MS = 90
 
 /**
- * Opening every photo at once is grander than opening one: three opens in a quick run, which
- * cuelume walks up a step each, as the press theme walks quick repeats: A, C# and F#. Played from
- * code, since one press makes all three. Call it in
- * the click: cuelume lets audio sleep a second after the last cue, and a note asked for while it
- * wakes waits for it while the next may not, so the run starts once `unlock` has it running.
+ * See more opens every photo at once, so it plays three opens in a quick run, which the press
+ * theme walks up a step each (A, C♯, F♯). The run waits for `unlock`: audio sleeps a second after
+ * the last cue, and notes asked for while it wakes would play out of order.
  */
 export function playOpenRun() {
   if (!getSoundOn()) return
