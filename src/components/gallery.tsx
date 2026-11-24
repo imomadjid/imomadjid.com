@@ -123,6 +123,7 @@ function Gallery({
         listRef={overlay.listRef}
         flies={overlay.flies}
         cellsLifted={overlay.cellsLifted}
+        flightAirborne={stage.airborne}
         closing={overlay.closing}
         onClose={overlay.close}
         onOpenPhoto={lightbox.openPhoto}

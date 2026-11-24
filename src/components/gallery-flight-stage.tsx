@@ -16,6 +16,8 @@ export type FlightStage = {
   flightRef: RefObject<Flight | null>
   /** True once the renderer draws; false without WebGPU, where views fade in by themselves. */
   ready: boolean
+  /** Whether a flight shows on the canvas, above everything in the dialogs. */
+  airborne: boolean
   /** Shows the canvas, for a flight that has drawn its first frame. */
   show: () => void
   /**
@@ -94,5 +96,5 @@ export function useFlightStage(
       body,
     )
 
-  return { flightRef, ready, show, hide, canvas }
+  return { flightRef, ready, airborne: visible, show, hide, canvas }
 }

@@ -334,6 +334,7 @@ export function GalleryOverlay({
   listRef,
   flies,
   cellsLifted,
+  flightAirborne,
   closing,
   onClose,
   onOpenPhoto,
@@ -347,6 +348,8 @@ export function GalleryOverlay({
   /** Whether the tile's photos fly in; if not, they enter with the rest. */
   flies: boolean
   cellsLifted: boolean
+  /** Whether any flight, this overlay's or a photo's opened from it, is drawn above it. */
+  flightAirborne: boolean
   closing: boolean
   onClose: () => void
   onOpenPhoto: OpenPhoto
@@ -376,7 +379,7 @@ export function GalleryOverlay({
         )}
         onClick={(event) => {
           // Not while the tile's photos are still flying in: a second click where See more was
-          // would turn them straight back. Escape and the close button still can.
+          // would turn them straight back. Escape still can.
           if (cellsLifted) return
           if (event.target instanceof Element && !event.target.closest('button')) onClose()
         }}
@@ -424,19 +427,20 @@ export function GalleryOverlay({
             ))}
           </div>
         </div>
-        {/* Floats over the photos, which scroll under it. */}
-        <Dialog.Close
-          render={
-            <IconButton
-              aria-label="Close gallery"
-              size="4xl"
-              glass
-              className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2"
-            />
-          }
+        {/* Floats over the photos, which scroll under it. A flight draws above the whole dialog
+            (z-60), so the button would sit under the flying photos and pop in front as they land:
+            it waits out every flight and enters once they have handed over. */}
+        <div
+          className={cn(
+            'fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 transition-[opacity,scale] duration-300 ease-out',
+            (cellsLifted || flightAirborne) &&
+              'pointer-events-none scale-90 opacity-0 duration-150 motion-reduce:scale-100',
+          )}
         >
-          <IconX aria-hidden="true" />
-        </Dialog.Close>
+          <Dialog.Close render={<IconButton aria-label="Close gallery" size="4xl" glass />}>
+            <IconX aria-hidden="true" />
+          </Dialog.Close>
+        </div>
       </Dialog.Popup>
     </Dialog.Portal>
   )
