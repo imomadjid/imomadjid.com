@@ -15,6 +15,7 @@ import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as DevComponentsRouteImport } from './routes/dev/components'
 import { Route as DevGalleryWarpRouteImport } from './routes/dev/gallery-warp'
 import { Route as DevGlassRouteImport } from './routes/dev/glass'
+import { Route as DevLiveGlassRouteImport } from './routes/dev/live-glass'
 import { Route as DevSurfacesRouteImport } from './routes/dev/surfaces'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const DevGlassRoute = DevGlassRouteImport.update({
   path: '/glass',
   getParentRoute: () => DevRouteRoute,
 } as any)
+const DevLiveGlassRoute = DevLiveGlassRouteImport.update({
+  id: '/live-glass',
+  path: '/live-glass',
+  getParentRoute: () => DevRouteRoute,
+} as any)
 const DevSurfacesRoute = DevSurfacesRouteImport.update({
   id: '/surfaces',
   path: '/surfaces',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/dev/components': typeof DevComponentsRoute
   '/dev/gallery-warp': typeof DevGalleryWarpRoute
   '/dev/glass': typeof DevGlassRoute
+  '/dev/live-glass': typeof DevLiveGlassRoute
   '/dev/surfaces': typeof DevSurfacesRoute
   '/dev/': typeof DevIndexRoute
 }
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/dev/components': typeof DevComponentsRoute
   '/dev/gallery-warp': typeof DevGalleryWarpRoute
   '/dev/glass': typeof DevGlassRoute
+  '/dev/live-glass': typeof DevLiveGlassRoute
   '/dev/surfaces': typeof DevSurfacesRoute
   '/dev': typeof DevIndexRoute
 }
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/dev/components': typeof DevComponentsRoute
   '/dev/gallery-warp': typeof DevGalleryWarpRoute
   '/dev/glass': typeof DevGlassRoute
+  '/dev/live-glass': typeof DevLiveGlassRoute
   '/dev/surfaces': typeof DevSurfacesRoute
   '/dev/': typeof DevIndexRoute
 }
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/dev/components'
     | '/dev/gallery-warp'
     | '/dev/glass'
+    | '/dev/live-glass'
     | '/dev/surfaces'
     | '/dev/'
   fileRoutesByTo: FileRoutesByTo
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/dev/components'
     | '/dev/gallery-warp'
     | '/dev/glass'
+    | '/dev/live-glass'
     | '/dev/surfaces'
     | '/dev'
   id:
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/dev/components'
     | '/dev/gallery-warp'
     | '/dev/glass'
+    | '/dev/live-glass'
     | '/dev/surfaces'
     | '/dev/'
   fileRoutesById: FileRoutesById
@@ -158,6 +170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevGlassRouteImport
       parentRoute: typeof DevRouteRoute
     }
+    '/dev/live-glass': {
+      id: '/dev/live-glass'
+      path: '/live-glass'
+      fullPath: '/dev/live-glass'
+      preLoaderRoute: typeof DevLiveGlassRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
     '/dev/surfaces': {
       id: '/dev/surfaces'
       path: '/surfaces'
@@ -172,6 +191,7 @@ interface DevRouteRouteChildren {
   DevComponentsRoute: typeof DevComponentsRoute
   DevGalleryWarpRoute: typeof DevGalleryWarpRoute
   DevGlassRoute: typeof DevGlassRoute
+  DevLiveGlassRoute: typeof DevLiveGlassRoute
   DevSurfacesRoute: typeof DevSurfacesRoute
   DevIndexRoute: typeof DevIndexRoute
 }
@@ -180,6 +200,7 @@ const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevComponentsRoute: DevComponentsRoute,
   DevGalleryWarpRoute: DevGalleryWarpRoute,
   DevGlassRoute: DevGlassRoute,
+  DevLiveGlassRoute: DevLiveGlassRoute,
   DevSurfacesRoute: DevSurfacesRoute,
   DevIndexRoute: DevIndexRoute,
 }

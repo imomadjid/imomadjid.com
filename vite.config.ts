@@ -87,7 +87,8 @@ const config = defineConfig({
       stylesheet: './src/styles.css',
       functions: ['clsx', 'cn', 'cva', 'twMerge'],
     },
-    ignorePatterns: [...toolingIgnores, 'bun.lock'],
+    // tools/glass-live/fit.py writes the live-glass tables; formatted, they run to 30k lines.
+    ignorePatterns: [...toolingIgnores, 'bun.lock', 'src/lib/live-glass-material.json'],
   },
   lint: {
     options: {
