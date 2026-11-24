@@ -8,6 +8,7 @@ import { useGalleryLightbox } from '#/components/gallery-lightbox'
 import { GalleryOverlay, HERO_CELLS, useSeeMoreOverlay } from '#/components/gallery-overlay'
 import { FeaturedPhoto } from '#/components/gallery-photo-tile'
 import { SeeMoreTile } from '#/components/gallery-see-more'
+import { figuresClass } from '#/lib/figures'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
 import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-settings'
@@ -17,9 +18,6 @@ import { recedePage } from '#/lib/page-recede'
 const useGalleryTuning = import.meta.env.DEV_TOOLS
   ? () => useDialKit('Gallery', galleryControls)
   : () => defaultGalleryTuning
-
-// Allo's open figures (ss03), slashed zero, and tabular figures, as on the project years.
-const figuresClass = "[font-feature-settings:'ss03'] whitespace-nowrap slashed-zero tabular-nums"
 
 /** Text with its digit runs set in the project years' figure style. A range stays on one line. */
 function Figures({ text }: { text: string }) {

@@ -1,6 +1,7 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
+import { ExposureReadout, READOUT_SPACE } from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
 import type { GalleryPhoto } from '#/lib/gallery'
@@ -65,13 +66,19 @@ function useViewport(active: boolean): Rect {
   return { x: 0, y: 0, width, height }
 }
 
-/** Where the full-screen photo sits: as large as fits, an even margin from the edges. */
+/** The full-screen photo's margin from the viewport's edges. */
+const screenMargin = (viewport: Rect) => (viewport.width < 640 ? 12 : 24)
+
+/**
+ * Where the full-screen photo sits: as large as fits, an even margin from the edges, and room
+ * under it for its exposure readout.
+ */
 function fullScreenRect(viewport: Rect, photo: GalleryPhoto): Rect {
-  const side = viewport.width < 640 ? 12 : 24
+  const side = screenMargin(viewport)
   return containRect(viewport, photo.width / photo.height, {
     top: side,
     right: side,
-    bottom: side,
+    bottom: side + READOUT_SPACE,
     left: side,
   })
 }
@@ -277,6 +284,12 @@ export function useGalleryLightbox(stage: FlightStage) {
                   width: target.width,
                   height: target.height,
                 }}
+              />
+              <ExposureReadout
+                photo={photo}
+                rect={target}
+                margin={screenMargin(viewport)}
+                shown={shown.phase === 'open'}
               />
             </>
           )}
