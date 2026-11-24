@@ -1,5 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { useRef } from 'react'
+import type { RefObject } from 'react'
 
 import { useGalleryRenderer } from '#/components/use-gallery-renderer'
 import type { GalleryPhoto } from '#/lib/gallery'
@@ -40,13 +41,21 @@ export function SeeMoreTile({
   photos,
   total,
   tuning,
+  tileRef,
+  zoomedOutRef,
+  onIntent,
 }: {
   photos: readonly GalleryPhoto[]
   total: number
   tuning: WarpTuning
+  /** The grid's box, which the See more overlay's photos fly out of and back into. */
+  tileRef: RefObject<HTMLSpanElement | null>
+  /** Whether the tile shows its whole grid, for the overlay's flight. */
+  zoomedOutRef: RefObject<boolean>
+  /** A hover or focus that may open the overlay. */
+  onIntent: () => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const zoomedOutRef = useRef(false)
   // Strings, so the renderer restarts only when the photos change, not on every new array.
   const thumbUrls = photos.map((photo) => photo.thumb).join(' ')
   const smallUrls = photos.map((photo) => photo.small).join(' ')
@@ -82,12 +91,24 @@ export function SeeMoreTile({
       aria-label={`See all ${total} photos`}
       className="group relative block w-full cursor-pointer rounded-xl outline-none"
       // Touch has no hover; a tap opens the overlay.
-      onPointerEnter={(event) => event.pointerType !== 'touch' && zoomOut(true)}
+      onPointerEnter={(event) => {
+        onIntent()
+        if (event.pointerType !== 'touch') zoomOut(true)
+      }}
       onPointerLeave={() => zoomOut(false)}
-      onFocus={(event) => zoomOut(event.currentTarget.matches(':focus-visible'))}
+      onFocus={(event) => {
+        onIntent()
+        // Only keyboard focus zooms out. A click focuses the tile too (in Chrome), and must leave
+        // the hover's zoom alone, or it zooms back in as the overlay opens.
+        if (event.currentTarget.matches(':focus-visible')) zoomOut(true)
+      }}
       onBlur={() => zoomOut(false)}
     >
-      <span className="relative block aspect-square w-full overflow-hidden rounded-xl">
+      {/* Empty while its photos are out in the overlay (data-lifted). */}
+      <span
+        ref={tileRef}
+        className="relative block aspect-square w-full overflow-hidden rounded-xl data-lifted:invisible"
+      >
         <span
           className={cn(
             'absolute -inset-px grid scale-200 grid-cols-4 content-start gap-0.5',

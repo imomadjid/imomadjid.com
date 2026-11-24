@@ -55,7 +55,11 @@ export const wholeImage: Rect = { x: 0, y: 0, width: 1, height: 1 }
  * up to 1. Corners as far as each other start together, so a tile centred across the screen moves
  * its top or bottom edge as one, and the spread grows the more lopsided the move is.
  */
-export function cornerLags(from: Quad, toward: Quad, scale: number): number[] {
+export function cornerLags(
+  from: readonly Point[],
+  toward: readonly Point[],
+  scale: number,
+): number[] {
   const distances = from.map((point, i) =>
     Math.hypot(toward[i][0] - point[0], toward[i][1] - point[1]),
   )

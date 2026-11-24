@@ -1,5 +1,5 @@
 import type { TransitionConfig } from 'dialkit'
-import { frame, init, sampler, surface } from 'vgpu'
+import { frame, init, sampler, surface, texture } from 'vgpu'
 import type { Effect, Gpu, Surface } from 'vgpu'
 
 import { transitionTiming } from '#/lib/ambient-transition'
@@ -242,6 +242,37 @@ export function uploadMips(
 /** Mip levels down to about `smallest` texels on the longer side. */
 export function mipLevels(width: number, height: number, smallest = 16) {
   return Math.max(1, Math.floor(Math.log2(Math.max(width, height) / smallest)) + 1)
+}
+
+/**
+ * One photo per layer of a square 2D array texture with mips: each photo's middle square
+ * (`crop`), or the whole photo squeezed square (`squeeze`), for a shader that maps its own
+ * coordinates. Layers are as large as the smallest source, up to `maxSize`.
+ */
+export function squarePhotoLayers(
+  gpu: Gpu,
+  images: readonly HTMLImageElement[],
+  { maxSize, fit, label }: { maxSize: number; fit: 'crop' | 'squeeze'; label: string },
+) {
+  const sources = images.map((image) => {
+    const { naturalWidth: width, naturalHeight: height } = image
+    if (fit === 'squeeze') return { x: 0, y: 0, width, height, side: Math.max(width, height) }
+    const side = Math.min(width, height)
+    return { x: (width - side) / 2, y: (height - side) / 2, width: side, height: side, side }
+  })
+  const size = Math.max(1, Math.min(maxSize, ...sources.map((source) => Math.floor(source.side))))
+  const layers = texture(gpu, {
+    kind: '2d-array',
+    size: [size, size],
+    layers: images.length,
+    format: 'rgba8unorm',
+    mipLevelCount: mipLevels(size, size),
+    usage: ['texture_binding', 'copy_dst', 'render_attachment'],
+    label,
+  })
+  for (const [layer, image] of images.entries())
+    uploadMips(gpu, layers.gpu, image, sources[layer], layer)
+  return { layers, size }
 }
 
 /** A sampled 2D texture of a whole photo, at most `maxSize` on its longer side. */

@@ -1,13 +1,11 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import type { RefObject } from 'react'
-import { createPortal } from 'react-dom'
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
+import type { FlightStage } from '#/components/gallery-flight-stage'
 import { IconButton } from '#/components/ui/icon-button'
-import { useGalleryRenderer } from '#/components/use-gallery-renderer'
 import type { GalleryPhoto } from '#/lib/gallery'
-import type { Flight, FlightPose, FlightTuning } from '#/lib/gallery-flight'
+import type { FlightPose } from '#/lib/gallery-flight'
 import {
   containRect,
   cornerLags,
@@ -56,41 +54,6 @@ function useViewport(active: boolean): Rect {
   return { x: 0, y: 0, width, height }
 }
 
-// The body to portal into, once hydrated.
-const clientBody = () => document.body
-const serverBody = () => null
-
-/** The canvas the flight is drawn on, over the whole viewport. */
-function FlightCanvas({
-  ref,
-  body,
-  visible,
-  fadeSeconds,
-}: {
-  ref: RefObject<HTMLCanvasElement | null>
-  body: HTMLElement
-  visible: boolean
-  /** Fading out over this many seconds, or null while it shows. */
-  fadeSeconds: number | null
-}) {
-  const fading = fadeSeconds !== null
-  return createPortal(
-    // Above the dialog (z-50) and below tooltips (z-70); it never takes the pointer.
-    <canvas
-      ref={ref}
-      aria-hidden
-      className={cn(
-        'pointer-events-none fixed inset-0 z-60 size-full',
-        !visible && !fading && 'invisible',
-        // Only while fading, so a new flight shows at once.
-        fading && 'opacity-0 transition-opacity ease-out motion-reduce:transition-none',
-      )}
-      style={fading ? { transitionDuration: `${fadeSeconds}s` } : undefined}
-    />,
-    body,
-  )
-}
-
 /** Where the full-screen photo sits: as large as fits, clear of the close button. */
 function fullScreenRect(viewport: Rect, photo: GalleryPhoto): Rect {
   const narrow = viewport.width < 640
@@ -132,45 +95,18 @@ function tilePose(photo: GalleryPhoto, tile: HTMLElement): FlightPose {
  * Closing flies it back the same way, against its place in the tile. Without WebGPU the photo fades
  * in and out.
  *
- * Returns `openPhoto` for the featured tiles and the See more grid, and the elements to render: the
- * dialog, and the canvas the flight is drawn on, above it. Render them inside the See more
- * dialog's root, so a photo opened from its grid nests in it and closes back to the grid.
+ * Flies on the Gallery's shared `stage` (src/components/gallery-flight-stage.tsx). Returns
+ * `openPhoto` for the featured tiles and the See more grid, and the dialog to render. Render it
+ * inside the See more dialog's root, so a photo opened from its grid nests in it and closes back
+ * to the grid.
  */
-export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Element | null>) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+export function useGalleryLightbox(stage: FlightStage) {
   const imageRef = useRef<HTMLImageElement>(null)
   const [shown, setShown] = useState<Shown | null>(null)
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
   const flightToken = useRef(0)
   const viewport = useViewport(shown !== null)
-  const body = useSyncExternalStore(subscribeNever, clientBody, serverBody)
-
-  const { rendererRef: flightRef, ready } = useGalleryRenderer<Flight, FlightTuning>(
-    canvasRef,
-    // The canvas only exists once hydrated, in a portal.
-    body ? 'flight' : 'server',
-    tuning,
-    async (canvas, initialTuning, signal, onFail) => {
-      const { startGalleryFlight } = await import('#/lib/gallery-flight')
-      return startGalleryFlight(canvas, initialTuning, signal, onFail)
-    },
-    nearRef,
-  )
-
-  // The canvas shows the photo only while it flies. The full-screen photo takes over in the same
-  // commit that hides it. A photo landing back in its tile fades out over the tile instead: the
-  // flight above the page is unlit, and the tile beneath is lit by the Sunlit layer, so the fade
-  // brings its light and shadows in rather than snapping them on. Then the last frame can go.
-  const flying = shown !== null && shown.airborne && shown.phase !== 'open'
-  const [relighting, setRelighting] = useState(false)
-  useEffect(() => {
-    if (!relighting) return
-    const timer = setTimeout(() => setRelighting(false), tuning.relight * 1000)
-    return () => clearTimeout(timer)
-  }, [relighting, tuning.relight])
-  useEffect(() => {
-    if (!flying && !relighting) flightRef.current?.clear()
-  }, [flying, relighting, flightRef])
+  const { flightRef } = stage
 
   // The photo has lifted out of its tile or grid cell while the flight or the full-screen view
   // shows it: `data-lifted` hides the tile (data-lifted:invisible), before paint, in the commit
@@ -184,7 +120,6 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
   const openPhoto = (photo: GalleryPhoto, tile: HTMLElement) => {
     const flight = flightRef.current
     const token = ++flightToken.current
-    setRelighting(false)
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
     if (!flight) return
     const from = tilePose(photo, tile)
@@ -206,17 +141,23 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
           direction: 'open',
         })
         setShown((shown) => (shown && current() ? { ...shown, airborne: true } : shown))
+        stage.show()
         return landing
       })
       .then(async (landed) => {
         if (!landed) return
         // Keep the flight's last frame up until the full-screen photo can replace it.
         await imageRef.current?.decode().catch(() => {})
-        setShown((shown) => (shown && current() ? { ...shown, phase: 'open' } : shown))
+        if (!current()) return
+        // One commit: the full-screen photo shows as the canvas hides.
+        setShown((shown) => (shown ? { ...shown, phase: 'open' } : shown))
+        stage.hide(false)
       })
       .catch((error) => {
         console.warn('The Gallery photo opened without its expand:', error)
-        setShown((shown) => (shown && current() ? { ...shown, phase: 'open' } : shown))
+        if (!current()) return
+        setShown((shown) => (shown ? { ...shown, phase: 'open' } : shown))
+        stage.hide(false)
       })
   }
 
@@ -244,12 +185,13 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
       direction: 'close',
     })
     setShown({ ...shown, phase: 'closing', airborne: true })
+    stage.show()
     // Landed or not (a lost device ends the flight early), the dialog closes.
     const close = (landed: boolean) => {
       if (flightToken.current !== token) return
       setShown(null)
       // A landed photo fades into its lit tile; one cut short by a failure just goes.
-      setRelighting(landed && tuning.relight > 0)
+      stage.hide(landed)
     }
     landing.then(close, () => close(false))
   }
@@ -257,76 +199,66 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
   const photo = shown?.photo
   const target = photo ? fullScreenRect(viewport, photo) : null
   // Without the flight renderer the photo fades in by itself.
-  const fades = !ready
+  const fades = !stage.ready
 
   const element = (
-    <>
-      <Dialog.Root
-        open={shown !== null}
-        onOpenChange={(open) => {
-          if (!open) requestClose()
-        }}
-      >
-        {/* Portalled to the body at z-50, so it covers the Sunlit light and the blind wand. */}
-        <Dialog.Portal>
-          {/* Nested in the See more dialog, which Base UI would leave without a backdrop. */}
-          <Dialog.Backdrop
-            forceRender
-            className={cn(
-              'fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
-              shown?.phase === 'closing' && 'opacity-0',
-            )}
-          />
-          <Dialog.Popup
-            className="fixed inset-0 z-50 cursor-zoom-out outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
-            onClick={(event) => {
-              if (event.target === event.currentTarget) requestClose()
-            }}
-          >
-            {photo && target && (
-              <>
-                <Dialog.Title className="sr-only">{photo.alt}</Dialog.Title>
-                <img
-                  ref={imageRef}
-                  src={photo.large}
-                  srcSet={`${photo.small} 640w, ${photo.large} 1600w`}
-                  sizes={`${Math.round(target.width)}px`}
-                  alt=""
-                  width={photo.width}
-                  height={photo.height}
-                  decoding="async"
-                  className={cn(
-                    'pointer-events-none fixed rounded-xl bg-neutral-200 dark:bg-neutral-800',
-                    shown.phase !== 'open' && 'opacity-0',
-                    fades &&
-                      'transition-[opacity,scale] duration-300 ease-out motion-reduce:transition-none starting:scale-95 starting:opacity-0',
-                  )}
-                  style={{
-                    left: target.x,
-                    top: target.y,
-                    width: target.width,
-                    height: target.height,
-                  }}
-                />
-                <div className="fixed top-3 right-3 sm:top-4 sm:right-6">
-                  <Dialog.Close render={<IconButton aria-label="Close photo" />}>
-                    <IconX size={18} stroke={1.75} aria-hidden="true" />
-                  </Dialog.Close>
-                </div>
-              </>
-            )}
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
-      {body && (
-        <FlightCanvas
-          ref={canvasRef}
-          body={body}
-          visible={flying}
-          fadeSeconds={relighting ? tuning.relight : null}
+    <Dialog.Root
+      open={shown !== null}
+      onOpenChange={(open) => {
+        if (!open) requestClose()
+      }}
+    >
+      {/* Portalled to the body at z-50, so it covers the Sunlit light and the blind wand. */}
+      <Dialog.Portal>
+        {/* Nested in the See more dialog, which Base UI would leave without a backdrop. */}
+        <Dialog.Backdrop
+          forceRender
+          className={cn(
+            'fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
+            shown?.phase === 'closing' && 'opacity-0',
+          )}
         />
-      )}
-    </>
+        <Dialog.Popup
+          className="fixed inset-0 z-50 cursor-zoom-out outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) requestClose()
+          }}
+        >
+          {photo && target && (
+            <>
+              <Dialog.Title className="sr-only">{photo.alt}</Dialog.Title>
+              <img
+                ref={imageRef}
+                src={photo.large}
+                srcSet={`${photo.small} 640w, ${photo.large} 1600w`}
+                sizes={`${Math.round(target.width)}px`}
+                alt=""
+                width={photo.width}
+                height={photo.height}
+                decoding="async"
+                className={cn(
+                  'pointer-events-none fixed rounded-xl bg-neutral-200 dark:bg-neutral-800',
+                  shown.phase !== 'open' && 'opacity-0',
+                  fades &&
+                    'transition-[opacity,scale] duration-300 ease-out motion-reduce:transition-none starting:scale-95 starting:opacity-0',
+                )}
+                style={{
+                  left: target.x,
+                  top: target.y,
+                  width: target.width,
+                  height: target.height,
+                }}
+              />
+              <div className="fixed top-3 right-3 sm:top-4 sm:right-6">
+                <Dialog.Close render={<IconButton aria-label="Close photo" />}>
+                  <IconX size={18} stroke={1.75} aria-hidden="true" />
+                </Dialog.Close>
+              </div>
+            </>
+          )}
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 
   return { openPhoto, element }
