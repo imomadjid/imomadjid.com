@@ -3,7 +3,6 @@ import type { PointerEvent } from 'react'
 
 import { PreviewMedia } from '#/components/project-preview-media'
 import type { ProjectPreview } from '#/components/project-preview-media'
-import { playRowTick } from '#/lib/project-list-sounds'
 import { cn } from '#/lib/utils'
 
 export type Project = {
@@ -143,10 +142,6 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
     const width = box.offsetWidth
     const height = box.offsetHeight
     const visiting = preview?.shown === true
-    // Every new row ticks, the first one of a visit too; staying on a row doesn't.
-    if (!visiting || index !== preview.index) {
-      playRowTick(visiting && index < preview.index ? 'up' : 'down')
-    }
 
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))

@@ -10,6 +10,7 @@ import { ProfileAvatar } from '#/components/profile-avatar'
 import { ProjectList } from '#/components/project-list'
 import type { Project } from '#/components/project-list'
 import { Signature } from '#/components/signature'
+import { SiteFooter } from '#/components/site-footer'
 import { TableOfContents } from '#/components/table-of-contents'
 import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
@@ -352,6 +353,8 @@ function Home() {
               </Section>
             </>
           )}
+
+          <SiteFooter />
         </div>
       </div>
     </main>

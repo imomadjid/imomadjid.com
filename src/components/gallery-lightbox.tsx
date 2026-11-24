@@ -1,4 +1,5 @@
 import { Dialog } from '@base-ui/react/dialog'
+import { play } from 'cuelume'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import { ExposureReadout, readoutSpace } from '#/components/gallery-exposure'
@@ -20,7 +21,6 @@ import {
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import type { GalleryTuning } from '#/lib/gallery-settings'
-import { playGalleryClose, playGalleryOpen } from '#/lib/gallery-sounds'
 import { fullScaleRect } from '#/lib/page-recede'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
@@ -149,7 +149,6 @@ export function useGalleryLightbox(
 
   const openPhoto: OpenPhoto = (photo, tile, keyboard) => {
     returnTo.current = { tile, keyboard }
-    playGalleryOpen()
     const flight = flightRef.current
     const token = ++flightToken.current
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false, readout: !flight })
@@ -213,7 +212,8 @@ export function useGalleryLightbox(
 
   const requestClose = () => {
     if (!shown || shown.phase === 'closing') return
-    playGalleryClose()
+    // Escape or a click beside the photo: no control to bind, so the close plays from here.
+    play('close')
     const flight = flightRef.current
     const { photo, tile } = shown
     const token = ++flightToken.current

@@ -4,7 +4,6 @@ import type { RefObject } from 'react'
 
 import { useGalleryRenderer } from '#/components/use-gallery-renderer'
 import type { GalleryPhoto } from '#/lib/gallery'
-import { playGalleryHover } from '#/lib/gallery-sounds'
 import type { GalleryWarp, WarpTuning } from '#/lib/gallery-warp'
 import { cn } from '#/lib/utils'
 
@@ -90,22 +89,19 @@ export function SeeMoreTile({
   return (
     <Dialog.Trigger
       aria-label={`See all ${total} photos`}
+      data-cuelume-open
       className="group relative block w-full cursor-pointer rounded-xl outline-none"
       // Touch has no hover; a tap opens the overlay.
       onPointerEnter={(event) => {
         onIntent()
-        if (event.pointerType === 'touch') return
-        playGalleryHover()
-        zoomOut(true)
+        if (event.pointerType !== 'touch') zoomOut(true)
       }}
       onPointerLeave={() => zoomOut(false)}
       onFocus={(event) => {
         onIntent()
         // Only keyboard focus zooms out. A click focuses the tile too (in Chrome), and must leave
         // the hover's zoom alone, or it zooms back in as the overlay opens.
-        if (!event.currentTarget.matches(':focus-visible')) return
-        playGalleryHover()
-        zoomOut(true)
+        if (event.currentTarget.matches(':focus-visible')) zoomOut(true)
       }}
       onBlur={() => zoomOut(false)}
     >

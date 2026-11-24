@@ -1,5 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
+import { play } from 'cuelume'
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 
@@ -24,7 +25,6 @@ import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import { masonryColumns } from '#/lib/gallery-masonry'
 import type { PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
-import { playGalleryClose, playGalleryOpen } from '#/lib/gallery-sounds'
 import { fullScaleRect, recedeClass } from '#/lib/page-recede'
 import { SEE_MORE_CELL_RADIUS, seeMoreCellRect, seeMoreRestZoom } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
@@ -250,9 +250,10 @@ export function useSeeMoreOverlay({
       })
   }
 
-  const closeOverlay = () => {
+  /** `voiced` unless the close button asked: it carries its own cue, which bind() plays. */
+  const closeOverlay = (voiced = true) => {
     if (!shown || shown.phase === 'closing') return
-    playGalleryClose(true)
+    if (voiced) play('close')
     const flight = stage.flightRef.current
     const tile = tileRef.current
     const token = ++flightToken.current
@@ -302,12 +303,11 @@ export function useSeeMoreOverlay({
         const keyboard = event instanceof MouseEvent ? event.detail === 0 : true
         const trigger = tileRef.current?.closest('button')
         returnTo.current = trigger ? { tile: trigger, keyboard } : null
-        playGalleryOpen(true)
         openOverlay()
       }
       // The tile sits under the overlay once it opens, so a press on it can only be the second
       // click of a double click landing before the overlay did: that opens it, it doesn't close it.
-      else if (reason !== 'trigger-press') closeOverlay()
+      else if (reason !== 'trigger-press') closeOverlay(reason !== 'close-press')
     },
     close: closeOverlay,
     /**
@@ -445,7 +445,9 @@ export function GalleryOverlay({
               'pointer-events-none scale-90 opacity-0 duration-150 motion-reduce:scale-100',
           )}
         >
-          <Dialog.Close render={<IconButton aria-label="Close gallery" size="4xl" glass />}>
+          <Dialog.Close
+            render={<IconButton aria-label="Close gallery" size="4xl" glass data-cuelume-close />}
+          >
             <IconX aria-hidden="true" />
           </Dialog.Close>
         </div>

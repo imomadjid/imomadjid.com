@@ -6,7 +6,6 @@ import { transitionTiming } from '#/lib/ambient-transition'
 import type { GalleryPhoto } from '#/lib/gallery'
 import { decodedImage } from '#/lib/gallery-images'
 import type { PhotoZoom, PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
-import { playGalleryHover } from '#/lib/gallery-sounds'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
@@ -80,15 +79,11 @@ function useZoomingPhoto({
   const cssZoom = !ready && (!lazy || !active || failed || unsupported)
   const handlers = {
     onPointerEnter: (event: ReactPointerEvent) => {
-      if (event.pointerType === 'touch') return
-      playGalleryHover()
-      zoomIn(true)
+      if (event.pointerType !== 'touch') zoomIn(true)
     },
     onPointerLeave: () => zoomIn(false),
     onFocus: (event: ReactFocusEvent<HTMLElement>) => {
-      const keyboard = event.currentTarget.matches(':focus-visible')
-      if (keyboard) playGalleryHover()
-      zoomIn(keyboard)
+      zoomIn(event.currentTarget.matches(':focus-visible'))
     },
     onBlur: () => zoomIn(false),
   }
@@ -118,6 +113,7 @@ export function FeaturedPhoto({
     <button
       type="button"
       aria-haspopup="dialog"
+      data-cuelume-open
       className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-neutral-200 outline-none data-lifted:invisible dark:bg-neutral-800"
       {...zoom.handlers}
       onClick={(event) => {
@@ -172,6 +168,7 @@ export function OverlayPhoto({
       type="button"
       aria-haspopup="dialog"
       data-hero-cell={heroCell}
+      data-cuelume-open
       className={cn(
         'group relative block w-full cursor-zoom-in overflow-hidden rounded-lg bg-neutral-200 data-lifted:invisible dark:bg-neutral-800',
         className,

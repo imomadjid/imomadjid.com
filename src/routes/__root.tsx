@@ -6,10 +6,10 @@ import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
 import { ShapeProvider } from '#/lib/shape-context'
+import { startSounds } from '#/lib/sound'
 import { SurfaceProvider } from '#/lib/surface-context'
 import { textLinkClass } from '#/lib/text-link'
 import { THEME_SCRIPT, useTheme } from '#/lib/theme'
-import { warmSoundsOnGesture } from '#/lib/ui-sound'
 import { cn } from '#/lib/utils'
 
 import appCss from '#/styles.css?url'
@@ -63,7 +63,7 @@ function ThemedDialKit() {
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
-  useEffect(warmSoundsOnGesture, [])
+  useEffect(startSounds, [])
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

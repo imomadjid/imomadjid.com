@@ -30,8 +30,7 @@ const MEDIA_QUERY = '(prefers-color-scheme: dark)'
 const COLOR_SCHEME = { light: 'light only', dark: 'dark' } as const satisfies Record<Scheme, string>
 let transitionTimeout: ReturnType<typeof setTimeout> | undefined
 
-export const prefersReducedMotion = () =>
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
  * Reads the stored preference and drops an override once the system has caught up with it:

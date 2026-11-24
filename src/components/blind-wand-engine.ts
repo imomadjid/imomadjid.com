@@ -1,10 +1,11 @@
+import { play } from 'cuelume'
+
 import type { AmbientSettings } from '#/lib/ambient-settings'
 import { lightFrame, lightOverscan } from '#/lib/light-frame'
 import { sceneLight, wandPose } from '#/lib/sunlit-scene'
 import type { SceneLight } from '#/lib/sunlit-scene'
 import { getResolvedScheme, toggleScheme } from '#/lib/theme'
 import type { Scheme } from '#/lib/theme'
-import { playWandTick } from '#/lib/wand-sounds'
 
 import {
   facetLight,
@@ -457,7 +458,14 @@ export function startBlindWand(
     }
     const nextTooth = Math.round(turn / TOOTH)
     if (nextTooth !== tooth) {
-      if (voiced && !still) playWandTick(Math.abs(turnVelocity) / spring.tickSpeed)
+      // A gear tooth passing: cuelume's slider step, the way the wand turns, softer when slow.
+      if (voiced && !still) {
+        play('select', {
+          emphasis: 'subtle',
+          direction: turnVelocity < 0 ? 'back' : 'forward',
+          volume: 0.5 + 0.5 * Math.min(1, Math.abs(turnVelocity) / spring.tickSpeed),
+        })
+      }
       tooth = nextTooth
     }
     const progress = (turn - twistFrom) / (turnTarget - twistFrom || 1)
