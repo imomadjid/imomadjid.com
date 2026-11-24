@@ -132,9 +132,20 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
   }, [tuning, flightRef])
 
   const flying = shown !== null && shown.airborne && shown.phase !== 'open'
-  // Once the real photo or the tile shows it again, drop the flight's last frame.
+  // The canvas stays up from the first flight frame until the photo beneath it has painted.
+  const [holding, setHolding] = useState(false)
+  // Once the full-screen photo or the tile shows it again, drop the flight's last frame. Wait two
+  // frames first: the first paints the photo under the canvas, so taking the canvas away in the
+  // same frame can't show a frame with neither.
   useEffect(() => {
-    if (!flying) flightRef.current?.clear()
+    if (flying) return
+    let frameId = requestAnimationFrame(() => {
+      frameId = requestAnimationFrame(() => {
+        flightRef.current?.clear()
+        setHolding(false)
+      })
+    })
+    return () => cancelAnimationFrame(frameId)
   }, [flying, flightRef])
 
   const openPhoto = (photo: GalleryPhoto, tile: HTMLElement) => {
@@ -165,6 +176,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
           order: cornerOrder(from.corners, quadOf(screen)),
         })
         setShown((current) => (sameShown(current) ? { ...current!, airborne: true } : current))
+        setHolding(true)
         return landing
       })
       .then(async (landed) => {
@@ -213,6 +225,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
       order: cornerOrder(from.corners, to.corners),
     })
     setShown({ ...shown, phase: 'closing', airborne: true })
+    setHolding(true)
     landing
       .then((landed) => {
         if (landed)
@@ -261,7 +274,8 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
                   alt=""
                   width={photo.width}
                   height={photo.height}
-                  decoding="async"
+                  // Decoded before it shows, and painted with the frame that shows it.
+                  decoding="sync"
                   className={cn(
                     'pointer-events-none fixed rounded-xl bg-neutral-200 dark:bg-neutral-800',
                     shown.phase !== 'open' && 'opacity-0',
@@ -285,7 +299,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
           </Dialog.Popup>
         </Dialog.Portal>
       </Dialog.Root>
-      <FlightCanvas ref={canvasRef} flying={flying} />
+      <FlightCanvas ref={canvasRef} flying={flying || holding} />
     </>
   )
 

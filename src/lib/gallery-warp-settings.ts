@@ -20,7 +20,7 @@ export const galleryControls = {
   expand: {
     motion: { type: 'easing', duration: 0.55, ease: [0.32, 0.72, 0, 1] },
     /** Seconds between one corner starting and the next. */
-    stagger: [0.06, 0, 0.25, 0.005],
+    stagger: [0.03, 0, 0.25, 0.005],
   },
 } satisfies DialConfig
 
