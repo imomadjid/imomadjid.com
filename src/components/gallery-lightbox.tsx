@@ -1,8 +1,15 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { play } from 'cuelume'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { flushSync } from 'react-dom'
 
-import { ExposureReadout, readoutSpace } from '#/components/gallery-exposure'
+import {
+  ExposureReadout,
+  measureReadout,
+  readoutGap,
+  readoutRow,
+  readoutSpace,
+} from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
 import { springOf } from '#/lib/flight-springs'
@@ -36,6 +43,8 @@ type Shown = {
   airborne: boolean
   /** True once the exposure readout comes up: before the photo lands, so the two overlap. */
   readout: boolean
+  /** The readout's items' widths, which set how many lines it needs; null until measured. */
+  readoutWidths: readonly number[] | null
 }
 
 /**
@@ -75,23 +84,43 @@ function useViewport(active: boolean): Rect {
 const screenMargin = (viewport: Rect) => (viewport.width < 640 ? 12 : 24)
 
 /**
- * Where the full-screen photo sits: as large as fits, an even margin from the edges, and room
- * under it for its exposure readout.
+ * Where the full-screen photo sits, as large as fits an even margin from the edges, and its
+ * exposure readout under it, with room for as many lines as the readout's items
+ * (`readoutWidths`) wrap onto (readoutRow). A smaller photo can need another line, which makes
+ * it smaller again, so it tries again with that many until they fit.
  */
-function fullScreenRect(viewport: Rect, photo: GalleryPhoto): Rect {
+function fullScreenLayout(
+  viewport: Rect,
+  photo: GalleryPhoto,
+  readoutWidths: readonly number[] | null,
+) {
   const side = screenMargin(viewport)
-  return containRect(viewport, photo.width / photo.height, {
-    top: side,
-    right: side,
-    bottom: side + readoutSpace(viewport.width),
-    left: side,
-  })
+  const gap = readoutGap(viewport.width)
+  let lines = 1
+  for (;;) {
+    const rect = containRect(viewport, photo.width / photo.height, {
+      top: side,
+      right: side,
+      bottom: side + readoutSpace(lines),
+      left: side,
+    })
+    const readout = readoutRow(rect, viewport, side, readoutWidths, gap)
+    // Each pass adds a line, and the items can't take more lines than there are of them.
+    if (readout.lines <= lines || lines >= (readoutWidths?.length ?? 1)) {
+      return { photo: rect, readout }
+    }
+    lines = readout.lines
+  }
 }
 
 /** The whole photo in its full-screen rect. */
-function fullScreenPose(viewport: Rect, photo: GalleryPhoto): FlightPose {
+function fullScreenPose(
+  viewport: Rect,
+  photo: GalleryPhoto,
+  readoutWidths: readonly number[] | null,
+): FlightPose {
   return {
-    corners: quadOf(fullScreenRect(viewport, photo)),
+    corners: quadOf(fullScreenLayout(viewport, photo, readoutWidths).photo),
     texels: quadOf(wholeImage),
     radius: TILE_RADIUS,
   }
@@ -128,6 +157,7 @@ export function useGalleryLightbox(
   tuning: Pick<GalleryTuning, 'expand' | 'readout'>,
 ) {
   const imageRef = useRef<HTMLImageElement>(null)
+  const readoutRef = useRef<HTMLDListElement>(null)
   const [shown, setShown] = useState<Shown | null>(null)
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
   const flightToken = useRef(0)
@@ -151,7 +181,18 @@ export function useGalleryLightbox(
     returnTo.current = { tile, keyboard }
     const flight = flightRef.current
     const token = ++flightToken.current
-    setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false, readout: !flight })
+    const opened = {
+      photo,
+      tile,
+      phase: flight ? ('opening' as const) : ('open' as const),
+      airborne: false,
+      readout: !flight,
+    }
+    // Render the readout first, hidden, to measure how many lines it takes, which the photo's
+    // full-screen rect, and so the flight's landing, leaves room for.
+    flushSync(() => setShown({ ...opened, readoutWidths: null }))
+    const readoutWidths = readoutRef.current ? measureReadout(readoutRef.current) : null
+    setShown({ ...opened, readoutWidths })
     if (!flight) return
     const from = tilePose(photo, tile, tile.getBoundingClientRect())
     const screen = viewportRect()
@@ -175,7 +216,7 @@ export function useGalleryLightbox(
         const landing = flight.fly({
           photo: photoImage,
           from,
-          to: fullScreenPose(screen, photo),
+          to: fullScreenPose(screen, photo, readoutWidths),
           // The corner with the longest way to its side of the screen leads.
           lags: cornerLags(from.corners, quadOf(screen), diagonal(screen)),
           direction: 'open',
@@ -215,7 +256,7 @@ export function useGalleryLightbox(
     // Escape or a click beside the photo: no control to bind, so the close plays from here.
     play('close')
     const flight = flightRef.current
-    const { photo, tile } = shown
+    const { photo, tile, readoutWidths } = shown
     const token = ++flightToken.current
     // The photo the open flew, or the sharp one if the full-screen view has loaded it since.
     const image = decodedNow(photo.large) ?? decodedNow(photo.small)
@@ -226,7 +267,7 @@ export function useGalleryLightbox(
     }
     const screen = viewportRect()
     // A photo still flying out turns around where it is instead (Flight.fly).
-    const from = fullScreenPose(screen, photo)
+    const from = fullScreenPose(screen, photo, readoutWidths)
     // Where the tile will be once the page behind the photo has grown back.
     const to = tilePose(photo, tile, fullScaleRect(tile))
     const landing = flight.fly({
@@ -250,7 +291,7 @@ export function useGalleryLightbox(
   }
 
   const photo = shown?.photo
-  const target = photo ? fullScreenRect(viewport, photo) : null
+  const layout = photo ? fullScreenLayout(viewport, photo, shown.readoutWidths) : null
   // Without the flight renderer the photo fades in by itself.
   const fades = !stage.ready
 
@@ -278,14 +319,14 @@ export function useGalleryLightbox(
             if (event.target === event.currentTarget) requestClose()
           }}
         >
-          {photo && target && (
+          {photo && layout && (
             <>
               <Dialog.Title className="sr-only">{photo.alt}</Dialog.Title>
               <img
                 ref={imageRef}
                 src={photo.large}
                 srcSet={`${photo.small} 640w, ${photo.large} 1600w`}
-                sizes={`${Math.round(target.width)}px`}
+                sizes={`${Math.round(layout.photo.width)}px`}
                 alt=""
                 width={photo.width}
                 height={photo.height}
@@ -297,15 +338,17 @@ export function useGalleryLightbox(
                     'transition-[opacity,scale] duration-300 ease-out motion-reduce:transition-none starting:scale-95 starting:opacity-0',
                 )}
                 style={{
-                  left: target.x,
-                  top: target.y,
-                  width: target.width,
-                  height: target.height,
+                  left: layout.photo.x,
+                  top: layout.photo.y,
+                  width: layout.photo.width,
+                  height: layout.photo.height,
                 }}
               />
               <ExposureReadout
+                ref={readoutRef}
                 photo={photo}
-                rect={target}
+                row={layout.readout}
+                gap={readoutGap(viewport.width)}
                 shown={shown.readout && shown.phase !== 'closing'}
                 tuning={tuning.readout}
               />

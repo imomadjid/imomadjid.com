@@ -1,5 +1,6 @@
 import { Button as ButtonPrimitive } from '@base-ui/react/button'
 
+import { LiveGlassLayer } from '#/components/live-glass'
 import { glassSurface } from '#/lib/glass'
 import { cn } from '#/lib/utils'
 
@@ -20,8 +21,10 @@ type IconButtonSize = keyof typeof sizeClasses
 type IconButtonProps = Omit<ButtonPrimitive.Props, 'className'> & {
   className?: string
   size?: IconButtonSize
-  /** Static liquid glass (#/lib/glass) in place of the ghost fill. */
-  glass?: boolean
+  /** Liquid glass in place of the ghost fill: static (#/lib/glass, also `true`), or live, which
+   *  refracts what a LiveGlassSourceProvider above lists behind it (#/lib/live-glass) and is
+   *  static glass wherever that can't run. */
+  glass?: boolean | 'static' | 'live'
 }
 
 export function IconButton({
@@ -31,6 +34,17 @@ export function IconButton({
   children,
   ...props
 }: IconButtonProps) {
+  const surface = (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'absolute rounded-[inherit]',
+        glass
+          ? cn('-z-10 motion-reduce:transition-none', glassSurface.rest)
+          : 'inset-px bg-transparent shadow-[0_0_0_1px_transparent] transition-[box-shadow,background-color] duration-180 group-hover:bg-hover group-hover:shadow-[0_0_0_1px_var(--hover)] group-active:bg-active group-active:shadow-[0_0_0_0px_var(--active)]',
+      )}
+    />
+  )
   return (
     <ButtonPrimitive
       {...props}
@@ -43,15 +57,7 @@ export function IconButton({
         className,
       )}
     >
-      <span
-        aria-hidden="true"
-        className={cn(
-          'absolute rounded-[inherit]',
-          glass
-            ? cn('-z-10 motion-reduce:transition-none', glassSurface.rest)
-            : 'inset-px bg-transparent shadow-[0_0_0_1px_transparent] transition-[box-shadow,background-color] duration-180 group-hover:bg-hover group-hover:shadow-[0_0_0_1px_var(--hover)] group-active:bg-active group-active:shadow-[0_0_0_0px_var(--active)]',
-        )}
-      />
+      {glass === 'live' ? <LiveGlassLayer fallback={surface} /> : surface}
       <span className="relative inline-flex items-center justify-center">{children}</span>
     </ButtonPrimitive>
   )

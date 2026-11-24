@@ -35,6 +35,6 @@
   "health": {
     "ignore": ["tools/oxlint/anti-slop/**"]
   },
-  "entry": ["tools/gallery/metadata.ts"],
+  "entry": ["tools/gallery/metadata.ts", "tools/glass-live/scenes.ts", "tools/glass-live/shoot.ts"],
   "ignoreBinaries": ["exiftool"]
 }
