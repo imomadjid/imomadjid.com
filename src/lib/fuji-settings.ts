@@ -181,10 +181,11 @@ export const fujiRecipes: readonly FujiRecipe[] = [
     },
   },
   {
-    // Published with Color Chrome FX Blue Weak; Fuji X Weekly sets it Off on X-Trans V.
+    // Reggie's own page, linked, sets Color Chrome FX Blue Weak; this keeps Fuji X Weekly's
+    // X-Trans V version, Off, which is what the photo using it was shot with.
     name: "Reggie's Portra",
     author: 'Reggie Ballesteros',
-    url: 'https://fujixweekly.com/2022/06/11/fujifilm-x-trans-iv-film-simulation-recipe-reggies-portra/',
+    url: 'https://reggiebphotography.com/blog/the-most-versatile-fujifilm-x-trans-iv-film-simulation-recipe-reggies-portra',
     settings: {
       filmSimulation: 'Classic Chrome',
       dynamicRange: 'Auto',
