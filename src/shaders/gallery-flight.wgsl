@@ -83,7 +83,9 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let top = mix(params.topTexels.xy, params.topTexels.zw, q.x);
   let bottom = mix(params.bottomTexels.zw, params.bottomTexels.xy, q.x);
   let texel = mix(top, bottom, q.y);
-  let color = textureSampleLevel(photo, photoSampler, clamp(texel, vec2f(0.0), vec2f(1.0)), 0.0).rgb;
+  // Sampled with derivatives, so a photo shrinking into its tile reads the mip chain and doesn't
+  // shimmer. Outside the quad the clamp flattens them, which keeps the edges sharp.
+  let color = textureSample(photo, photoSampler, clamp(texel, vec2f(0.0), vec2f(1.0))).rgb;
   // Rounded corners in the quad's own pixels: its width and height where this pixel sits.
   let width = mix(distance(a, b), distance(d, c), q.y);
   let height = mix(distance(a, d), distance(b, c), q.x);

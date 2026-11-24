@@ -40,7 +40,9 @@ function subscribeViewport(onChange: () => void) {
   window.addEventListener('resize', onChange)
   return () => window.removeEventListener('resize', onChange)
 }
-const viewportSnapshot = () => `${document.documentElement.clientWidth} ${window.innerHeight}`
+// The layout viewport without scrollbars: the box the fixed flight canvas fills.
+const viewportSnapshot = () =>
+  `${document.documentElement.clientWidth} ${document.documentElement.clientHeight}`
 const serverViewport = () => '0 0'
 
 function useViewport(): Rect {
@@ -117,6 +119,8 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
   // The photo the flight last drew, which a close flies back.
   const flightImage = useRef<HTMLImageElement | null>(null)
   const [shown, setShown] = useState<Shown | null>(null)
+  // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
+  const flightToken = useRef(0)
   const viewport = useViewport()
 
   const { rendererRef: flightRef, ready } = useGalleryRenderer<Flight>(
@@ -142,6 +146,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
   // few frames and at least HOLD_MS first, so the photo beneath has painted before the canvas goes.
   useEffect(() => {
     if (flying) return
+    const token = flightToken.current
     const shownAt = performance.now()
     let frames = 0
     let frameId = 0
@@ -151,6 +156,8 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
         frameId = requestAnimationFrame(wait)
         return
       }
+      // A flight that started meanwhile owns the canvas now.
+      if (flightToken.current !== token) return
       flightRef.current?.clear()
       setHolding(false)
     }
@@ -160,6 +167,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
 
   const openPhoto = (photo: GalleryPhoto, tile: HTMLElement) => {
     const flight = flightRef.current
+    const token = ++flightToken.current
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
     if (!flight) return
     const tileRect = tile.getBoundingClientRect()
@@ -170,12 +178,14 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
       height: canvasRef.current?.clientHeight ?? 0,
     }
     const target = fullScreenRect(screen, photo)
-    const sameShown = (current: Shown | null) => current?.photo === photo && current.tile === tile
+    const current = () => flightToken.current === token
     // The sharp photo if hovering already decoded it; otherwise the tile's own, swapped on landing.
     const image = decodedNow(photo.large) ?? decodedNow(photo.small)
     const photoReady = image ? Promise.resolve(image) : decodedImage(photo.small)
     photoReady
       .then((photoImage) => {
+        // Closed before the photo was ready: it never takes off.
+        if (!current()) return false
         flightImage.current = photoImage
         const from = tilePose(photo, tileRect)
         const landing = flight.fly({
@@ -185,7 +195,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
           // The corner with the longest way to its side of the screen leads.
           order: cornerOrder(from.corners, quadOf(screen)),
         })
-        setShown((current) => (sameShown(current) ? { ...current!, airborne: true } : current))
+        setShown((shown) => (shown && current() ? { ...shown, airborne: true } : shown))
         setHolding(true)
         return landing
       })
@@ -193,15 +203,11 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
         if (!landed) return
         // Keep the flight's last frame up until the full-screen photo can replace it.
         await imageRef.current?.decode().catch(() => {})
-        setShown((current) =>
-          sameShown(current) && current!.phase === 'opening'
-            ? { ...current!, phase: 'open' }
-            : current,
-        )
+        setShown((shown) => (shown && current() ? { ...shown, phase: 'open' } : shown))
       })
       .catch((error) => {
         console.warn('The Gallery photo opened without its expand:', error)
-        setShown((current) => (sameShown(current) ? { ...current!, phase: 'open' } : current))
+        setShown((shown) => (shown && current() ? { ...shown, phase: 'open' } : shown))
       })
   }
 
@@ -209,9 +215,11 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
     if (!shown || shown.phase === 'closing') return
     const flight = flightRef.current
     const { photo, tile } = shown
+    const token = ++flightToken.current
     // Prefer the sharp photo for the way back, now that the full-screen view has loaded it.
     const image = decodedNow(photo.large) ?? flightImage.current
-    if (!flight || !image) {
+    // Without the renderer, or before the photo took off, there is nothing to fly back.
+    if (!flight || !image || !shown.airborne) {
       setShown(null)
       return
     }
@@ -236,14 +244,11 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
     })
     setShown({ ...shown, phase: 'closing', airborne: true })
     setHolding(true)
-    landing
-      .then((landed) => {
-        if (landed)
-          setShown((current) =>
-            current?.photo === photo && current.phase === 'closing' ? null : current,
-          )
-      })
-      .catch(() => setShown(null))
+    // Landed or not (a lost device ends the flight early), the dialog closes.
+    const close = () => {
+      if (flightToken.current === token) setShown(null)
+    }
+    landing.then(close, close)
   }
 
   const photo = shown?.photo

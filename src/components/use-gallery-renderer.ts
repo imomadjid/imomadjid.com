@@ -40,6 +40,8 @@ export function useGalleryRenderer<T>(
       startRef
         .current(canvas, abort.signal, fallBack)
         .then((renderer) => {
+          // A start that finished after cleanup has already disposed itself.
+          if (abort.signal.aborted) return
           rendererRef.current = renderer
           // The renderer draws its first frame in the next animation frame, before this callback.
           // One that failed in between has cleared the ref and must not hide the fallback.
@@ -65,6 +67,8 @@ export function useGalleryRenderer<T>(
       observer.disconnect()
       abort.abort()
       rendererRef.current = null
+      // Bring the CSS fallback back until a restarted renderer draws.
+      setReady(false)
     }
   }, [canvasRef, nearRef, key])
 
