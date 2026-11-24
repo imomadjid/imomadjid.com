@@ -293,7 +293,12 @@ export function useSeeMoreOverlay({
 
   return {
     open: shown !== null,
-    onOpenChange: (open: boolean) => (open ? openOverlay() : closeOverlay()),
+    onOpenChange: (open: boolean, { reason }: Dialog.Root.ChangeEventDetails) => {
+      if (open) openOverlay()
+      // The tile sits under the overlay once it opens, so a press on it can only be the second
+      // click of a double click landing before the overlay did: that opens it, it doesn't close it.
+      else if (reason !== 'trigger-press') closeOverlay()
+    },
     close: closeOverlay,
     prepare,
     /** The first cells are empty while the flight shows their photos. */

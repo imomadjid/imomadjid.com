@@ -6,6 +6,7 @@
       "dist/**",
       ".tanstack/**",
       ".wrangler/**",
+      "tools/gallery/metadata.ts",
       "src/components/fluid-hover-highlight.tsx",
       "src/components/ui/badge.tsx",
       "src/components/ui/button.tsx",
