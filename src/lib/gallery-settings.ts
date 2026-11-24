@@ -16,11 +16,11 @@ export const galleryControls = {
     /** How far the photo zooms in: 0.06 is 6%. */
     zoom: [0.06, 0, 0.2, 0.005],
   },
-  /** A featured photo expanding to full screen, one corner at a time. */
+  /** A photo expanding to full screen, corners starting by how far each has to go. */
   expand: {
     motion: { type: 'easing', duration: 0.8, ease: [0.32, 0.72, 0, 1] },
-    /** Seconds between one corner starting and the next. */
-    stagger: [0.02, 0, 0.25, 0.005],
+    /** Seconds the nearest corner can trail the farthest, for a move across the whole screen. */
+    spread: [0.12, 0, 0.5, 0.005],
   },
 } satisfies DialConfig
 
@@ -32,5 +32,5 @@ const { seeMore, photo, expand } = galleryControls
 export const defaultGalleryTuning: GalleryTuning = {
   seeMore: { motion: seeMore.motion, lead: seeMore.lead[0], bulge: seeMore.bulge[0] },
   photo: { motion: photo.motion, lead: photo.lead[0], zoom: photo.zoom[0] },
-  expand: { motion: expand.motion, stagger: expand.stagger[0] },
+  expand: { motion: expand.motion, spread: expand.spread[0] },
 }

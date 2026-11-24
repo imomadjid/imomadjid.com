@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 
-import { containRect, cornerOrder, coverCrop, quadOf } from './gallery-flight-geometry'
+import { containRect, cornerLags, coverCrop, diagonal, quadOf } from './gallery-flight-geometry'
 
 const viewport = { x: 0, y: 0, width: 1000, height: 800 }
 const noInsets = { top: 0, right: 0, bottom: 0, left: 0 }
@@ -33,18 +33,36 @@ void test('coverCrop keeps the middle square of a 2:3 photo', () => {
   assert.ok(Math.abs(crop.y - 1 / 6) < 1e-9)
 })
 
-void test('cornerOrder leads with the corner farthest from its viewport corner', () => {
-  // A tile near the top left: its bottom right corner has the longest way to go.
-  const tile = quadOf({ x: 100, y: 100, width: 200, height: 200 })
-  assert.deepEqual(cornerOrder(tile, quadOf(viewport)), [2, 1, 3, 0])
+void test('cornerLags starts the corner farthest from its viewport corner first', () => {
+  const viewport = { x: 0, y: 0, width: 1000, height: 800 }
+  const tile = quadOf({ x: 100, y: 100, width: 100, height: 100 })
+  const lags = cornerLags(tile, quadOf(viewport), diagonal(viewport))
+  // The bottom right has the longest way to go.
+  assert.equal(lags[2], 0)
+  assert.ok(lags[0] > lags[3] && lags[3] > 0 && lags[1] > 0)
 })
 
-void test('cornerOrder ranks a tile near the bottom right the other way round', () => {
-  const tile = quadOf({ x: 700, y: 500, width: 200, height: 200 })
-  assert.deepEqual(cornerOrder(tile, quadOf(viewport))[0], 0)
+void test('cornerLags moves an edge as one when its corners are as far as each other', () => {
+  const viewport = { x: 0, y: 0, width: 1000, height: 800 }
+  // Centred across, near the top: the bottom edge leads, both corners together.
+  const tile = quadOf({ x: 450, y: 100, width: 100, height: 100 })
+  const lags = cornerLags(tile, quadOf(viewport), diagonal(viewport))
+  assert.ok(Math.abs(lags[2] - lags[3]) < 1e-9 && lags[2] === 0)
+  assert.ok(Math.abs(lags[0] - lags[1]) < 1e-9 && lags[0] > 0)
 })
 
-void test('cornerOrder breaks ties in corner order', () => {
-  const square = quadOf({ x: 0, y: 0, width: 10, height: 10 })
-  assert.deepEqual(cornerOrder(square, square), [0, 1, 2, 3])
+void test('cornerLags starts every corner together from the middle of the screen', () => {
+  const viewport = { x: 0, y: 0, width: 1000, height: 800 }
+  const tile = quadOf({ x: 450, y: 350, width: 100, height: 100 })
+  const lags = cornerLags(tile, quadOf(viewport), diagonal(viewport))
+  for (const lag of lags) assert.ok(Math.abs(lag) < 1e-9)
+})
+
+void test('cornerLags spreads a tile near the edge more than one near the middle', () => {
+  const viewport = { x: 0, y: 0, width: 1000, height: 800 }
+  const spread = (tile: ReturnType<typeof quadOf>) =>
+    Math.max(...cornerLags(tile, quadOf(viewport), diagonal(viewport)))
+  const nearMiddle = quadOf({ x: 400, y: 300, width: 100, height: 100 })
+  const atBottom = quadOf({ x: 450, y: 690, width: 100, height: 100 })
+  assert.ok(spread(atBottom) > spread(nearMiddle))
 })

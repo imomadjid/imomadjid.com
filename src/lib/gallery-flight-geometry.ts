@@ -50,13 +50,22 @@ export function coverCrop(imageAspect: number, boxAspect: number): Rect {
 export const wholeImage: Rect = { x: 0, y: 0, width: 1, height: 1 }
 
 /**
- * The order the corners move in: the one farthest from its partner in `toward` first, then the
- * rest by falling distance. Opening ranks the tile's corners against the viewport's, so the
- * corner with the longest way to its side of the screen leads.
+ * How long each corner waits behind the one farthest from its partner in `toward`, as a fraction
+ * of `scale` (the viewport's diagonal): its distance short of the farthest one's, over `scale`,
+ * up to 1. Corners as far as each other start together, so a tile centred across the screen moves
+ * its top or bottom edge as one, and the spread grows the more lopsided the move is.
  */
-export function cornerOrder(from: Quad, toward: Quad): number[] {
-  const distance = (i: number) => Math.hypot(toward[i][0] - from[i][0], toward[i][1] - from[i][1])
-  return [0, 1, 2, 3].sort((a, b) => distance(b) - distance(a) || a - b)
+export function cornerLags(from: Quad, toward: Quad, scale: number): number[] {
+  const distances = from.map((point, i) =>
+    Math.hypot(toward[i][0] - point[0], toward[i][1] - point[1]),
+  )
+  const farthest = Math.max(...distances)
+  return distances.map((distance) => (scale > 0 ? Math.min(1, (farthest - distance) / scale) : 0))
+}
+
+/** The length of a rect's diagonal. */
+export function diagonal(rect: Rect) {
+  return Math.hypot(rect.width, rect.height)
 }
 
 /** `from` moved toward `to` by `amount` (0 stays, 1 arrives). */

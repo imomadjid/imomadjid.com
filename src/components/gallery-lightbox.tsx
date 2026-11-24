@@ -10,8 +10,9 @@ import type { GalleryPhoto } from '#/lib/gallery'
 import type { Flight, FlightPose, FlightTuning } from '#/lib/gallery-flight'
 import {
   containRect,
-  cornerOrder,
+  cornerLags,
   coverCrop,
+  diagonal,
   quadOf,
   wholeImage,
 } from '#/lib/gallery-flight-geometry'
@@ -116,9 +117,9 @@ function tilePose(photo: GalleryPhoto, tile: HTMLElement): FlightPose {
 
 /**
  * Opens a featured photo full screen. Where WebGPU runs, the photo lifts out of its tile and
- * expands one corner at a time (src/lib/gallery-flight.ts): the corner farthest from its corner
- * of the viewport moves first, then the others by falling distance. Closing flies it back the
- * same way, the corner farthest from its place in the tile first. Without WebGPU the photo fades
+ * expands corner by corner (src/lib/gallery-flight.ts): the corner farthest from its corner of the
+ * viewport moves first, and each other one trails it by how much shorter its way is (cornerLags).
+ * Closing flies it back the same way, against its place in the tile. Without WebGPU the photo fades
  * in and out.
  *
  * Returns `openPhoto` for the featured tiles and the See more grid, and the elements to render: the
@@ -182,7 +183,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
           from,
           to: fullScreenPose(screen, photo),
           // The corner with the longest way to its side of the screen leads.
-          order: cornerOrder(from.corners, quadOf(screen)),
+          lags: cornerLags(from.corners, quadOf(screen), diagonal(screen)),
         })
         setShown((shown) => (shown && current() ? { ...shown, airborne: true } : shown))
         return landing
@@ -211,14 +212,15 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
       setShown(null)
       return
     }
-    const from = flight.pose() ?? fullScreenPose(readViewport(), photo)
+    const screen = readViewport()
+    const from = flight.pose() ?? fullScreenPose(screen, photo)
     const to = tilePose(photo, tile)
     const landing = flight.fly({
       photo: image,
       from,
       to,
       // The corner farthest from its place in the tile leads.
-      order: cornerOrder(from.corners, to.corners),
+      lags: cornerLags(from.corners, to.corners, diagonal(screen)),
     })
     setShown({ ...shown, phase: 'closing', airborne: true })
     // Landed or not (a lost device ends the flight early), the dialog closes.

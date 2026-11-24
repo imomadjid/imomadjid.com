@@ -22,8 +22,8 @@ const MAX_TEXTURE_SIZE = 2048
 export type FlightTuning = {
   /** Each corner's own move. */
   motion: TransitionConfig
-  /** Seconds between one corner starting and the next. */
-  stagger: number
+  /** Seconds the nearest corner can trail the farthest; each lags by its share of it. */
+  spread: number
 }
 
 /** Where a photo is: its corners on screen, the texture coordinate at each, and its corner radius. */
@@ -31,14 +31,15 @@ export type FlightPose = { corners: Quad; texels: Quad; radius: number }
 
 export type Flight = {
   /**
-   * Moves `photo` from `from` to `to`, corners in `order`. Resolves true when it lands, holding
-   * the last frame until `clear`, or false when a newer flight or a failure ends it first.
+   * Moves `photo` from `from` to `to`, each corner starting `lags[i]` of the spread late (see
+   * cornerLags). Resolves true when it lands, holding the last frame until `clear`, or false when
+   * a newer flight or a failure ends it first.
    */
   fly: (options: {
     photo: HTMLImageElement
     from: FlightPose
     to: FlightPose
-    order: readonly number[]
+    lags: readonly number[]
   }) => Promise<boolean>
   /** Where the photo is now, mid-flight or landed; null when cleared. */
   pose: () => FlightPose | null
@@ -50,16 +51,16 @@ export type Flight = {
 type Leg = {
   from: FlightPose
   to: FlightPose
-  /** Each corner's rank: 0 moves first. */
-  rank: number[]
+  /** Each corner's start, as a fraction of the spread. */
+  lags: readonly number[]
   start: number
   land: (landed: boolean) => void
 }
 
 /**
  * Draws a photo flying between its tile and the full-screen view on a canvas that covers the
- * viewport. The photo is a quad whose corners move one at a time, each on its own eased clock,
- * started `stagger` apart in the order the caller ranks them.
+ * viewport. The photo is a quad whose corners each move on their own eased clock, started late
+ * by the caller's lag for that corner times the spread.
  */
 export async function startGalleryFlight(
   canvas: HTMLCanvasElement,
@@ -118,10 +119,10 @@ export async function startGalleryFlight(
       if (life.disposed() || !leg) return
       const elapsed = (now - leg.start) / 1000
       const duration = reducedMotion.matches ? 0 : timing.duration
-      const stagger = reducedMotion.matches ? 0 : tuning.stagger
+      const spread = reducedMotion.matches ? 0 : tuning.spread
       let landed = true
-      const amounts = leg.rank.map((rank) => {
-        const eased = delayedEase(elapsed, rank * stagger, duration, timing.ease)
+      const amounts = leg.lags.map((lag) => {
+        const eased = delayedEase(elapsed, lag * spread, duration, timing.ease)
         if (eased.moving) landed = false
         return eased.value
       })
@@ -156,7 +157,7 @@ export async function startGalleryFlight(
     )
 
     return {
-      fly({ photo, from, to, order }) {
+      fly({ photo, from, to, lags }) {
         life.assertLive()
         if (texture?.photo !== photo) {
           texture?.gpu.destroy()
@@ -164,12 +165,8 @@ export async function startGalleryFlight(
           flight.set({ photo: texture.gpu, photoSampler: sampler })
         }
         leg?.land(false)
-        const rank = [0, 0, 0, 0]
-        order.forEach((cornerIndex, position) => {
-          rank[cornerIndex] = position
-        })
         return new Promise<boolean>((land) => {
-          leg = { from, to, rank, start: performance.now(), land }
+          leg = { from, to, lags, start: performance.now(), land }
           cancelAnimationFrame(frameId)
           // Draw the starting pose now, so it is on screen in the same frame as the caller's swap.
           step(performance.now())
