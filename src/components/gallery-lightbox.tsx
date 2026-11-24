@@ -17,6 +17,7 @@ import {
 } from '#/lib/gallery-flight-geometry'
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
+import { playRelease, playShutter } from '#/lib/gallery-sounds'
 import { fullScaleRect } from '#/lib/page-recede'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
@@ -134,6 +135,7 @@ export function useGalleryLightbox(stage: FlightStage) {
 
   const openPhoto: OpenPhoto = (photo, tile, keyboard) => {
     returnTo.current = { tile, keyboard }
+    playShutter(photo.exposure.shutter)
     const flight = flightRef.current
     const token = ++flightToken.current
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
@@ -189,6 +191,7 @@ export function useGalleryLightbox(stage: FlightStage) {
 
   const requestClose = () => {
     if (!shown || shown.phase === 'closing') return
+    playRelease()
     const flight = flightRef.current
     const { photo, tile } = shown
     const token = ++flightToken.current

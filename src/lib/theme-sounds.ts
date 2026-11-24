@@ -14,7 +14,7 @@ import { defineUiSound, playSound } from './ui-sound'
 export const HISS_CUT = { type: 'lowpass', frequency: 4500, resonance: -3 } as const
 
 /** The contact: a narrow ring over a wider body below it, so it reads as a part rather than a puff of noise. */
-const click = (frequency: number, gain: number): Layer[] => [
+export const click = (frequency: number, gain: number): Layer[] => [
   {
     source: { type: 'noise' },
     filter: [{ type: 'bandpass', frequency, resonance: 5 }, HISS_CUT],
@@ -30,7 +30,7 @@ const click = (frequency: number, gain: number): Layer[] => [
 ]
 
 /** The body: a sine struck 60% sharp that settles onto `frequency` within ~20 ms. */
-const knock = (frequency: number, gain: number): Layer => ({
+export const knock = (frequency: number, gain: number): Layer => ({
   source: { type: 'sine', frequency: { start: frequency * 1.6, end: frequency } },
   envelope: { attack: 0.001, decay: 0.018 },
   gain,
