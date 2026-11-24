@@ -28,8 +28,14 @@ trap 'rm -rf "$work"' EXIT
 src_dir="${GALLERY_SRC:-$work/src}"
 if [ -z "${GALLERY_SRC:-}" ]; then
   printf '%s\n' "$@" >"$work/files.txt"
-  rclone copy "$remote" "$src_dir" --drive-root-folder-id "$folder" \
-    --files-from "$work/files.txt" --transfers 8 2>&1 | grep -v NOTICE || true
+  # Report rclone's own error, such as an expired token, rather than a missing file below.
+  if ! rclone copy "$remote" "$src_dir" --drive-root-folder-id "$folder" \
+    --files-from "$work/files.txt" --transfers 8 2>"$work/rclone.log"; then
+    grep -v NOTICE "$work/rclone.log" >&2 || true
+    echo "rclone could not download from Drive" >&2
+    exit 1
+  fi
+  grep -v NOTICE "$work/rclone.log" >&2 || true
 fi
 
 for file in "$@"; do

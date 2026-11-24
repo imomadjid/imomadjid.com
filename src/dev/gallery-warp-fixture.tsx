@@ -38,7 +38,10 @@ function WarpTile({ size, tuning, pinned }: { size: number; tuning: WarpTuning; 
     const canvas = canvasRef.current
     if (!canvas) return
     const controller = new AbortController()
-    startGalleryWarp(canvas, photoUrls, tuningRef.current, controller.signal)
+    startGalleryWarp(canvas, photoUrls, tuningRef.current, controller.signal, (error) => {
+      warpRef.current = null
+      setFailure(String(error))
+    })
       .then((warp) => {
         warpRef.current = warp
         warp.setZoomedOut(zoomedOutRef.current)
