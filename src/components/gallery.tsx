@@ -6,6 +6,7 @@ import cameraPhoto from '#/assets/camera/fujifilm-x-t30-iii.webp'
 import { IconButton } from '#/components/ui/icon-button'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
+import { playGallerySound } from '#/lib/gallery-sounds'
 import { cn } from '#/lib/utils'
 
 const tileClass = 'aspect-square w-full rounded-xl bg-neutral-200 dark:bg-neutral-800'
@@ -83,7 +84,7 @@ function Gallery({
   const featured = photos.slice(0, featuredCount)
 
   return (
-    <Dialog.Root>
+    <Dialog.Root onOpenChange={playGallerySound}>
       <div className="flex flex-col gap-10">
         <div className="flex items-center justify-between gap-6 sm:gap-8">
           <img
