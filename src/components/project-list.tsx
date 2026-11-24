@@ -141,7 +141,6 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
 
     const width = box.offsetWidth
     const height = box.offsetHeight
-    const visiting = preview?.shown === true
 
     const maxX = window.innerWidth - viewportMargin - width - list.left
     const x = Math.max(0, Math.min(title.right - list.left + titleGap, maxX))
@@ -152,7 +151,7 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
       (element) => (element?.getBoundingClientRect().bottom ?? title.bottom) - list.top - height,
     )
     const y = title.bottom - list.top - height
-    setPreview({ index, x, y, rowYs, shown: true, fresh: !visiting })
+    setPreview({ index, x, y, rowYs, shown: true, fresh: !preview?.shown })
   }
 
   const leave = () => setPreview((current) => current && { ...current, shown: false })
