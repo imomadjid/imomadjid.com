@@ -10,13 +10,6 @@ import { cn } from '#/lib/utils'
 
 const tileClass = 'aspect-square w-full rounded-xl bg-neutral-200 dark:bg-neutral-800'
 
-// The fanned stack's cards, back to front: rest pose, then spread on hover or focus.
-const stackCards = [
-  'rotate-[-9deg] -translate-x-[14%] group-hover:rotate-[-15deg] group-hover:-translate-x-[24%] group-focus-visible:rotate-[-15deg] group-focus-visible:-translate-x-[24%]',
-  'rotate-[8deg] translate-x-[14%] group-hover:rotate-[14deg] group-hover:translate-x-[24%] group-focus-visible:rotate-[14deg] group-focus-visible:translate-x-[24%]',
-  'rotate-[-2deg] group-hover:rotate-0 group-hover:-translate-y-[4%] group-focus-visible:rotate-0 group-focus-visible:-translate-y-[4%]',
-]
-
 // Allo's open figures (ss03), slashed zero, and tabular figures, as on the project years.
 const figuresClass = "[font-feature-settings:'ss03'] whitespace-nowrap slashed-zero tabular-nums"
 
@@ -40,37 +33,44 @@ function enterIndex(index: number): CSSProperties & { '--enter-index': number } 
   return { '--enter-index': Math.min(index, maxStagger) }
 }
 
-function PhotoStack({ photos, total }: { photos: readonly GalleryPhoto[]; total: number }) {
+// The See more tile's preview: the photos past the grid, then from the top, 16 in all.
+function previewPhotos(photos: readonly GalleryPhoto[], featuredCount: number) {
+  return [...photos.slice(featuredCount), ...photos.slice(0, featuredCount)].slice(0, 16)
+}
+
+/**
+ * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
+ * out to the whole grid and shows the label. Half-gap padding puts the 2x crop's edges in the
+ * middle of the gaps, so the 2x2 keeps even spacing.
+ */
+function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total: number }) {
   return (
     <Dialog.Trigger
-      className={cn(
-        tileClass,
-        'group relative flex cursor-pointer flex-col items-center justify-center gap-3 bg-transparent outline-none dark:bg-transparent',
-      )}
+      aria-label={`See all ${total} photos`}
+      className="group relative block w-full cursor-pointer rounded-xl outline-none"
     >
-      <span className="relative block aspect-[4/5] w-[52%]">
-        {photos.slice(0, 3).map((photo, index) => (
-          <img
-            key={photo.id}
-            src={photo.small}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className={cn(
-              'absolute inset-0 size-full rounded-md border-[3px] border-white bg-neutral-200 object-cover shadow-md transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none dark:border-neutral-100',
-              stackCards[index],
-            )}
-          />
-        ))}
+      <span className={cn(tileClass, 'block overflow-hidden')}>
+        <span className="grid size-full scale-200 grid-cols-4 grid-rows-4 gap-0.5 p-px transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:transition-none">
+          {photos.map((photo) => (
+            <img
+              key={photo.id}
+              src={photo.thumb}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="size-full rounded-[3px] object-cover"
+            />
+          ))}
+        </span>
       </span>
-      <span className="text-sm text-neutral-600 transition-colors duration-180 group-hover:text-neutral-950 dark:text-neutral-400 dark:group-hover:text-neutral-50">
-        See all {total}
+      <span className="pointer-events-none absolute inset-x-0 top-full mt-2 translate-y-1 text-center text-sm text-neutral-600 opacity-0 transition-[opacity,translate] duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:transition-none dark:text-neutral-400 pointer-coarse:translate-y-0 pointer-coarse:opacity-100">
+        See more
       </span>
     </Dialog.Trigger>
   )
 }
 
-/** The Gallery section: the camera, a few favourites, and a stack that opens every photo. */
+/** The Gallery section: the camera, the favourites, and a tile that opens every photo. */
 function Gallery({
   photos,
   featuredCount,
@@ -79,7 +79,6 @@ function Gallery({
   featuredCount: number
 }) {
   const featured = photos.slice(0, featuredCount)
-  const rest = photos.slice(featuredCount)
 
   return (
     <Dialog.Root>
@@ -116,7 +115,7 @@ function Gallery({
             </li>
           ))}
           <li>
-            <PhotoStack photos={rest} total={photos.length} />
+            <SeeMoreTile photos={previewPhotos(photos, featuredCount)} total={photos.length} />
           </li>
         </ul>
       </div>

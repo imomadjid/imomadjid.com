@@ -1,6 +1,6 @@
 import sizes from '#/assets/gallery/photos.json'
 
-// tools/gallery/import.sh writes <stem>-640.webp and <stem>-1600.webp per photo plus their size
+// tools/gallery/import.sh writes <stem>-240, -640 and -1600.webp per photo plus their size
 // in photos.json. Vite fingerprints the files into /assets/; only the URLs are bundled.
 const files = import.meta.glob<string>('../assets/gallery/*.webp', {
   query: '?url',
@@ -14,6 +14,7 @@ export type GalleryPhoto = {
   alt: string
   width: number
   height: number
+  thumb: string
   small: string
   large: string
 }
@@ -26,11 +27,19 @@ function file(name: string) {
 
 function photo(id: keyof typeof sizes, alt: string): GalleryPhoto {
   const { width, height } = sizes[id]
-  return { id, alt, width, height, small: file(`${id}-640.webp`), large: file(`${id}-1600.webp`) }
+  return {
+    id,
+    alt,
+    width,
+    height,
+    thumb: file(`${id}-240.webp`),
+    small: file(`${id}-640.webp`),
+    large: file(`${id}-1600.webp`),
+  }
 }
 
-// Display order. The first `featuredCount` fill the homepage grid; the stack and the overlay
-// hold the rest. Reorder to choose the favourites.
+// Display order. The first `featuredCount` fill the homepage grid; the See more tile previews
+// the rest, and the overlay holds them all. Reorder to choose the favourites.
 export const galleryPhotos = [
   photo('dscf0006', 'A black and white cat on a tiled floor beside a cardboard box'),
   photo('dscf0097', 'An old manuscript lying open in a museum display case'),
@@ -58,5 +67,5 @@ export const galleryPhotos = [
   photo('dscf0633', 'A metal school lunch tray with bread and sides'),
 ] as const satisfies readonly GalleryPhoto[]
 
-/** How many photos the homepage grid shows before the stack. */
-export const featuredCount = 5
+/** How many photos the homepage grid shows before the See more tile. */
+export const featuredCount = 11

@@ -3,8 +3,8 @@
 #
 # Usage: tools/gallery/import.sh DSCF0123.JPG DSCF0456.HIF ...
 #
-# Each photo becomes <stem>-640.webp and <stem>-1600.webp, rotated upright and stripped of all
-# metadata (EXIF can carry GPS). photos.json records every imported photo's size for layout.
+# Each photo becomes <stem>-240.webp, -640.webp and -1600.webp, rotated upright and stripped of
+# all metadata (EXIF can carry GPS). photos.json records every imported photo's size for layout.
 # Needs rclone with the `mhmmadjid@gmail.com:` remote, ImageMagick with HEIF, and jq.
 # GALLERY_SRC=<dir> reads already downloaded originals from <dir> instead of Drive.
 set -euo pipefail
@@ -39,7 +39,7 @@ for file in "$@"; do
     exit 1
   fi
   stem="$(echo "${file%.*}" | tr '[:upper:]' '[:lower:]')"
-  for width in 640 1600; do
+  for width in 240 640 1600; do
     magick "$src" -auto-orient -colorspace sRGB -resize "${width}x${width}>" -strip \
       -quality 80 -define webp:method=6 "$out/$stem-$width.webp"
   done
