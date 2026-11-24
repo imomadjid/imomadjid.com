@@ -130,10 +130,13 @@ export function photoSampler(gpu: Gpu) {
   return sampler(gpu, { minFilter: 'linear', magFilter: 'linear', mipmapFilter: 'linear' })
 }
 
-/** Draws one pass of `effect`; a frame that throws fails the renderer. False once it has. */
-export function drawPass(gpu: Gpu, life: RendererLife, output: Surface, pass: Effect) {
+/**
+ * Draws one pass of `effect`, or clears to transparent given null; a frame that throws fails the
+ * renderer. False once it has.
+ */
+export function drawPass(gpu: Gpu, life: RendererLife, output: Surface, pass: Effect | null) {
   try {
-    frame(gpu, (now) => now.pass(output, pass))
+    frame(gpu, (now) => now.pass(output, pass ?? (() => {})))
     return true
   } catch (error) {
     life.fail(error instanceof Error ? error : new Error(String(error)))

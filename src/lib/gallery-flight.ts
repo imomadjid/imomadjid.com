@@ -1,5 +1,5 @@
 import type { TransitionConfig } from 'dialkit'
-import { effect, frame } from 'vgpu'
+import { effect } from 'vgpu'
 
 import { transitionTiming } from '#/lib/ambient-transition'
 import { mixPoint } from '#/lib/gallery-flight-geometry'
@@ -7,6 +7,7 @@ import type { Quad } from '#/lib/gallery-flight-geometry'
 import {
   TILE_RADIUS,
   acquireGalleryGpu,
+  drawPass,
   gallerySurface,
   photoSampler,
   photoTexture,
@@ -94,31 +95,23 @@ export async function startGalleryFlight(
     })
 
     function render(pose: FlightPose | null) {
-      try {
-        frame(gpu, (now) => {
-          if (!pose) {
-            // Clears to transparent.
-            now.pass(output, () => {})
-            return
-          }
-          const [a, b, c, d] = pose.corners
-          const [ta, tb, tc, td] = pose.texels
-          flight.set({
-            params: {
-              size: [canvas.clientWidth, canvas.clientHeight],
-              dpr: output.dpr,
-              radius: TILE_RADIUS,
-              topCorners: [...a, ...b],
-              bottomCorners: [...c, ...d],
-              topTexels: [...ta, ...tb],
-              bottomTexels: [...tc, ...td],
-            },
-          })
-          now.pass(output, flight)
+      if (pose) {
+        const [a, b, c, d] = pose.corners
+        const [ta, tb, tc, td] = pose.texels
+        flight.set({
+          params: {
+            size: [canvas.clientWidth, canvas.clientHeight],
+            dpr: output.dpr,
+            radius: TILE_RADIUS,
+            topCorners: [...a, ...b],
+            bottomCorners: [...c, ...d],
+            topTexels: [...ta, ...tb],
+            bottomTexels: [...tc, ...td],
+          },
         })
-      } catch (error) {
-        life.fail(error instanceof Error ? error : new Error(String(error)))
       }
+      // Without a pose, clears to transparent.
+      drawPass(gpu, life, output, pose ? flight : null)
     }
 
     function step(now: number) {
