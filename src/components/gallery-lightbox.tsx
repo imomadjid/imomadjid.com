@@ -1,9 +1,7 @@
 import { Dialog } from '@base-ui/react/dialog'
-import { IconX } from '@tabler/icons-react'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import type { FlightStage } from '#/components/gallery-flight-stage'
-import { IconButton } from '#/components/ui/icon-button'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
 import {
@@ -56,12 +54,11 @@ function useViewport(active: boolean): Rect {
   return { x: 0, y: 0, width, height }
 }
 
-/** Where the full-screen photo sits: as large as fits, clear of the close button. */
+/** Where the full-screen photo sits: as large as fits, an even margin from the edges. */
 function fullScreenRect(viewport: Rect, photo: GalleryPhoto): Rect {
-  const narrow = viewport.width < 640
-  const side = narrow ? 12 : 24
+  const side = viewport.width < 640 ? 12 : 24
   return containRect(viewport, photo.width / photo.height, {
-    top: narrow ? 56 : 64,
+    top: side,
     right: side,
     bottom: side,
     left: side,
@@ -234,7 +231,7 @@ export function useGalleryLightbox(stage: FlightStage) {
           className="fixed inset-0 z-50 cursor-zoom-out outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
           onClick={(event) => {
             // Not while the photo is still flying out: a second click where it was would turn it
-            // straight back. Escape and the close button still can.
+            // straight back. Escape still can.
             if (shown?.phase === 'opening') return
             if (event.target === event.currentTarget) requestClose()
           }}
@@ -264,11 +261,6 @@ export function useGalleryLightbox(stage: FlightStage) {
                   height: target.height,
                 }}
               />
-              <div className="fixed top-3 right-3 sm:top-4 sm:right-6">
-                <Dialog.Close render={<IconButton aria-label="Close photo" />}>
-                  <IconX size={18} stroke={1.75} aria-hidden="true" />
-                </Dialog.Close>
-              </div>
             </>
           )}
         </Dialog.Popup>
