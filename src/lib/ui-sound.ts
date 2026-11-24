@@ -1,5 +1,5 @@
 import { defineSound, ensureReady } from '@web-kits/audio'
-import type { Layer, PlayOptions, VoiceHandle } from '@web-kits/audio'
+import type { Effect, Layer, PlayOptions, VoiceHandle } from '@web-kits/audio'
 
 import { prefersReducedMotion } from './theme'
 
@@ -21,10 +21,11 @@ const STALL_MS = 50
  */
 const LEAD_S = 0.01
 
-/** A web-kits sound whose layers all start `LEAD_S` after it is played. */
-export function defineUiSound(layers: Layer[]) {
+/** A web-kits sound whose layers all start `LEAD_S` after it is played, through `effects` if any. */
+export function defineUiSound(layers: Layer[], effects?: Effect[]) {
   return defineSound({
     layers: layers.map((layer) => ({ ...layer, delay: (layer.delay ?? 0) + LEAD_S })),
+    effects,
   })
 }
 

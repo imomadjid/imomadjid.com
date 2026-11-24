@@ -24,7 +24,7 @@ import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import { masonryColumns } from '#/lib/gallery-masonry'
 import type { PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
-import { playBurst, playRelease } from '#/lib/gallery-sounds'
+import { playGalleryClose, playGalleryOpen } from '#/lib/gallery-sounds'
 import { fullScaleRect, recedeClass } from '#/lib/page-recede'
 import { SEE_MORE_CELL_RADIUS, seeMoreCellRect, seeMoreRestZoom } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
@@ -252,7 +252,7 @@ export function useSeeMoreOverlay({
 
   const closeOverlay = () => {
     if (!shown || shown.phase === 'closing') return
-    playRelease()
+    playGalleryClose(true)
     const flight = stage.flightRef.current
     const tile = tileRef.current
     const token = ++flightToken.current
@@ -302,7 +302,7 @@ export function useSeeMoreOverlay({
         const keyboard = event instanceof MouseEvent ? event.detail === 0 : true
         const trigger = tileRef.current?.closest('button')
         returnTo.current = trigger ? { tile: trigger, keyboard } : null
-        playBurst()
+        playGalleryOpen(true)
         openOverlay()
       }
       // The tile sits under the overlay once it opens, so a press on it can only be the second
