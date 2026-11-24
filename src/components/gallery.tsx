@@ -50,7 +50,7 @@ function Gallery({
   const tileRef = useRef<HTMLSpanElement>(null)
   const zoomedOutRef = useRef(false)
   const stage = useFlightStage(tuning.expand, sectionRef)
-  const lightbox = useGalleryLightbox(stage)
+  const lightbox = useGalleryLightbox(stage, tuning)
   const overlay = useSeeMoreOverlay({ stage, photos: preview, tileRef, zoomedOutRef })
 
   // The page shrinks behind an open photo or the overlay, and grows back as either starts to

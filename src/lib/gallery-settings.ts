@@ -33,6 +33,18 @@ export const galleryControls = {
     /** Seconds a closed photo takes to fade into its tile, bringing the Sunlit light back in. */
     relight: [0.3, 0, 1, 0.05],
   },
+  /** The exposure readout under an open photo. */
+  readout: {
+    /**
+     * How far into the photo's open it starts coming up, in the open's responses: before the
+     * photo lands, so the two overlap rather than run one after the other.
+     */
+    start: [0.6, 0, 1.5, 0.05],
+    /** Each readout's rise, crossfade and unblur, on a spring without bounce as Apple's are. */
+    motion: { type: 'spring', visualDuration: 0.45, bounce: 0 },
+    /** Seconds each readout starts after the one before it. */
+    stagger: [0.04, 0, 0.1, 0.005],
+  },
   /**
    * The page shrinking behind an open photo or the See more overlay, on Apple's Home Screen
    * spring (0.7s, damping ratio 0.88), and back on a quicker one.
@@ -47,7 +59,7 @@ export const galleryControls = {
 
 export type GalleryTuning = ResolvedValues<typeof galleryControls>
 
-const { seeMore, photo, expand, recede } = galleryControls
+const { seeMore, photo, expand, readout, recede } = galleryControls
 
 // Production values; DialKit's Gallery panel tunes these in development.
 export const defaultGalleryTuning: GalleryTuning = {
@@ -59,5 +71,6 @@ export const defaultGalleryTuning: GalleryTuning = {
     spread: expand.spread[0],
     relight: expand.relight[0],
   },
+  readout: { start: readout.start[0], motion: readout.motion, stagger: readout.stagger[0] },
   recede: { scale: recede.scale[0], open: recede.open, close: recede.close },
 }

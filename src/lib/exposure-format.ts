@@ -35,17 +35,6 @@ export function formatExposureCompensation(stops: number) {
   return `${stops < 0 ? '−' : '+'}${whole > 0 ? whole : ''}${thirdsOf[thirds % 3]}`
 }
 
-/**
- * Fujifilm's lens names run the parts together (`XC13-33mmF3.5-6.3 OIS`); this spaces off the
- * aperture and sets it like the others: `XC13–33mm ƒ3,5–6,3 OIS`.
- */
-export function formatLens(lens: string) {
-  return lens
-    .replace(/(\d)mmF(?=\d)/, '$1mm ƒ')
-    .replace(/(\d)\.(\d)/g, '$1,$2')
-    .replace(/(\d)-(\d)/g, '$1–$2')
-}
-
 /** The readouts the lightbox shows under a photo, in the order a camera's display lists them. */
 export function exposureReadouts(exposure: Exposure) {
   return [
