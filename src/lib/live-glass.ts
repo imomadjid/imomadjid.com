@@ -39,6 +39,7 @@ type Scheme = (typeof material)['light']
  * Draws live glass over `canvas`, which reaches LIVE_GLASS_MARGIN past the glass shape on every
  * side; the shape's corner radius comes from `radius` in CSS pixels. Draws whenever the source,
  * the canvas's box or the theme changes, and on every frame while any of them keeps moving.
+ * `onDrawn` runs once the first frame is drawn, so the static glass stays until then.
  */
 export async function startLiveGlass(
   canvas: HTMLCanvasElement,
@@ -46,6 +47,7 @@ export async function startLiveGlass(
   radius: () => number,
   signal: AbortSignal,
   onFail: (error: Error) => void,
+  onDrawn: () => void,
 ): Promise<LiveGlass> {
   const handle = await acquireGalleryGpu()
   const { gpu } = handle
@@ -107,13 +109,32 @@ export async function startLiveGlass(
     let still = 0
     life.onDispose(() => cancelAnimationFrame(frameId))
 
+    let drawn = false
+
+    // Any throw while drawing (reading the scene, uploading a photo, setting uniforms, the frame
+    // itself) fails the renderer, so the static glass comes back.
     function draw() {
       frameId = 0
       if (life.disposed()) return
+      try {
+        if (!drawFrame()) return
+      } catch (error) {
+        life.fail(error instanceof Error ? error : new Error(String(error)))
+        return
+      }
+      if (!drawn) {
+        drawn = true
+        onDrawn()
+      }
+      frameId = requestAnimationFrame(draw)
+    }
+
+    /** Draws one frame; false once nothing has changed for a few frames, or there's no box. */
+    function drawFrame() {
       const box = canvas.getBoundingClientRect()
       const width = canvas.clientWidth
       const height = canvas.clientHeight
-      if (width === 0 || height === 0) return
+      if (width === 0 || height === 0) return false
       // Dark wherever a .dark ancestor applies the dark tokens, as the static glass reads them.
       const dark = canvas.closest('.dark') !== null
       const scheme: Scheme = dark ? material.dark : material.light
@@ -148,7 +169,7 @@ export async function startLiveGlass(
       // Draws while anything moves, then two frames more, and sleeps.
       if (signature === last) {
         still += 1
-        if (still > 2) return
+        if (still > 2) return false
       } else {
         still = 0
         last = signature
@@ -167,6 +188,8 @@ export async function startLiveGlass(
         count: photos.length,
         layerSize: LAYER_SIZE,
         _pad: 0,
+        viewport: [document.documentElement.clientWidth, document.documentElement.clientHeight],
+        _pad2: [0, 0],
         background,
         rects: slots(
           photos.map((photo) => [photo.rect.x, photo.rect.y, photo.rect.width, photo.rect.height]),
@@ -199,6 +222,8 @@ export async function startLiveGlass(
           dpr: output.dpr,
           scheme: dark ? 1 : 0,
           origin: [box.x, box.y],
+          // Screen pixels per canvas CSS pixel: the button scales as it enters and leaves.
+          zoom: [box.width / width, box.height / height],
           scale,
           radius: Math.min(radius(), glassWidth / 2, glassHeight / 2),
           box: [LIVE_GLASS_MARGIN, LIVE_GLASS_MARGIN, glassWidth, glassHeight],
@@ -209,26 +234,20 @@ export async function startLiveGlass(
           tableStep: material.dStep,
           tableRows: scheme.gain.length,
           tableAngles: material.angles,
-          _pad: [0, 0],
           knots: quads(material.knots),
           pulls: quads(material.pulls),
         },
       })
-      try {
-        frame(gpu, (now) => {
-          now.pass(sharp[0], composeSharp)
-          now.pass(sharp[1], blur(0, sharp[0], sharpSize, true, scheme.blur * sharpScale))
-          now.pass(sharp[0], blur(1, sharp[1], sharpSize, false, scheme.blur * sharpScale))
-          now.pass(soft[0], composeWide)
-          now.pass(soft[1], blur(2, soft[0], wideSize, true, scheme.wideBlur))
-          now.pass(soft[0], blur(3, soft[1], wideSize, false, scheme.wideBlur))
-          now.pass(output, glass)
-        })
-      } catch (error) {
-        life.fail(error instanceof Error ? error : new Error(String(error)))
-        return
-      }
-      frameId = requestAnimationFrame(draw)
+      frame(gpu, (now) => {
+        now.pass(sharp[0], composeSharp)
+        now.pass(sharp[1], blur(0, sharp[0], sharpSize, true, scheme.blur * sharpScale))
+        now.pass(sharp[0], blur(1, sharp[1], sharpSize, false, scheme.blur * sharpScale))
+        now.pass(soft[0], composeWide)
+        now.pass(soft[1], blur(2, soft[0], wideSize, true, scheme.wideBlur))
+        now.pass(soft[0], blur(3, soft[1], wideSize, false, scheme.wideBlur))
+        now.pass(output, glass)
+      })
+      return true
     }
 
     function wake() {

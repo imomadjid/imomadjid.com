@@ -13,6 +13,10 @@ struct ComposeParams {
   // Edge length of each photo layer in texels.
   layerSize: f32,
   _pad: f32,
+  // The viewport in CSS pixels: past its edges the frost sees the edge repeated, as iOS's does,
+  // not content scrolled out of view.
+  viewport: vec2f,
+  _pad2: vec2f,
   // Flat colour behind the photos (sRGB).
   background: vec4f,
   // Photo i's box in the viewport (CSS pixels), the part of its layer the box shows (origin,
@@ -27,7 +31,7 @@ struct ComposeParams {
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  let q = params.origin + uv * params.span;
+  let q = clamp(params.origin + uv * params.span, vec2f(0.5), params.viewport - 0.5);
   var color = params.background.rgb;
   let count = u32(params.count);
   for (var i = 0u; i < 8u; i++) {

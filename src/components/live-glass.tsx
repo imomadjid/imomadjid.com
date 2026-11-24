@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 
 import { LIVE_GLASS_MARGIN } from '#/lib/live-glass-source'
@@ -28,11 +28,11 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
   const source = useContext(LiveGlassSourceContext)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [state, setState] = useState<'idle' | 'live' | 'failed'>('idle')
+  const reduced = useSyncExternalStore(watchReducedTransparency, reducedTransparency, () => false)
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !source || !('gpu' in navigator)) return
-    if (matchMedia('(prefers-reduced-transparency: reduce)').matches) return
+    if (!canvas || !source || reduced || !('gpu' in navigator)) return
     const controller = new AbortController()
     const fail = (error: Error) => {
       if (controller.signal.aborted) return
@@ -46,8 +46,10 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
     const start = async () => {
       try {
         const { startLiveGlass } = await import('#/lib/live-glass')
-        await startLiveGlass(canvas, source, radius, controller.signal, fail)
-        if (!controller.signal.aborted) setState('live')
+        // Live once a frame is on the canvas; until then the static glass shows.
+        await startLiveGlass(canvas, source, radius, controller.signal, fail, () => {
+          if (!controller.signal.aborted) setState('live')
+        })
       } catch (error) {
         fail(error instanceof Error ? error : new Error(String(error)))
       }
@@ -57,12 +59,12 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
       controller.abort()
       setState('idle')
     }
-  }, [source])
+  }, [source, reduced])
 
   return (
     <>
       {state !== 'live' && fallback}
-      {source && state !== 'failed' && (
+      {source && !reduced && state !== 'failed' && (
         <canvas
           ref={canvasRef}
           aria-hidden="true"
@@ -89,4 +91,16 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
       )}
     </>
   )
+}
+
+const reducedQuery = '(prefers-reduced-transparency: reduce)'
+
+function reducedTransparency() {
+  return matchMedia(reducedQuery).matches
+}
+
+function watchReducedTransparency(change: () => void) {
+  const query = matchMedia(reducedQuery)
+  query.addEventListener('change', change)
+  return () => query.removeEventListener('change', change)
 }

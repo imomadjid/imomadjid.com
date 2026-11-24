@@ -1,6 +1,7 @@
 // Live liquid glass, last pass: the glass shape over its backdrop, refracted, frosted and toned as
 // iOS 27's .glassEffect(.regular) draws it. tools/glass-live/fit.py fits the model to simulator
-// captures and evaluates it the same way; src/lib/live-glass.ts runs the passes:
+// captures and evaluates it the same way (except the 1-device-pixel edge antialiasing and the
+// shadow's overlay form); src/lib/live-glass.ts runs the passes:
 //   sample = p - n * pull(d)            inside, d pt in from the edge, n its outward normal
 //   base   = mix(narrow, wide, wide) at sample   the backdrop at the frost's two blurs
 //   base   = luma + saturation * (base - luma)
@@ -15,8 +16,10 @@ struct GlassParams {
   size: vec2f,
   dpr: f32,
   scheme: f32,
-  // The canvas's top left in the viewport, in CSS pixels.
+  // The canvas's top left in the viewport, in CSS pixels, and screen pixels per canvas CSS pixel
+  // (not 1 while a transform scales the glass).
   origin: vec2f,
+  zoom: vec2f,
   // The shape's scale against the fitted 56 pt circle, which narrows the refraction on smaller
   // shapes, and its corner radius in CSS pixels.
   scale: f32,
@@ -32,7 +35,6 @@ struct GlassParams {
   tableStep: f32,
   tableRows: f32,
   tableAngles: f32,
-  _pad: vec2f,
   // The bevel's pull, pt inward, at 10 distances from the edge in pt (the last 0), four a slot.
   knots: array<vec4f, 3>,
   pulls: array<vec4f, 3>,
@@ -103,7 +105,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   // over that backdrop.
   let under = dot(
     textureSampleLevel(
-      narrow, backdropSampler, (params.origin + p - params.region.xy) / params.region.zw, 0.0
+      narrow, backdropSampler, (params.origin + p * params.zoom - params.region.xy) / params.region.zw, 0.0
     ).rgb,
     vec3f(0.2126, 0.7152, 0.0722)
   );
@@ -118,7 +120,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   }
 
   let scale = params.scale;
-  let q = params.origin + p - normal * pull(d / scale) * scale;
+  let q = params.origin + (p - normal * pull(d / scale) * scale) * params.zoom;
   let at = (q - params.region.xy) / params.region.zw;
   var base = mix(
     textureSampleLevel(narrow, backdropSampler, at, 0.0).rgb,
@@ -126,7 +128,8 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     params.wide
   );
   let luma = dot(base, vec3f(0.2126, 0.7152, 0.0722));
-  base = clamp(vec3f(luma) + params.saturation * (base - vec3f(luma)), vec3f(0.0), vec3f(1.0));
+  // Unclamped, as fit.py fits it: a saturated channel may leave 0-1 before the tone.
+  base = vec3f(luma) + params.saturation * (base - vec3f(luma));
   let glass = clamp(m.x + m.y * base + m.z * base * base + dither, vec3f(0.0), vec3f(1.0));
   // Antialiased edge between the glass and its shadow, over one device pixel.
   let coverage = clamp(0.5 - sd * params.dpr, 0.0, 1.0);

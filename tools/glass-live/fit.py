@@ -3,7 +3,8 @@
 #   uv run --with pillow --with numpy --with scipy python fit.py <dir> [--write]
 # The model, which src/shaders/live-glass.wgsl evaluates the same way, per pixel at distance d
 # inside the shape's edge (pt) with outward normal n:
-#   sample = p - n * depth * (1 - d / bevel)^power        (refraction, inside d < bevel)
+#   sample = p - n * pull(d)                               (refraction: pull is linear between
+#                                                           KNOTS, 0 from the last one in)
 #   base   = mix(gaussian(backdrop, blur), gaussian(backdrop, wideBlur), wide) at sample  (frost)
 #   base   = luma + saturation * (base - luma)              (vibrancy)
 #   out    = offset + gain * base + curve * base^2         (sRGB 0-1, tables over d and angle)
@@ -24,7 +25,7 @@ SCALE = 3
 BUTTON = SCENES['scenes'][0]['button']
 RADIUS = BUTTON['size'] / 2
 CX, CY = BUTTON['x'] + RADIUS, BUTTON['y'] + RADIUS
-# The crop: the button and 12 pt around it for the shadow; the backdrop gets 40 pt for the
+# The crop: the button and 12 pt around it for the shadow; the backdrop gets 64 pt for the
 # refraction and blur to reach into.
 CROP = RADIUS + 12
 PAD = RADIUS + 64
@@ -260,9 +261,9 @@ def evaluate(data, params, detail=False):
     return float(np.mean(errs))
 
 
-# Measured directly from the ramp captures (see README): inside about 19 pt from the middle the
-# glass is 1:1, and across the outer bevel every pixel samples from about 6.5 pt inside the edge.
-# Light and dark agree, so the refraction is fixed and shared; the search fits the frost.
+# The ramp captures' first reading of the bevel, a power-law pull: inside about 19 pt from the
+# middle the glass is 1:1, and across the outer bevel pixels sample from ~6.5 pt inside the edge.
+# Only used when no PROFILE is set; the main run starts PROFILE from it and fits the knots.
 REFRACTION = [6.5, 10.0, 1.8]
 
 
