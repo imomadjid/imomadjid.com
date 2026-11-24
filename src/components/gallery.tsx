@@ -1,7 +1,7 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
 import { useDialKit } from 'dialkit'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import cameraPhoto from '#/assets/camera/fujifilm-x-t30-iii.webp'
@@ -58,9 +58,10 @@ function Gallery({
   const tuning = useGalleryTuning()
   const sectionRef = useRef<HTMLDivElement>(null)
   const lightbox = useGalleryLightbox(tuning.expand, sectionRef)
+  const [overlayOpen, setOverlayOpen] = useState(false)
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={overlayOpen} onOpenChange={setOverlayOpen}>
       {/* Inside the See more dialog's root, so a photo opened from its grid nests in it: closing
           the photo returns to the grid. */}
       {lightbox.element}
@@ -102,16 +103,24 @@ function Gallery({
           and the blind wand. */}
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none" />
-        <Dialog.Popup className="fixed inset-0 z-50 overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none">
+        {/* A click beside the photos and the header closes it, as a click on an open photo
+            closes that: from a photo opened in the grid, two clicks lead back to the page. */}
+        <Dialog.Popup
+          className="fixed inset-0 z-50 cursor-zoom-out overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none"
+          onClick={(event) => {
+            if (event.target instanceof Element && !event.target.closest('button, header'))
+              setOverlayOpen(false)
+          }}
+        >
           <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
-            <div className="sticky top-0 z-10 -mx-4 mb-1 flex items-center justify-between bg-surface-1/80 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
+            <header className="sticky top-0 z-10 -mx-4 mb-1 flex cursor-auto items-center justify-between bg-surface-1/80 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
               <Dialog.Title className="text-base font-semibold text-neutral-950 dark:text-neutral-50">
                 Gallery
               </Dialog.Title>
               <Dialog.Close render={<IconButton aria-label="Close gallery" />}>
                 <IconX size={18} stroke={1.75} aria-hidden="true" />
               </Dialog.Close>
-            </div>
+            </header>
             <ul className="columns-2 gap-3 sm:columns-3">
               {photos.map((photo, index) => (
                 <li
