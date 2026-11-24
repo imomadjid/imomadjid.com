@@ -3,7 +3,7 @@ import { effect } from 'vgpu'
 
 import { springOf, stepSprings } from '#/lib/flight-springs'
 import type { Spring, SpringState } from '#/lib/flight-springs'
-import type { Point, Quad } from '#/lib/gallery-flight-geometry'
+import type { Point, Quad, Rect } from '#/lib/gallery-flight-geometry'
 import {
   acquireGalleryGpu,
   drawPass,
@@ -40,10 +40,17 @@ export type FlightTuning = {
 }
 
 /**
- * Where a photo is: its corners on screen, the texture coordinate at each, its corner radius, and
- * its opacity (1 when left out).
+ * Where a photo is: its corners on screen, the texture coordinate at each, its corner radius, its
+ * opacity (1 when left out), and for a cell, how far past the flight's clip it may show (see
+ * flyCells; unclipped when left out).
  */
-export type FlightPose = { corners: Quad; texels: Quad; radius: number; opacity?: number }
+export type FlightPose = {
+  corners: Quad
+  texels: Quad
+  radius: number
+  opacity?: number
+  clipMargin?: number
+}
 
 type Direction = 'open' | 'close'
 
@@ -65,7 +72,8 @@ export type Flight = {
   }) => Promise<boolean>
   /**
    * Moves up to 16 photos at once, as `fly` moves one: photo i from `from[i]` to `to[i]` with
-   * `lags[i]`. Their texels are each photo's own coordinates, whole photo 0 to 1.
+   * `lags[i]`. Their texels are each photo's own coordinates, whole photo 0 to 1. Each is clipped
+   * to `clip` (a rounded box) grown by its pose's clip margin, which springs like its radius.
    */
   flyCells: (options: {
     photos: readonly HTMLImageElement[]
@@ -73,6 +81,7 @@ export type Flight = {
     to: readonly FlightPose[]
     lags: readonly (readonly number[])[]
     direction: Direction
+    clip: { rect: Rect; radius: number }
   }) => Promise<boolean>
   /**
    * Swaps the photo being flown, `from`, for a sharper copy of it, `to`, mid-flight or landed, so
@@ -101,18 +110,27 @@ type Leg = {
   land: (landed: boolean) => void
 }
 
-// A pose's values: its corners' x and y, its texels' u and v, its radius and its opacity.
-const POSE_VALUES = 18
+// A pose's values: its corners' x and y, its texels' u and v, its radius, opacity and clip margin.
+const POSE_VALUES = 19
+// A clip margin this wide clips nothing on any screen.
+const UNCLIPPED = 1e5
 // Each value snaps on once this close: a tenth of a pixel, a ten-thousandth of the photo.
 const POSE_TOLERANCES = [
   ...Array.from({ length: 8 }, () => 0.1),
   ...Array.from({ length: 8 }, () => 1e-4),
   0.1,
   1e-3,
+  0.1,
 ]
 
 function poseValues(pose: FlightPose): number[] {
-  return [...pose.corners.flat(), ...pose.texels.flat(), pose.radius, pose.opacity ?? 1]
+  return [
+    ...pose.corners.flat(),
+    ...pose.texels.flat(),
+    pose.radius,
+    pose.opacity ?? 1,
+    pose.clipMargin ?? UNCLIPPED,
+  ]
 }
 
 function poseAt(values: readonly number[], index: number): FlightPose {
@@ -129,6 +147,7 @@ function poseAt(values: readonly number[], index: number): FlightPose {
     texels: quad(8),
     radius: values[base + 16],
     opacity: values[base + 17],
+    clipMargin: values[base + 18],
   }
 }
 
@@ -187,6 +206,8 @@ export async function startGalleryFlight(
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     let tuning = initialTuning
     let photoTextureFor: { photo: HTMLImageElement; gpu: GPUTexture } | null = null
+    // The rounded box the cells are clipped to, grown by each one's clip margin.
+    let cellsClip = { rect: { x: 0, y: 0, width: 0, height: 0 }, radius: 0 }
     let cellsTextureFor: {
       photos: readonly HTMLImageElement[]
       layers: ReturnType<typeof squarePhotoLayers>['layers']
@@ -238,7 +259,14 @@ export async function startGalleryFlight(
           mipCount: cellsTextureFor.layers.mipLevelCount,
           corners: padded.flatMap((pose) => quadVectors(pose.corners)),
           texels: padded.flatMap((pose) => quadVectors(pose.texels)),
-          styles: padded.map((pose) => [pose.radius, pose.opacity ?? 1, 0, 0]),
+          clipRadius: cellsClip.radius,
+          clip: [cellsClip.rect.x, cellsClip.rect.y, cellsClip.rect.width, cellsClip.rect.height],
+          styles: padded.map((pose) => [
+            pose.radius,
+            pose.opacity ?? 1,
+            Math.min(pose.clipMargin ?? UNCLIPPED, UNCLIPPED),
+            0,
+          ]),
         },
       })
       drawPass(gpu, life, output, cellsFlight)
@@ -350,7 +378,7 @@ export async function startGalleryFlight(
         loadPhoto(photo)
         return start('photo', [photo], { from: [from], to: [to], lags: [lags], direction })
       },
-      flyCells({ photos, from, to, lags, direction }) {
+      flyCells({ photos, from, to, lags, direction, clip }) {
         life.assertLive()
         if (photos.length > MAX_CELLS) throw new Error(`A flight draws at most ${MAX_CELLS} cells`)
         const cached = cellsTextureFor?.photos
@@ -367,6 +395,7 @@ export async function startGalleryFlight(
           cellsTextureFor = { photos, layers, size }
           cellsFlight.set({ photos: layers, photoSampler: sampler })
         }
+        cellsClip = clip
         return start('cells', photos, { from, to, lags, direction })
       },
       sharpen(from, to) {

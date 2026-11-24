@@ -30,8 +30,9 @@ export type PhotoZoom = {
 }
 
 /**
- * Draws one featured photo cropped to its tile, and on hover zooms it in a little inside the
- * tile, ring by ring from the middle out (src/lib/ring-motion.ts), like the See more tile.
+ * Draws one Gallery photo cropped to its tile, with corners of `radius` CSS pixels, and on hover
+ * zooms it in a little inside the tile, ring by ring from the middle out
+ * (src/lib/ring-motion.ts), like the See more tile.
  */
 export async function startPhotoZoom(
   canvas: HTMLCanvasElement,
@@ -39,6 +40,7 @@ export async function startPhotoZoom(
   initialTuning: PhotoZoomTuning,
   signal: AbortSignal,
   onFail: (error: Error) => void,
+  radius = TILE_RADIUS,
 ): Promise<PhotoZoom> {
   const image = decodedImage(photoUrl)
   image.catch(() => {})
@@ -75,7 +77,7 @@ export async function startPhotoZoom(
           params: {
             size: [width, height],
             dpr: output.dpr,
-            radius: TILE_RADIUS,
+            radius,
             crop: [crop.x, crop.y, crop.width, crop.height],
             rings: ringUniforms((ring) => 1 + tuning.zoom * motion.progress[ring]),
           },

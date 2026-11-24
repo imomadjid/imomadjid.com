@@ -25,12 +25,3 @@ export function seeMoreCellRect(tile: Rect, index: number, zoom: number): Rect {
     height: cell * zoom,
   }
 }
-
-/** The share of `rect`'s area inside `within`. */
-export function visibleFraction(rect: Rect, within: Rect) {
-  const width = Math.min(rect.x + rect.width, within.x + within.width) - Math.max(rect.x, within.x)
-  const height =
-    Math.min(rect.y + rect.height, within.y + within.height) - Math.max(rect.y, within.y)
-  const area = rect.width * rect.height
-  return area > 0 ? (Math.max(0, width) * Math.max(0, height)) / area : 0
-}

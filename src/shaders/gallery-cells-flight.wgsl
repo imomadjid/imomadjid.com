@@ -13,13 +13,17 @@ struct CellsFlightParams {
   // Edge length of each photo layer, in texels at mip 0.
   texSize: f32,
   mipCount: f32,
+  // The See more tile's box and corner radius, in CSS pixels. Each cell is clipped to it grown by
+  // its own margin, so cells the tile's 2x crop leaves out slide behind its edge as they land.
+  clipRadius: f32,
+  clip: vec4f,
   // Cell i's corners in CSS pixels: corners[2i] holds top left and top right, corners[2i + 1]
   // bottom right and bottom left.
   corners: array<vec4f, 32>,
   // Each corner's texture coordinate in the same layout. A layer holds its whole photo squeezed
   // square, so these are the photo's own coordinates.
   texels: array<vec4f, 32>,
-  // Cell i's corner radius in CSS pixels, then its opacity.
+  // Cell i's corner radius in CSS pixels, its opacity, then its clip margin.
   styles: array<vec4f, 16>,
 }
 @group(0) @binding(0) var<uniform> params: CellsFlightParams;
@@ -48,7 +52,14 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     let style = params.styles[i];
     let radius = min(style.x, 0.5 * min(size.x, size.y));
     let edge = roundedBox((q - 0.5) * size, size * 0.5, radius);
-    let coverage = clamp(0.5 - edge * params.dpr, 0.0, 1.0) * style.y;
+    let clipHalf = params.clip.zw * 0.5 + style.z;
+    let clipEdge = roundedBox(
+      p - params.clip.xy - params.clip.zw * 0.5,
+      clipHalf,
+      min(params.clipRadius + style.z, min(clipHalf.x, clipHalf.y)),
+    );
+    let coverage = clamp(0.5 - edge * params.dpr, 0.0, 1.0)
+      * clamp(0.5 - clipEdge * params.dpr, 0.0, 1.0) * style.y;
     if (coverage <= 0.0) {
       continue;
     }

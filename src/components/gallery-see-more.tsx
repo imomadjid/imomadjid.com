@@ -1,5 +1,5 @@
 import { Dialog } from '@base-ui/react/dialog'
-import { useImperativeHandle, useRef } from 'react'
+import { useRef } from 'react'
 import type { RefObject } from 'react'
 
 import { useGalleryRenderer } from '#/components/use-gallery-renderer'
@@ -19,17 +19,6 @@ const seeMoreCellSizes = '(min-width: 592px) 132px, calc((100vw - 64px) / 4)'
 
 // The thumbnails' long side, from tools/gallery/import.sh.
 const thumbLongSide = 240
-
-/** The See more overlay's hold on the tile while its photos are out. */
-export type SeeMoreTileControl = {
-  /**
-   * Shows the whole grid at once, unseen while the tile is hidden, so photos flying home can land
-   * in all 16 cells; false if the tile has no warp to show it with.
-   */
-  landWhole: () => boolean
-  /** Eases from the whole grid back to what the pointer asks for, as leaving the tile does. */
-  settle: () => void
-}
 
 /**
  * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
@@ -55,7 +44,6 @@ export function SeeMoreTile({
   tileRef,
   zoomedOutRef,
   onIntent,
-  controlRef,
 }: {
   photos: readonly GalleryPhoto[]
   total: number
@@ -66,7 +54,6 @@ export function SeeMoreTile({
   zoomedOutRef: RefObject<boolean>
   /** A hover or focus that may open the overlay. */
   onIntent: () => void
-  controlRef: RefObject<SeeMoreTileControl | null>
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // Strings, so the renderer restarts only when the photos change, not on every new array.
@@ -92,21 +79,6 @@ export function SeeMoreTile({
       warp.setZoomedOut(zoomedOutRef.current)
       return warp
     },
-  )
-
-  useImperativeHandle(
-    controlRef,
-    () => ({
-      landWhole() {
-        const warp = rendererRef.current
-        warp?.jumpZoomedOut(true)
-        return warp !== null
-      },
-      settle() {
-        rendererRef.current?.setZoomedOut(zoomedOutRef.current)
-      },
-    }),
-    [rendererRef, zoomedOutRef],
   )
 
   const zoomOut = (zoomedOut: boolean) => {

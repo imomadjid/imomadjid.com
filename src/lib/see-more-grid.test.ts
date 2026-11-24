@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 
-import { seeMoreCellRect, seeMoreRestZoom, visibleFraction } from './see-more-grid'
+import { seeMoreCellRect, seeMoreRestZoom } from './see-more-grid'
 
 const tile = { x: 100, y: 50, width: 178, height: 178 }
 const close = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-9)
@@ -21,7 +21,4 @@ void test('seeMoreCellRect fills the resting tile with the middle four cells', (
   close(first.y, tile.y)
   close(last.x + last.width, tile.x + tile.width)
   close(last.y + last.height, tile.y + tile.height)
-  close(visibleFraction(first, tile), 1)
-  assert.equal(visibleFraction(seeMoreCellRect(tile, 0, zoom), tile), 0)
-  assert.equal(visibleFraction(seeMoreCellRect(tile, 4, zoom), tile), 0)
 })

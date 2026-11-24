@@ -1,10 +1,10 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 
 import type { FlightStage } from '#/components/gallery-flight-stage'
-import type { SeeMoreTileControl } from '#/components/gallery-see-more'
+import { OverlayPhoto } from '#/components/gallery-photo-tile'
 import { IconButton } from '#/components/ui/icon-button'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
@@ -12,13 +12,9 @@ import { cornerLags, coverCrop, quadOf, wholeImage } from '#/lib/gallery-flight-
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import { masonryColumns } from '#/lib/gallery-masonry'
+import type { PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
 import { fullScaleRect, recedeClass } from '#/lib/page-recede'
-import {
-  SEE_MORE_CELL_RADIUS,
-  seeMoreCellRect,
-  seeMoreRestZoom,
-  visibleFraction,
-} from '#/lib/see-more-grid'
+import { SEE_MORE_CELL_RADIUS, seeMoreCellRect, seeMoreRestZoom } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
 // The overlay's columns, and the See more tile's rows and columns: the tile's cell in row r and
@@ -52,31 +48,37 @@ async function heroCells(list: RefObject<HTMLElement | null>): Promise<HTMLEleme
   throw new Error('The See more overlay did not mount')
 }
 
-/** A whole photo in its overlay cell. */
+/**
+ * A whole photo in its overlay cell, free of the tile's clip: its clip margin is the viewport's
+ * diagonal, so the clip grows past every edge of the screen.
+ */
 function cellPose(cell: HTMLElement): FlightPose {
   return {
     corners: quadOf(cell.getBoundingClientRect()),
     texels: quadOf(wholeImage),
     radius: Number.parseFloat(getComputedStyle(cell).borderTopLeftRadius) || 0,
+    clipMargin: Math.hypot(window.innerWidth, window.innerHeight),
   }
 }
 
 /**
  * The tile's photos in its cells, its box at `rect`, magnified as the tile shows them now: the
- * whole grid when zoomed out, else the 2x crop, where the outer cells lie outside the tile and
- * start unseen.
+ * whole grid when zoomed out, else the 2x crop. Each is clipped to the tile's own edge there, so
+ * the outer cells of the crop sit behind it, and the flight's last frame is the tile's.
  */
 function tilePoses(photos: readonly GalleryPhoto[], rect: Rect, zoomedOut: boolean) {
   const zoom = zoomedOut ? 1 : seeMoreRestZoom(rect.width)
-  return photos.map((photo, index): FlightPose => {
-    const cell = seeMoreCellRect(rect, index, zoom)
-    return {
-      corners: quadOf(cell),
-      texels: quadOf(coverCrop(photo.width / photo.height, 1)),
-      radius: SEE_MORE_CELL_RADIUS * zoom,
-      opacity: visibleFraction(cell, rect),
-    }
-  })
+  return photos.map((photo, index): FlightPose => ({
+    corners: quadOf(seeMoreCellRect(rect, index, zoom)),
+    texels: quadOf(coverCrop(photo.width / photo.height, 1)),
+    radius: SEE_MORE_CELL_RADIUS * zoom,
+    clipMargin: 0,
+  }))
+}
+
+/** The tile's box and corner radius, which the flying cells are clipped to near it. */
+function tileClip(tile: HTMLElement, rect: Rect) {
+  return { rect, radius: Number.parseFloat(getComputedStyle(tile).borderTopLeftRadius) || 0 }
 }
 
 /**
@@ -102,12 +104,14 @@ function cellLags(
  * Opens and closes the See more overlay. Where WebGPU runs, the tile's 16 photos fly out of its
  * cells into the first rows of the masonry columns, each corner on its own spring
  * (src/lib/gallery-flight.ts), led as a single photo's are. Closing flies them back into the
- * tile, turning around with their speed if the open is still under way. They land in all 16
- * cells: the hidden tile shows its whole grid for them, takes them in as the canvas fades, then
- * eases back to its resting 2x crop as leaving it does. Without WebGPU it fades.
+ * tile, turning around with their speed if the open is still under way, straight into the cells
+ * as it shows them. Each cell is clipped to the tile's rounded edge grown by a margin that
+ * springs with it, wide open in the overlay and closed in the tile, so the outer cells of the 2x
+ * crop slide behind the tile's edge as they land, and slide out from behind it opening, in one
+ * motion. Without WebGPU it fades.
  *
- * `photos` are the tile's, in its order; `tileRef` is its grid's box, `zoomedOutRef` whether
- * it shows the whole grid, and `tileControlRef` its hold on the warp. Returns the dialog root's `open` and `onOpenChange`, `prepare` to warm
+ * `photos` are the tile's, in its order; `tileRef` is its grid's box and `zoomedOutRef` whether
+ * it shows the whole grid. Returns the dialog root's `open` and `onOpenChange`, `prepare` to warm
  * the photos up on hover, and the overlay's state.
  */
 export function useSeeMoreOverlay({
@@ -115,22 +119,16 @@ export function useSeeMoreOverlay({
   photos,
   tileRef,
   zoomedOutRef,
-  tileControlRef,
 }: {
   stage: FlightStage
   photos: readonly GalleryPhoto[]
   tileRef: RefObject<HTMLElement | null>
   zoomedOutRef: RefObject<boolean>
-  tileControlRef: RefObject<SeeMoreTileControl | null>
 }) {
   const [shown, setShown] = useState<Shown | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
   const flightToken = useRef(0)
-  // True from a landing in the whole grid until the tile eases back to its resting crop.
-  const showingWhole = useRef(false)
-  const settleTimer = useRef(0)
-  useEffect(() => () => clearTimeout(settleTimer.current), [])
 
   // The tile stays empty while its photos are out, in flight or in the overlay.
   const tileLifted = shown?.lifted ?? false
@@ -156,9 +154,7 @@ export function useSeeMoreOverlay({
     // The overlay mounts with the first cells empty, to be filled by the flight.
     setShown({ phase: 'opening', lifted: false })
     const tileRect = tile.getBoundingClientRect()
-    // A tile still showing the whole grid from the last close opens from it.
-    clearTimeout(settleTimer.current)
-    const from = tilePoses(photos, tileRect, showingWhole.current || zoomedOutRef.current)
+    const from = tilePoses(photos, tileRect, zoomedOutRef.current)
     let cells: HTMLElement[] = []
     Promise.all(photos.map((photo) => decodedImage(photo.small)))
       .then(async (images) => {
@@ -172,6 +168,7 @@ export function useSeeMoreOverlay({
           to,
           lags: cellLags(from, to, 'open'),
           direction: 'open',
+          clip: tileClip(tile, tileRect),
         })
         setShown((shown) => (shown && current() ? { ...shown, lifted: true } : shown))
         stage.show()
@@ -215,16 +212,14 @@ export function useSeeMoreOverlay({
         .map(cellPose)
     // Where the tile will be once the page behind the overlay has grown back.
     const tileRect = fullScaleRect(tile)
-    // Every photo lands in its own cell: the hidden tile shows its whole grid to take them.
-    clearTimeout(settleTimer.current)
-    if (tileControlRef.current?.landWhole()) showingWhole.current = true
-    const to = tilePoses(photos, tileRect, showingWhole.current || zoomedOutRef.current)
+    const to = tilePoses(photos, tileRect, zoomedOutRef.current)
     const landing = flight.flyCells({
       photos: images.filter((image) => image !== undefined),
       from,
       to,
       lags: cellLags(from, to, 'close'),
       direction: 'close',
+      clip: tileClip(tile, tileRect),
     })
     setShown({ phase: 'closing', lifted: true })
     stage.show()
@@ -234,14 +229,6 @@ export function useSeeMoreOverlay({
       setShown(null)
       // Landed photos fade into the lit tile; ones cut short by a failure just go.
       stage.hide(landed)
-      // Once the light is back, the tile eases from the whole grid to its resting crop.
-      settleTimer.current = window.setTimeout(
-        () => {
-          showingWhole.current = false
-          tileControlRef.current?.settle()
-        },
-        landed ? stage.relight * 1000 : 0,
-      )
     }
     landing.then(close, () => close(false))
   }
@@ -266,6 +253,7 @@ export function useSeeMoreOverlay({
  */
 export function GalleryOverlay({
   photos,
+  photoTuning,
   listRef,
   flies,
   cellsLifted,
@@ -275,6 +263,8 @@ export function GalleryOverlay({
 }: {
   /** Every photo, the See more tile's first. */
   photos: readonly GalleryPhoto[]
+  /** Each photo's hover zoom, as the featured photos'. */
+  photoTuning: PhotoZoomTuning
   listRef: RefObject<HTMLDivElement | null>
   /** Whether the tile's photos fly in; if not, they enter with the rest. */
   flies: boolean
@@ -338,34 +328,15 @@ export function GalleryOverlay({
                       className={cn(!flown && 'animate-enter [--enter-step:30ms]')}
                       style={flown ? undefined : enterIndex(flies ? index - HERO_CELLS : index)}
                     >
-                      <button
-                        type="button"
-                        aria-haspopup="dialog"
-                        data-hero-cell={hero ? index : undefined}
-                        className={cn(
-                          'block w-full cursor-zoom-in overflow-hidden rounded-lg bg-neutral-200 data-lifted:invisible dark:bg-neutral-800',
-                          flown && cellsLifted && 'invisible',
-                        )}
-                        // Warms the full-size file a click would open, as the featured photos do.
-                        onPointerEnter={(event) => {
-                          if (event.pointerType !== 'touch')
-                            decodedImage(photo.large).catch(() => {})
-                        }}
-                        onClick={(event) => onOpenPhoto(photo, event.currentTarget)}
-                      >
-                        <img
-                          src={photo.small}
-                          srcSet={`${photo.small} 640w, ${photo.large} 1600w`}
-                          sizes="25vw"
-                          alt={photo.alt}
-                          width={photo.width}
-                          height={photo.height}
-                          // The tile's photos land here straight away.
-                          loading={hero ? 'eager' : 'lazy'}
-                          decoding="async"
-                          className="block h-auto w-full"
-                        />
-                      </button>
+                      <OverlayPhoto
+                        photo={photo}
+                        tuning={photoTuning}
+                        // The tile's photos land here straight away.
+                        eager={hero}
+                        heroCell={hero ? index : undefined}
+                        className={cn(flown && cellsLifted && 'invisible')}
+                        onOpen={onOpenPhoto}
+                      />
                     </li>
                   )
                 })}

@@ -197,11 +197,6 @@ export function ringLoop<T extends RingTuning>(options: {
     setTarget: (on: boolean) => {
       if (motion.retarget(on ? 1 : 0, performance.now())) wake()
     },
-    /** Shows 1 (on) or 0 at once, without moving. */
-    jumpTo: (on: boolean) => {
-      motion.jump(on ? 1 : 0)
-      wake()
-    },
     update: (nextTuning: T) => {
       tuning = nextTuning
       timing = transitionTiming(tuning.motion)

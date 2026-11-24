@@ -23,8 +23,6 @@ export type FlightStage = {
    * the lit tile beneath instead, then clears.
    */
   hide: (relight: boolean) => void
-  /** Seconds a relighting hide takes to fade. */
-  relight: number
   /** The canvas, portalled to the body. */
   canvas: ReactNode
 }
@@ -96,5 +94,5 @@ export function useFlightStage(
       body,
     )
 
-  return { flightRef, ready, show, hide, relight: tuning.relight, canvas }
+  return { flightRef, ready, show, hide, canvas }
 }
