@@ -22,6 +22,10 @@ import { cn } from '#/lib/utils'
 
 type Phase = 'opening' | 'open' | 'closing'
 
+// How long the flight's last frame stays over the full-screen photo or the tile once they show.
+const HOLD_FRAMES = 3
+const HOLD_MS = 80
+
 type Shown = {
   photo: GalleryPhoto
   /** The tile the photo lifts out of and lands back in. */
@@ -134,17 +138,24 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
   const flying = shown !== null && shown.airborne && shown.phase !== 'open'
   // The canvas stays up from the first flight frame until the photo beneath it has painted.
   const [holding, setHolding] = useState(false)
-  // Once the full-screen photo or the tile shows it again, drop the flight's last frame. Wait two
-  // frames first: the first paints the photo under the canvas, so taking the canvas away in the
-  // same frame can't show a frame with neither.
+  // Once the full-screen photo or the tile shows it again, drop the flight's last frame. Hold it a
+  // few frames and at least HOLD_MS first, so the browser has drawn the photo beneath it: taking
+  // the canvas away sooner showed a frame of the photo half drawn.
   useEffect(() => {
     if (flying) return
-    let frameId = requestAnimationFrame(() => {
-      frameId = requestAnimationFrame(() => {
-        flightRef.current?.clear()
-        setHolding(false)
-      })
-    })
+    const shownAt = performance.now()
+    let frames = 0
+    let frameId = 0
+    const wait = (now: number) => {
+      frames += 1
+      if (frames < HOLD_FRAMES || now - shownAt < HOLD_MS) {
+        frameId = requestAnimationFrame(wait)
+        return
+      }
+      flightRef.current?.clear()
+      setHolding(false)
+    }
+    frameId = requestAnimationFrame(wait)
     return () => cancelAnimationFrame(frameId)
   }, [flying, flightRef])
 
@@ -279,6 +290,11 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
                   className={cn(
                     'pointer-events-none fixed rounded-xl bg-neutral-200 dark:bg-neutral-800',
                     shown.phase !== 'open' && 'opacity-0',
+                    // A browser skips drawing an invisible image, then draws it in tiles the frame
+                    // it shows: one frame of it half drawn as the flight hands over. Its own layer,
+                    // kept from the start of the flight until the dialog closes, has it drawn while
+                    // it waits underneath, and nothing redraws it when the canvas lets go.
+                    !fades && 'will-change-[opacity]',
                     fades &&
                       'transition-[opacity,scale] duration-300 ease-out motion-reduce:transition-none starting:scale-95 starting:opacity-0',
                   )}
