@@ -23,8 +23,28 @@ fn cross2(a: vec2f, b: vec2f) -> f32 {
   return a.x * b.y - a.y * b.x;
 }
 
+// u for a given v: solves h = u (e + g v) + f v along the axis with the larger denominator.
+fn solveU(h: vec2f, e: vec2f, f: vec2f, g: vec2f, v: f32) -> f32 {
+  let across = e + g * v;
+  let rest = h - f * v;
+  if (abs(across.x) >= abs(across.y)) {
+    return rest.x / select(across.x, 1.0, across.x == 0.0);
+  }
+  return rest.y / across.y;
+}
+
+fn inside01(q: vec2f) -> bool {
+  return all(q >= vec2f(0.0)) && all(q <= vec2f(1.0));
+}
+
 // Where p lies in the quad a (0,0), b (1,0), c (1,1), d (0,1); outside it gives values beyond 0..1.
 // After Inigo Quilez, "Inverse bilinear interpolation".
+//
+// v solves k2 v² + k1 v + k0 = 0. The textbook roots, (-k1 ± √w) / 2 k2, subtract two nearly equal
+// numbers when the quad is nearly a parallelogram (k2 → 0), and in f32 that leaves v off by whole
+// bands of the photo. A landed rect is one: a - b + c - d rounds to about 1e-4 px rather than 0, so
+// k2 lands just above any cut-off, and the landed frame drew the photo in smeared horizontal bands.
+// The stable form below never subtracts them, and tends to the linear map -k0 / k1 as k2 → 0.
 fn inverseBilinear(p: vec2f, a: vec2f, b: vec2f, c: vec2f, d: vec2f) -> vec2f {
   let e = b - a;
   let f = d - a;
@@ -33,22 +53,23 @@ fn inverseBilinear(p: vec2f, a: vec2f, b: vec2f, c: vec2f, d: vec2f) -> vec2f {
   let k2 = cross2(g, f);
   let k1 = cross2(e, f) + cross2(h, g);
   let k0 = cross2(h, e);
-  if (abs(k2) < 1e-3) {
-    // A parallelogram: the map is linear.
-    return vec2f((h.x * k1 + f.x * k0) / (e.x * k1 - g.x * k0), -k0 / k1);
-  }
   let w = k1 * k1 - 4.0 * k0 * k2;
   if (w < 0.0) {
     return vec2f(-1.0);
   }
-  let root = sqrt(w);
-  var v = (-k1 - root) * 0.5 / k2;
-  var u = (h.x - f.x * v) / (e.x + g.x * v);
-  if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) {
-    v = (-k1 + root) * 0.5 / k2;
-    u = (h.x - f.x * v) / (e.x + g.x * v);
+  let q = -0.5 * (k1 + select(-1.0, 1.0, k1 >= 0.0) * sqrt(w));
+  if (q == 0.0) {
+    return vec2f(-1.0);
   }
-  return vec2f(u, v);
+  // The root that stays finite as the quad becomes a parallelogram, then the other one.
+  let near = k0 / q;
+  let first = vec2f(solveU(h, e, f, g, near), near);
+  if (inside01(first) || k2 == 0.0) {
+    return first;
+  }
+  let far = q / k2;
+  let second = vec2f(solveU(h, e, f, g, far), far);
+  return select(first, second, inside01(second));
 }
 
 @fragment

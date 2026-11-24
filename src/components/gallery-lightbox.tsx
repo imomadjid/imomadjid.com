@@ -139,8 +139,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
   // The canvas stays up from the first flight frame until the photo beneath it has painted.
   const [holding, setHolding] = useState(false)
   // Once the full-screen photo or the tile shows it again, drop the flight's last frame. Hold it a
-  // few frames and at least HOLD_MS first, so the browser has drawn the photo beneath it: taking
-  // the canvas away sooner showed a frame of the photo half drawn.
+  // few frames and at least HOLD_MS first, so the photo beneath has painted before the canvas goes.
   useEffect(() => {
     if (flying) return
     const shownAt = performance.now()
@@ -290,11 +289,6 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
                   className={cn(
                     'pointer-events-none fixed rounded-xl bg-neutral-200 dark:bg-neutral-800',
                     shown.phase !== 'open' && 'opacity-0',
-                    // A browser skips drawing an invisible image, then draws it in tiles the frame
-                    // it shows: one frame of it half drawn as the flight hands over. Its own layer,
-                    // kept from the start of the flight until the dialog closes, has it drawn while
-                    // it waits underneath, and nothing redraws it when the canvas lets go.
-                    !fades && 'will-change-[opacity]',
                     fades &&
                       'transition-[opacity,scale] duration-300 ease-out motion-reduce:transition-none starting:scale-95 starting:opacity-0',
                   )}
