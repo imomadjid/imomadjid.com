@@ -9,6 +9,9 @@ import type { PhotoZoom, PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
+/** Opens `photo` full screen out of `tile`; `keyboard` if a key pressed it, not a pointer. */
+export type OpenPhoto = (photo: GalleryPhoto, tile: HTMLElement, keyboard: boolean) => void
+
 // The CSS fallback's hover zoom, left off while the canvas draws the photo.
 const photoZoomClass =
   'transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06] group-focus-visible:scale-[1.06] motion-reduce:transition-none'
@@ -99,7 +102,7 @@ export function FeaturedPhoto({
 }: {
   photo: GalleryPhoto
   tuning: PhotoZoomTuning
-  onOpen: (photo: GalleryPhoto, tile: HTMLElement) => void
+  onOpen: OpenPhoto
 }) {
   const zoom = useZoomingPhoto({ photo, tuning, radius: TILE_RADIUS, lazy: false })
 
@@ -111,7 +114,8 @@ export function FeaturedPhoto({
       {...zoom.handlers}
       onClick={(event) => {
         zoom.zoomIn(false)
-        onOpen(photo, event.currentTarget)
+        // A click from the keyboard (Enter or Space) has no click count.
+        onOpen(photo, event.currentTarget, event.detail === 0)
       }}
     >
       <img
@@ -151,7 +155,7 @@ export function OverlayPhoto({
   /** Its place among the See more tile's photos, which the overlay's flight finds it by. */
   heroCell?: number
   className?: string
-  onOpen: (photo: GalleryPhoto, tile: HTMLElement) => void
+  onOpen: OpenPhoto
 }) {
   const zoom = useZoomingPhoto({ photo, tuning, radius: 8 /* rounded-lg */, lazy: true })
 
@@ -167,7 +171,7 @@ export function OverlayPhoto({
       {...zoom.handlers}
       onClick={(event) => {
         zoom.zoomIn(false)
-        onOpen(photo, event.currentTarget)
+        onOpen(photo, event.currentTarget, event.detail === 0)
       }}
     >
       <img
