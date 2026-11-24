@@ -20,8 +20,10 @@ import flightSource from '#/shaders/gallery-flight.wgsl'
 const MAX_TEXTURE_SIZE = 2048
 
 export type FlightTuning = {
-  /** Each corner's own move. */
-  motion: TransitionConfig
+  /** Each corner's own move out to full screen. */
+  open: TransitionConfig
+  /** Each corner's own move back into its tile, quicker than the open. */
+  close: TransitionConfig
   /** Seconds the nearest corner can trail the farthest; each lags by its share of it. */
   spread: number
 }
@@ -31,8 +33,8 @@ export type FlightPose = { corners: Quad; texels: Quad; radius: number }
 
 export type Flight = {
   /**
-   * Moves `photo` from `from` to `to`, each corner starting `lags[i]` of the spread late (see
-   * cornerLags). Resolves true when it lands, holding the last frame until `clear`, or false when
+   * Moves `photo` from `from` to `to` with the open or the close timing, each corner starting
+   * `lags[i]` of the spread late (see cornerLags). Resolves true when it lands, holding the last frame until `clear`, or false when
    * a newer flight or a failure ends it first.
    */
   fly: (options: {
@@ -40,6 +42,7 @@ export type Flight = {
     from: FlightPose
     to: FlightPose
     lags: readonly number[]
+    direction: 'open' | 'close'
   }) => Promise<boolean>
   /** Where the photo is now, mid-flight or landed; null when cleared. */
   pose: () => FlightPose | null
@@ -53,6 +56,7 @@ type Leg = {
   to: FlightPose
   /** Each corner's start, as a fraction of the spread. */
   lags: readonly number[]
+  direction: 'open' | 'close'
   start: number
   land: (landed: boolean) => void
 }
@@ -83,7 +87,7 @@ export async function startGalleryFlight(
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     let tuning = initialTuning
-    let timing = transitionTiming(tuning.motion)
+    let timings = { open: transitionTiming(tuning.open), close: transitionTiming(tuning.close) }
     let texture: { photo: HTMLImageElement; gpu: GPUTexture } | null = null
     let leg: Leg | null = null
     let current: FlightPose | null = null
@@ -118,6 +122,7 @@ export async function startGalleryFlight(
       frameId = 0
       if (life.disposed() || !leg) return
       const elapsed = (now - leg.start) / 1000
+      const timing = timings[leg.direction]
       const duration = reducedMotion.matches ? 0 : timing.duration
       const spread = reducedMotion.matches ? 0 : tuning.spread
       let landed = true
@@ -157,7 +162,7 @@ export async function startGalleryFlight(
     )
 
     return {
-      fly({ photo, from, to, lags }) {
+      fly({ photo, from, to, lags, direction }) {
         life.assertLive()
         if (texture?.photo !== photo) {
           texture?.gpu.destroy()
@@ -166,7 +171,7 @@ export async function startGalleryFlight(
         }
         leg?.land(false)
         return new Promise<boolean>((land) => {
-          leg = { from, to, lags, start: performance.now(), land }
+          leg = { from, to, lags, direction, start: performance.now(), land }
           cancelAnimationFrame(frameId)
           // Draw the starting pose now, so it is on screen in the same frame as the caller's swap.
           step(performance.now())
@@ -183,7 +188,7 @@ export async function startGalleryFlight(
       },
       update(nextTuning) {
         tuning = nextTuning
-        timing = transitionTiming(tuning.motion)
+        timings = { open: transitionTiming(tuning.open), close: transitionTiming(tuning.close) }
       },
       dispose: life.dispose,
     }

@@ -184,6 +184,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
           to: fullScreenPose(screen, photo),
           // The corner with the longest way to its side of the screen leads.
           lags: cornerLags(from.corners, quadOf(screen), diagonal(screen)),
+          direction: 'open',
         })
         setShown((shown) => (shown && current() ? { ...shown, airborne: true } : shown))
         return landing
@@ -221,6 +222,7 @@ export function useGalleryLightbox(tuning: FlightTuning, nearRef: RefObject<Elem
       to,
       // The corner farthest from its place in the tile leads.
       lags: cornerLags(from.corners, to.corners, diagonal(screen)),
+      direction: 'close',
     })
     setShown({ ...shown, phase: 'closing', airborne: true })
     // Landed or not (a lost device ends the flight early), the dialog closes.

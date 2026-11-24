@@ -18,7 +18,9 @@ export const galleryControls = {
   },
   /** A photo expanding to full screen, corners starting by how far each has to go. */
   expand: {
-    motion: { type: 'easing', duration: 0.8, ease: [0.32, 0.72, 0, 1] },
+    open: { type: 'easing', duration: 0.8, ease: [0.32, 0.72, 0, 1] },
+    /** Back into the tile: quicker than the open. */
+    close: { type: 'easing', duration: 0.55, ease: [0.32, 0.72, 0, 1] },
     /** Seconds the nearest corner can trail the farthest, for a move across the whole screen. */
     spread: [0.12, 0, 0.5, 0.005],
   },
@@ -32,5 +34,5 @@ const { seeMore, photo, expand } = galleryControls
 export const defaultGalleryTuning: GalleryTuning = {
   seeMore: { motion: seeMore.motion, lead: seeMore.lead[0], bulge: seeMore.bulge[0] },
   photo: { motion: photo.motion, lead: photo.lead[0], zoom: photo.zoom[0] },
-  expand: { motion: expand.motion, spread: expand.spread[0] },
+  expand: { open: expand.open, close: expand.close, spread: expand.spread[0] },
 }
