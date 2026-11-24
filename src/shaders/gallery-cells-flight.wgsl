@@ -13,8 +13,10 @@ struct CellsFlightParams {
   // Edge length of each photo layer, in texels at mip 0.
   texSize: f32,
   mipCount: f32,
-  // The See more tile's box and corner radius, in CSS pixels. Each cell is clipped to it grown by
-  // its own margin, so cells the tile's 2x crop leaves out slide behind its edge as they land.
+  // The See more tile's box and corner radius, in CSS pixels. The cells are clipped to it grown by
+  // a margin, how far they still are from their places in the tile, with an edge that softens
+  // outward by half the margin: cells the tile's 2x crop leaves out slide under its rim, fading,
+  // as they land, and at the margin's 0 the edge is the tile's own.
   clipRadius: f32,
   clip: vec4f,
   // Cell i's corners in CSS pixels: corners[2i] holds top left and top right, corners[2i + 1]
@@ -23,7 +25,7 @@ struct CellsFlightParams {
   // Each corner's texture coordinate in the same layout. A layer holds its whole photo squeezed
   // square, so these are the photo's own coordinates.
   texels: array<vec4f, 32>,
-  // Cell i's corner radius in CSS pixels, its opacity, its clip margin, then how far it has
+  // Cell i's corner radius in CSS pixels, its opacity, the clip margin, then how far it has
   // turned into the photo it becomes.
   styles: array<vec4f, 16>,
   // Cell i's layer, the layer of the photo it becomes, and that photo's aspect.
@@ -80,8 +82,10 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
       clipHalf,
       min(params.clipRadius + style.z, min(clipHalf.x, clipHalf.y)),
     );
-    let coverage = clamp(0.5 - edge * params.dpr, 0.0, 1.0)
-      * clamp(0.5 - clipEdge * params.dpr, 0.0, 1.0) * style.y;
+    let pixel = 1.0 / params.dpr;
+    let soft = max(style.z * 0.5, pixel);
+    let clipCover = 1.0 - smoothstep(-0.5 * pixel, soft - 0.5 * pixel, clipEdge);
+    let coverage = clamp(0.5 - edge * params.dpr, 0.0, 1.0) * clipCover * style.y;
     if (coverage <= 0.0) {
       continue;
     }

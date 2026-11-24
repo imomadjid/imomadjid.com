@@ -41,16 +41,14 @@ export type FlightTuning = {
 
 /**
  * Where a photo is: its corners on screen, the texture coordinate at each, its corner radius, its
- * opacity (1 when left out), and for a cell, how far past the flight's clip it may show
- * (unclipped when left out) and how far it has turned into the photo it becomes (0 when left out;
- * see flyCells).
+ * opacity (1 when left out), and for a cell, how far it has turned into the photo it becomes (0
+ * when left out; see flyCells).
  */
 export type FlightPose = {
   corners: Quad
   texels: Quad
   radius: number
   opacity?: number
-  clipMargin?: number
   blend?: number
 }
 
@@ -75,7 +73,10 @@ export type Flight = {
   /**
    * Moves up to 16 photos at once, as `fly` moves one: photo i from `from[i]` to `to[i]` with
    * `lags[i]`. Their texels are each photo's own coordinates, whole photo 0 to 1. Each is clipped
-   * to `clip` (a rounded box) grown by its pose's clip margin, which springs like its radius.
+   * to `clip` (a rounded box) grown by how far the cells still are from `clip.cells`, their places
+   * there, at the farthest corner of any, with an edge as soft as half that: far from the box they
+   * are free of it, and as they all near it, cells whose places lie outside it slide under its
+   * rim, fading. A cell whose place is inside the box is never clipped.
    * Cell i crossfades into `into[i]`, if given and another photo, as its pose's blend goes from 0
    * to 1, shown as object-fit: cover shows it in the cell's shape at the time.
    */
@@ -86,7 +87,7 @@ export type Flight = {
     to: readonly FlightPose[]
     lags: readonly (readonly number[])[]
     direction: Direction
-    clip: { rect: Rect; radius: number }
+    clip: { rect: Rect; radius: number; cells: readonly Quad[] }
   }) => Promise<boolean>
   /**
    * Swaps the photo being flown, `from`, for a sharper copy of it, `to`, mid-flight or landed, so
@@ -115,9 +116,8 @@ type Leg = {
   land: (landed: boolean) => void
 }
 
-// A pose's values: its corners' x and y, its texels' u and v, its radius, opacity, clip margin
-// and blend.
-const POSE_VALUES = 20
+// A pose's values: its corners' x and y, its texels' u and v, its radius, opacity and blend.
+const POSE_VALUES = 19
 // A clip margin this wide clips nothing on any screen.
 const UNCLIPPED = 1e5
 // Each value snaps on once this close: a tenth of a pixel, a ten-thousandth of the photo.
@@ -126,7 +126,6 @@ const POSE_TOLERANCES = [
   ...Array.from({ length: 8 }, () => 1e-4),
   0.1,
   1e-3,
-  0.1,
   1e-3,
 ]
 
@@ -136,7 +135,6 @@ function poseValues(pose: FlightPose): number[] {
     ...pose.texels.flat(),
     pose.radius,
     pose.opacity ?? 1,
-    pose.clipMargin ?? UNCLIPPED,
     pose.blend ?? 0,
   ]
 }
@@ -155,8 +153,7 @@ function poseAt(values: readonly number[], index: number): FlightPose {
     texels: quad(8),
     radius: values[base + 16],
     opacity: values[base + 17],
-    clipMargin: values[base + 18],
-    blend: values[base + 19],
+    blend: values[base + 18],
   }
 }
 
@@ -169,6 +166,15 @@ function poseSprings(config: TransitionConfig, scales: readonly number[]): Sprin
   const own = springOf(config)
   return Array.from({ length: POSE_VALUES }, (_, value) =>
     value < 16 ? corners[Math.floor((value % 8) / 2)] : own,
+  )
+}
+
+/** How far `corners` are from `place` at the farthest; unclipped without a place. */
+function clipMargin(corners: Quad, place: Quad | undefined) {
+  if (!place) return UNCLIPPED
+  return Math.min(
+    UNCLIPPED,
+    Math.max(...corners.map(([x, y], k) => Math.hypot(x - place[k][0], y - place[k][1]))),
   )
 }
 
@@ -215,8 +221,12 @@ export async function startGalleryFlight(
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     let tuning = initialTuning
     let photoTextureFor: { photo: HTMLImageElement; gpu: GPUTexture } | null = null
-    // The rounded box the cells are clipped to, grown by each one's clip margin.
-    let cellsClip = { rect: { x: 0, y: 0, width: 0, height: 0 }, radius: 0 }
+    // The rounded box the cells are clipped to, and each cell's place there (see flyCells).
+    let cellsClip: Parameters<Flight['flyCells']>[0]['clip'] = {
+      rect: { x: 0, y: 0, width: 0, height: 0 },
+      radius: 0,
+      cells: [],
+    }
     let cellsTextureFor: {
       photos: readonly HTMLImageElement[]
       layers: ReturnType<typeof squarePhotoLayers>['layers']
@@ -259,6 +269,12 @@ export async function startGalleryFlight(
 
     function renderCells(poses: readonly FlightPose[]) {
       if (!cellsTextureFor) return
+      // One window for every cell, so neighbours share its edge: as far as the farthest cell is from
+      // its place, so no cell whose place is inside the box is ever clipped.
+      const margin = Math.max(
+        0,
+        ...poses.map((pose, index) => clipMargin(pose.corners, cellsClip.cells[index])),
+      )
       // The uniform arrays are fixed-size; cells past `count` are never read.
       const padded = Array.from({ length: MAX_CELLS }, (_, i) => poses[i] ?? poses[0])
       cellsFlight.set({
@@ -272,12 +288,7 @@ export async function startGalleryFlight(
           texels: padded.flatMap((pose) => quadVectors(pose.texels)),
           clipRadius: cellsClip.radius,
           clip: [cellsClip.rect.x, cellsClip.rect.y, cellsClip.rect.width, cellsClip.rect.height],
-          styles: padded.map((pose) => [
-            pose.radius,
-            pose.opacity ?? 1,
-            Math.min(pose.clipMargin ?? UNCLIPPED, UNCLIPPED),
-            pose.blend ?? 0,
-          ]),
+          styles: padded.map((pose) => [pose.radius, pose.opacity ?? 1, margin, pose.blend ?? 0]),
           layers: Array.from({ length: MAX_CELLS }, (_, i) => cellLayers[i] ?? cellLayers[0]),
         },
       })

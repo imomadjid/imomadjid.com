@@ -49,24 +49,20 @@ async function heroCells(list: RefObject<HTMLElement | null>): Promise<HTMLEleme
   throw new Error('The See more overlay did not mount')
 }
 
-/**
- * A whole photo in its overlay cell, free of the tile's clip (its clip margin is the viewport's
- * diagonal, so the clip grows past every edge of the screen) and still itself.
- */
+/** A whole photo in its overlay cell, still itself. */
 function cellPose(cell: HTMLElement): FlightPose {
   return {
     corners: quadOf(cell.getBoundingClientRect()),
     texels: quadOf(wholeImage),
     radius: Number.parseFloat(getComputedStyle(cell).borderTopLeftRadius) || 0,
-    clipMargin: Math.hypot(window.innerWidth, window.innerHeight),
   }
 }
 
 /**
  * Photos of `aspects` in the tile's cells, its box at `rect`, magnified as the tile shows them
- * now: the whole grid when zoomed out, else the 2x crop. Each is clipped to the tile's own edge
- * there, so the outer cells of the crop sit behind it, and has turned into the tile's own photo,
- * so the flight's last frame is the tile's.
+ * now: the whole grid when zoomed out, else the 2x crop, where the flight's clip (tileClip) hides
+ * the outer cells behind the tile's edge. Each has turned into the tile's own photo, so the
+ * flight's last frame is the tile's.
  */
 function tilePoses(aspects: readonly number[], rect: Rect, zoomedOut: boolean) {
   const zoom = zoomedOut ? 1 : seeMoreRestZoom(rect.width)
@@ -74,7 +70,6 @@ function tilePoses(aspects: readonly number[], rect: Rect, zoomedOut: boolean) {
     corners: quadOf(seeMoreCellRect(rect, index, zoom)),
     texels: quadOf(coverCrop(aspect, 1)),
     radius: SEE_MORE_CELL_RADIUS * zoom,
-    clipMargin: 0,
     blend: 1,
   }))
 }
@@ -104,11 +99,11 @@ function closingCells(
     const cell = picked[index]
     const heroIndex = cell?.dataset.heroCell
     const img = cell?.querySelector('img')
+    // The 640px file if it is decoded, else whichever file the cell shows.
+    const shown = img?.complete && img.naturalWidth > 0 ? img : undefined
     const image =
       heroIndex === undefined
-        ? img?.complete && img.naturalWidth > 0
-          ? img
-          : undefined
+        ? (decodedNow(img?.getAttribute('src') ?? '') ?? shown)
         : heroes[Number(heroIndex)]
     if (cell && image) return { cell, image }
     const own = list.querySelector<HTMLElement>(`[data-hero-cell="${index}"]`)
@@ -117,9 +112,16 @@ function closingCells(
   })
 }
 
-/** The tile's box and corner radius, which the flying cells are clipped to near it. */
-function tileClip(tile: HTMLElement, rect: Rect) {
-  return { rect, radius: Number.parseFloat(getComputedStyle(tile).borderTopLeftRadius) || 0 }
+/**
+ * The tile's box and corner radius, which the flying cells are clipped to as they near `places`,
+ * their poses in it.
+ */
+function tileClip(tile: HTMLElement, rect: Rect, places: readonly FlightPose[]) {
+  return {
+    rect,
+    radius: Number.parseFloat(getComputedStyle(tile).borderTopLeftRadius) || 0,
+    cells: places.map((pose) => pose.corners),
+  }
 }
 
 /**
@@ -215,14 +217,21 @@ export function useSeeMoreOverlay({
           to,
           lags: cellLags(from, to, 'open'),
           direction: 'open',
-          clip: tileClip(tile, tileRect),
+          clip: tileClip(tile, tileRect, from),
         })
         setShown((shown) => (shown && current() ? { ...shown, lifted: true } : shown))
         stage.show()
         return landing
       })
       .then(async (landed) => {
-        if (!landed) return
+        // A newer flight took over, or a failure cut this one short: then the cells show at once.
+        if (!landed) {
+          if (current()) {
+            setShown((shown) => (shown ? { ...shown, phase: 'open' } : shown))
+            stage.hide(false)
+          }
+          return
+        }
         // Keep the flight's last frame up until the cells can replace it.
         const images = cells.flatMap((cell) => [...cell.querySelectorAll('img')])
         await Promise.all(images.map((image) => image.decode().catch(() => {})))
@@ -271,7 +280,7 @@ export function useSeeMoreOverlay({
       to,
       lags: cellLags(from, to, 'close'),
       direction: 'close',
-      clip: tileClip(tile, tileRect),
+      clip: tileClip(tile, tileRect, to),
     })
     setShown({ phase: 'closing', lifted: true })
     stage.show()
@@ -347,7 +356,8 @@ export function GalleryOverlay({
       <Dialog.Popup
         className={cn(
           'fixed inset-0 z-50 cursor-zoom-out overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
-          closing && 'opacity-0 duration-200',
+          // Closing, it lets clicks through: a photo opened from it now would fly in a closing dialog.
+          closing && 'pointer-events-none opacity-0 duration-200',
         )}
         onClick={(event) => {
           if (event.target instanceof Element && !event.target.closest('button, header')) onClose()
