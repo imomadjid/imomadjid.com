@@ -22,7 +22,7 @@ const figuresClass = "[font-feature-settings:'ss03'] whitespace-nowrap slashed-z
 
 /** Text with its digit runs set in the project years' figure style. A range stays on one line. */
 function Figures({ text }: { text: string }) {
-  return text.split(/(\d[\d.]*(?:–\d[\d.]*)?)/).map((part, index) =>
+  return text.split(/(\d[\d.]*(?:[–-]\d[\d.]*)?)/).map((part, index) =>
     index % 2 === 1 ? (
       <span key={index} className={figuresClass}>
         {part}
@@ -87,17 +87,17 @@ function Gallery({
         <div className="flex items-center gap-6 sm:gap-8">
           <img
             src={cameraPhoto}
-            alt="Fujifilm X-T30 III camera"
-            width={360}
-            height={233}
-            className="h-auto w-[23%] max-w-30 shrink-0"
+            alt="FUJIFILM X-T30 III camera"
+            width={270}
+            height={175}
+            className="h-auto w-[17%] max-w-22.5 shrink-0"
           />
           <p className="grid gap-y-1.5 text-xs font-semibold">
             <span className="text-neutral-900 dark:text-neutral-100">
-              <Figures text="Fujifilm X-T30 III" />
+              <Figures text="FUJIFILM X-T30 III" />
             </span>
             <span className="text-neutral-500">
-              <Figures text="Fujinon XC 13–33mm F3.5–6.3 OIS" />
+              <Figures text="FUJINON XC13-33mmF3.5-6.3 OIS" />
             </span>
           </p>
         </div>
