@@ -34,5 +34,7 @@
   },
   "health": {
     "ignore": ["tools/oxlint/anti-slop/**"]
-  }
+  },
+  "entry": ["tools/gallery/metadata.ts"],
+  "ignoreBinaries": ["exiftool"]
 }
