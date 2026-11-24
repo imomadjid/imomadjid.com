@@ -14,6 +14,7 @@ import { TableOfContents } from '#/components/table-of-contents'
 import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
+import { recedeClass } from '#/lib/page-recede'
 import { projectFile, projectVideo } from '#/lib/project-media'
 import { defaultSignatureTiming, signatureControls } from '#/lib/signature-settings'
 import { textLinkClass } from '#/lib/text-link'
@@ -333,10 +334,7 @@ function Home() {
         {/* Shrinks behind an open Gallery dialog (src/lib/page-recede.ts). About stays out: it
             holds the wand, and scaling forms a stacking context that would hold the wand under
             the light layer. While a dialog is open About is far above the screen anyway. */}
-        <div
-          data-recede
-          className="origin-(--recede-origin) transition-[scale] duration-(--recede-duration) ease-(--recede-ease) motion-safe:data-receded:scale-(--recede-scale)"
-        >
+        <div data-recede className={recedeClass}>
           {/* Sections sit 8rem apart; About's bottom padding supplies half of the first gap. */}
           <Section id="projects" className="mt-16">
             <ProjectList projects={projects} />

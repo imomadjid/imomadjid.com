@@ -13,11 +13,18 @@ export type RecedeTuning = {
 }
 
 /**
- * Shrinks the part of the page that holds `from` (the `[data-recede]` wrapper in
- * src/routes/index.tsx) about the middle of the viewport, or brings it back, as iOS shrinks the
- * Home Screen behind an opening app. The wrapper scales in CSS, on a spring sampled into a
+ * The classes that let a `[data-recede]` wrapper shrink: it scales only while `data-receded`, so
+ * it forms a stacking context only then, and not at all with reduced motion.
+ */
+export const recedeClass =
+  'origin-(--recede-origin) transition-[scale] duration-(--recede-duration) ease-(--recede-ease) motion-safe:data-receded:scale-(--recede-scale)'
+
+/**
+ * Shrinks the `[data-recede]` wrapper that holds `from` (the page below About in
+ * src/routes/index.tsx, or the See more overlay's photos) about the middle of the viewport, or
+ * brings it back, as iOS shrinks the Home Screen behind an opening app. The wrapper scales in CSS, on a spring sampled into a
  * `linear()` easing; it scales only while receded, so it forms a stacking context only then.
- * Scrolling is locked while a dialog is open, so the middle it shrinks about stays put.
+ * Scrolling is locked while a dialog is open over it, so the middle it shrinks about stays put.
  */
 export function recedePage(from: Element, receded: boolean, tuning: RecedeTuning) {
   const page = from.closest<HTMLElement>('[data-recede]')
@@ -29,15 +36,15 @@ export function recedePage(from: Element, receded: boolean, tuning: RecedeTuning
   page.style.setProperty('--recede-ease', easing)
   if (receded) {
     // The viewport's middle in the wrapper's own box, from its layout position, so a shrink that
-    // starts while the last one is still easing back measures it unscaled.
+    // starts while the last one is still easing back measures it unscaled. The overlay's photos
+    // sit in a scrolling popup, so its scroll counts too.
     const parent = page.offsetParent ?? document.documentElement
     const box = parent.getBoundingClientRect()
+    const left = box.left + parent.clientLeft + page.offsetLeft - parent.scrollLeft
+    const top = box.top + parent.clientTop + page.offsetTop - parent.scrollTop
     const x = window.innerWidth / 2
     const y = window.innerHeight / 2
-    page.style.setProperty(
-      '--recede-origin',
-      `${x - box.left - page.offsetLeft}px ${y - box.top - page.offsetTop}px`,
-    )
+    page.style.setProperty('--recede-origin', `${x - left}px ${y - top}px`)
     page.dataset.recedeOrigin = `${x} ${y}`
     page.setAttribute('data-receded', '')
   } else {

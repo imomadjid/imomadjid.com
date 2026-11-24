@@ -11,7 +11,7 @@ import { centerOutLags, coverCrop, quadOf, wholeImage } from '#/lib/gallery-flig
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import { masonryColumns } from '#/lib/gallery-masonry'
-import { fullScaleRect } from '#/lib/page-recede'
+import { fullScaleRect, recedeClass } from '#/lib/page-recede'
 import {
   SEE_MORE_CELL_RADIUS,
   seeMoreCellRect,
@@ -293,7 +293,12 @@ export function GalleryOverlay({
               <IconX size={18} stroke={1.75} aria-hidden="true" />
             </Dialog.Close>
           </header>
-          <div ref={listRef} className={cn('grid grid-cols-4 items-start', gap)}>
+          {/* Shrinks behind a photo opened from it (src/lib/page-recede.ts). */}
+          <div
+            ref={listRef}
+            data-recede
+            className={cn('grid grid-cols-4 items-start', gap, recedeClass)}
+          >
             {columns.map((column) => (
               <ul key={column[0]} className={cn('grid', gap)}>
                 {column.map((index) => {

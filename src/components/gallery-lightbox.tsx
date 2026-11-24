@@ -269,7 +269,7 @@ export function useGalleryLightbox(stage: FlightStage) {
   return {
     openPhoto,
     element,
-    /** True while a photo is open or opening, until its close starts. */
-    holding: shown !== null && shown.phase !== 'closing',
+    /** The tile or cell of the photo open or opening, until its close starts. */
+    holdingTile: shown && shown.phase !== 'closing' ? shown.tile : null,
   }
 }

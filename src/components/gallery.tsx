@@ -56,11 +56,18 @@ function Gallery({
   const overlay = useSeeMoreOverlay({ stage, photos: preview, tileRef, zoomedOutRef })
 
   // The page shrinks behind an open photo or the overlay, and grows back as either starts to
-  // close, so a photo flying home lands on a page already on its way back.
-  const receded = (overlay.open && !overlay.closing) || lightbox.holding
+  // close, so a photo flying home lands on a page already on its way back. A photo opened from
+  // the overlay shrinks the overlay's photos behind it the same way, a layer further back.
+  const holdingTile = lightbox.holdingTile
+  const receded = (overlay.open && !overlay.closing) || holdingTile !== null
   useLayoutEffect(() => {
     if (sectionRef.current) recedePage(sectionRef.current, receded, tuning.recede)
   }, [receded, tuning.recede])
+  const { listRef } = overlay
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (list) recedePage(list, holdingTile !== null && list.contains(holdingTile), tuning.recede)
+  }, [holdingTile, listRef, tuning.recede])
   useLayoutEffect(() => {
     const section = sectionRef.current
     return () => {
