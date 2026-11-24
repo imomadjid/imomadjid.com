@@ -41,8 +41,9 @@ export type FlightTuning = {
 
 /**
  * Where a photo is: its corners on screen, the texture coordinate at each, its corner radius, its
- * opacity (1 when left out), and for a cell, how far past the flight's clip it may show (see
- * flyCells; unclipped when left out).
+ * opacity (1 when left out), and for a cell, how far past the flight's clip it may show
+ * (unclipped when left out) and how far it has turned into the photo it becomes (0 when left out;
+ * see flyCells).
  */
 export type FlightPose = {
   corners: Quad
@@ -50,6 +51,7 @@ export type FlightPose = {
   radius: number
   opacity?: number
   clipMargin?: number
+  blend?: number
 }
 
 type Direction = 'open' | 'close'
@@ -74,9 +76,12 @@ export type Flight = {
    * Moves up to 16 photos at once, as `fly` moves one: photo i from `from[i]` to `to[i]` with
    * `lags[i]`. Their texels are each photo's own coordinates, whole photo 0 to 1. Each is clipped
    * to `clip` (a rounded box) grown by its pose's clip margin, which springs like its radius.
+   * Cell i crossfades into `into[i]`, if given and another photo, as its pose's blend goes from 0
+   * to 1, shown as object-fit: cover shows it in the cell's shape at the time.
    */
   flyCells: (options: {
     photos: readonly HTMLImageElement[]
+    into?: readonly HTMLImageElement[]
     from: readonly FlightPose[]
     to: readonly FlightPose[]
     lags: readonly (readonly number[])[]
@@ -110,8 +115,9 @@ type Leg = {
   land: (landed: boolean) => void
 }
 
-// A pose's values: its corners' x and y, its texels' u and v, its radius, opacity and clip margin.
-const POSE_VALUES = 19
+// A pose's values: its corners' x and y, its texels' u and v, its radius, opacity, clip margin
+// and blend.
+const POSE_VALUES = 20
 // A clip margin this wide clips nothing on any screen.
 const UNCLIPPED = 1e5
 // Each value snaps on once this close: a tenth of a pixel, a ten-thousandth of the photo.
@@ -121,6 +127,7 @@ const POSE_TOLERANCES = [
   0.1,
   1e-3,
   0.1,
+  1e-3,
 ]
 
 function poseValues(pose: FlightPose): number[] {
@@ -130,6 +137,7 @@ function poseValues(pose: FlightPose): number[] {
     pose.radius,
     pose.opacity ?? 1,
     pose.clipMargin ?? UNCLIPPED,
+    pose.blend ?? 0,
   ]
 }
 
@@ -148,6 +156,7 @@ function poseAt(values: readonly number[], index: number): FlightPose {
     radius: values[base + 16],
     opacity: values[base + 17],
     clipMargin: values[base + 18],
+    blend: values[base + 19],
   }
 }
 
@@ -213,6 +222,8 @@ export async function startGalleryFlight(
       layers: ReturnType<typeof squarePhotoLayers>['layers']
       size: number
     } | null = null
+    // Each cell's layer, the layer it turns into, and that photo's aspect.
+    let cellLayers: number[][] = []
     let leg: Leg | null = null
     // Where the poses are and how fast they move, mid-flight or landed; null when cleared.
     let motion: {
@@ -265,8 +276,9 @@ export async function startGalleryFlight(
             pose.radius,
             pose.opacity ?? 1,
             Math.min(pose.clipMargin ?? UNCLIPPED, UNCLIPPED),
-            0,
+            pose.blend ?? 0,
           ]),
+          layers: Array.from({ length: MAX_CELLS }, (_, i) => cellLayers[i] ?? cellLayers[0]),
         },
       })
       drawPass(gpu, life, output, cellsFlight)
@@ -378,23 +390,34 @@ export async function startGalleryFlight(
         loadPhoto(photo)
         return start('photo', [photo], { from: [from], to: [to], lags: [lags], direction })
       },
-      flyCells({ photos, from, to, lags, direction, clip }) {
+      flyCells({ photos, into = photos, from, to, lags, direction, clip }) {
         life.assertLive()
         if (photos.length > MAX_CELLS) throw new Error(`A flight draws at most ${MAX_CELLS} cells`)
+        // One layer per distinct photo, flown or turned into.
+        const unique = [...new Set([...photos, ...into])]
         const cached = cellsTextureFor?.photos
         if (
-          cached?.length !== photos.length ||
-          cached.some((photo, index) => photo !== photos[index])
+          cached?.length !== unique.length ||
+          cached.some((photo, index) => photo !== unique[index])
         ) {
           cellsTextureFor?.layers.destroy()
-          const { layers, size } = squarePhotoLayers(gpu, photos, {
+          const { layers, size } = squarePhotoLayers(gpu, unique, {
             maxSize: MAX_CELL_TEXTURE_SIZE,
             fit: 'squeeze',
             label: 'gallery-cells-flight',
           })
-          cellsTextureFor = { photos, layers, size }
+          cellsTextureFor = { photos: unique, layers, size }
           cellsFlight.set({ photos: layers, photoSampler: sampler })
         }
+        cellLayers = photos.map((photo, index) => {
+          const target = into[index] ?? photo
+          return [
+            unique.indexOf(photo),
+            unique.indexOf(target),
+            target.naturalWidth / Math.max(1, target.naturalHeight),
+            0,
+          ]
+        })
         cellsClip = clip
         return start('cells', photos, { from, to, lags, direction })
       },

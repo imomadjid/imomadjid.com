@@ -21,6 +21,7 @@ import { cn } from '#/lib/utils'
 // column c leads row r of column c, so its photos fly straight up into their places.
 const COLUMNS = 4
 const HERO_CELLS = 16
+const ROWS = HERO_CELLS / COLUMNS
 
 // Overlay photos past this index enter together, so a long list doesn't trail in.
 const maxStagger = 12
@@ -49,8 +50,8 @@ async function heroCells(list: RefObject<HTMLElement | null>): Promise<HTMLEleme
 }
 
 /**
- * A whole photo in its overlay cell, free of the tile's clip: its clip margin is the viewport's
- * diagonal, so the clip grows past every edge of the screen.
+ * A whole photo in its overlay cell, free of the tile's clip (its clip margin is the viewport's
+ * diagonal, so the clip grows past every edge of the screen) and still itself.
  */
 function cellPose(cell: HTMLElement): FlightPose {
   return {
@@ -62,18 +63,58 @@ function cellPose(cell: HTMLElement): FlightPose {
 }
 
 /**
- * The tile's photos in its cells, its box at `rect`, magnified as the tile shows them now: the
- * whole grid when zoomed out, else the 2x crop. Each is clipped to the tile's own edge there, so
- * the outer cells of the crop sit behind it, and the flight's last frame is the tile's.
+ * Photos of `aspects` in the tile's cells, its box at `rect`, magnified as the tile shows them
+ * now: the whole grid when zoomed out, else the 2x crop. Each is clipped to the tile's own edge
+ * there, so the outer cells of the crop sit behind it, and has turned into the tile's own photo,
+ * so the flight's last frame is the tile's.
  */
-function tilePoses(photos: readonly GalleryPhoto[], rect: Rect, zoomedOut: boolean) {
+function tilePoses(aspects: readonly number[], rect: Rect, zoomedOut: boolean) {
   const zoom = zoomedOut ? 1 : seeMoreRestZoom(rect.width)
-  return photos.map((photo, index): FlightPose => ({
+  return aspects.map((aspect, index): FlightPose => ({
     corners: quadOf(seeMoreCellRect(rect, index, zoom)),
-    texels: quadOf(coverCrop(photo.width / photo.height, 1)),
+    texels: quadOf(coverCrop(aspect, 1)),
     radius: SEE_MORE_CELL_RADIUS * zoom,
     clipMargin: 0,
+    blend: 1,
   }))
+}
+
+const aspectOf = (image: HTMLImageElement) => image.naturalWidth / Math.max(1, image.naturalHeight)
+
+/**
+ * The overlay cells that fly back into the tile, by tile cell: in each masonry column, the first
+ * four not scrolled up past `top`, or its last four near its end, into that column of the tile,
+ * row by row. At the top of the overlay these are the tile's own photos; scrolled down, the photos
+ * in view fly home and turn into the tile's on the way, so the close starts from what's on
+ * screen. A cell with no photo ready to fly is the tile's own, wherever it is.
+ */
+function closingCells(
+  list: HTMLElement,
+  top: number,
+  heroes: readonly HTMLImageElement[],
+): { cell: HTMLElement; image: HTMLImageElement }[] {
+  const picked: (HTMLElement | undefined)[] = []
+  for (const [column, ul] of [...list.children].entries()) {
+    const cells = [...ul.querySelectorAll<HTMLElement>('button')]
+    const first = cells.findIndex((cell) => cell.getBoundingClientRect().bottom > top)
+    const start = Math.max(0, Math.min(first < 0 ? cells.length : first, cells.length - ROWS))
+    for (let row = 0; row < ROWS; row += 1) picked[row * COLUMNS + column] = cells[start + row]
+  }
+  return heroes.map((hero, index) => {
+    const cell = picked[index]
+    const heroIndex = cell?.dataset.heroCell
+    const img = cell?.querySelector('img')
+    const image =
+      heroIndex === undefined
+        ? img?.complete && img.naturalWidth > 0
+          ? img
+          : undefined
+        : heroes[Number(heroIndex)]
+    if (cell && image) return { cell, image }
+    const own = list.querySelector<HTMLElement>(`[data-hero-cell="${index}"]`)
+    if (!own) throw new Error(`The See more overlay has no cell ${index}`)
+    return { cell: own, image: hero }
+  })
 }
 
 /** The tile's box and corner radius, which the flying cells are clipped to near it. */
@@ -108,7 +149,9 @@ function cellLags(
  * as it shows them. Each cell is clipped to the tile's rounded edge grown by a margin that
  * springs with it, wide open in the overlay and closed in the tile, so the outer cells of the 2x
  * crop slide behind the tile's edge as they land, and slide out from behind it opening, in one
- * motion. Without WebGPU it fades.
+ * motion. Scrolled down, the photos in view fly home instead and turn into the tile's on the way
+ * (closingCells), so however long the list grows, the close starts from what's on screen. Without
+ * WebGPU it fades.
  *
  * `photos` are the tile's, in its order; `tileRef` is its grid's box and `zoomedOutRef` whether
  * it shows the whole grid. Returns the dialog root's `open` and `onOpenChange`, `prepare` to warm
@@ -154,7 +197,11 @@ export function useSeeMoreOverlay({
     // The overlay mounts with the first cells empty, to be filled by the flight.
     setShown({ phase: 'opening', lifted: false })
     const tileRect = tile.getBoundingClientRect()
-    const from = tilePoses(photos, tileRect, zoomedOutRef.current)
+    const from = tilePoses(
+      photos.map((photo) => photo.width / photo.height),
+      tileRect,
+      zoomedOutRef.current,
+    )
     let cells: HTMLElement[] = []
     Promise.all(photos.map((photo) => decodedImage(photo.small)))
       .then(async (images) => {
@@ -197,24 +244,29 @@ export function useSeeMoreOverlay({
     const flight = stage.flightRef.current
     const tile = tileRef.current
     const token = ++flightToken.current
-    const images = photos.map((photo) => decodedNow(photo.small))
-    const cells = listRef.current?.querySelectorAll<HTMLElement>('[data-hero-cell]')
+    const heroes = photos.flatMap((photo) => decodedNow(photo.small) ?? [])
+    const list = listRef.current
     // Without the renderer, or before the photos took off, there is nothing to fly back.
-    if (!flight || !tile || !shown.lifted || !cells || !images.every((image) => image)) {
+    if (!flight || !tile || !shown.lifted || !list || heroes.length !== HERO_CELLS) {
       setShown(null)
       return
     }
-    // Mid-open, the cells turn back from where they are.
-    const from =
-      (shown.phase === 'opening' ? flight.cellPoses() : null) ??
-      [...cells]
-        .sort((a, b) => Number(a.dataset.heroCell) - Number(b.dataset.heroCell))
-        .map(cellPose)
+    // Mid-open, the tile's photos turn back from where they are.
+    const turning = shown.phase === 'opening' ? flight.cellPoses() : null
+    const header = list.parentElement?.querySelector('header')
+    const flown = turning
+      ? null
+      : closingCells(list, header?.getBoundingClientRect().bottom ?? 0, heroes)
+    const sources = flown?.map(({ image }) => image) ?? heroes
+    const from = turning ?? (flown ?? []).map(({ cell }) => cellPose(cell))
+    // The flown cells leave the overlay as it fades; the tile's own already have.
+    for (const { cell } of flown ?? []) cell.setAttribute('data-lifted', '')
     // Where the tile will be once the page behind the overlay has grown back.
     const tileRect = fullScaleRect(tile)
-    const to = tilePoses(photos, tileRect, zoomedOutRef.current)
+    const to = tilePoses(sources.map(aspectOf), tileRect, zoomedOutRef.current)
     const landing = flight.flyCells({
-      photos: images.filter((image) => image !== undefined),
+      photos: sources,
+      into: heroes,
       from,
       to,
       lags: cellLags(from, to, 'close'),
