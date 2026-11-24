@@ -126,6 +126,7 @@ function Gallery({
         closing={overlay.closing}
         onClose={overlay.close}
         onOpenPhoto={lightbox.openPhoto}
+        finalFocus={overlay.finalFocus}
       />
       {stage.canvas}
     </Dialog.Root>

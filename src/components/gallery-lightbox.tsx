@@ -3,6 +3,7 @@ import { IconX } from '@tabler/icons-react'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import type { FlightStage } from '#/components/gallery-flight-stage'
+import type { OpenPhoto } from '#/components/gallery-photo-tile'
 import { IconButton } from '#/components/ui/icon-button'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
@@ -31,6 +32,16 @@ type Shown = {
   phase: Phase
   /** True once the flight canvas has drawn the photo, so the tile can let go of it. */
   airborne: boolean
+}
+
+/**
+ * Focuses `to.tile` as a closing Gallery dialog's `finalFocus`, without scrolling, and as keyboard
+ * focus (ring, hover zoom) only if a key opened the dialog. Falls back to Base UI's default.
+ */
+export function returnFocus(to: { tile: HTMLElement; keyboard: boolean } | null) {
+  if (!to?.tile.isConnected) return true
+  to.tile.focus({ preventScroll: true, focusVisible: to.keyboard })
+  return false
 }
 
 /** The backdrop both Gallery dialogs dim the page with, thin enough for the page's shrink to show. */
@@ -108,6 +119,10 @@ export function useGalleryLightbox(stage: FlightStage) {
   const [shown, setShown] = useState<Shown | null>(null)
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
   const flightToken = useRef(0)
+  // Where focus goes back to on close: the tile the photo came out of, shown as keyboard focus only
+  // if a key opened it. Base UI would hand it to the See more tile, the outer dialog's trigger,
+  // where keyboard focus zooms its grid out.
+  const returnTo = useRef<{ tile: HTMLElement; keyboard: boolean } | null>(null)
   const viewport = useViewport(shown !== null)
   const { flightRef } = stage
 
@@ -120,7 +135,8 @@ export function useGalleryLightbox(stage: FlightStage) {
     return () => lifted?.removeAttribute('data-lifted')
   }, [lifted])
 
-  const openPhoto = (photo: GalleryPhoto, tile: HTMLElement) => {
+  const openPhoto: OpenPhoto = (photo, tile, keyboard) => {
+    returnTo.current = { tile, keyboard }
     const flight = flightRef.current
     const token = ++flightToken.current
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
@@ -231,6 +247,7 @@ export function useGalleryLightbox(stage: FlightStage) {
           className={cn(galleryBackdropClass, shown?.phase === 'closing' && 'opacity-0')}
         />
         <Dialog.Popup
+          finalFocus={() => returnFocus(returnTo.current)}
           className="fixed inset-0 z-50 cursor-zoom-out outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
           onClick={(event) => {
             // Not while the photo is still flying out: a second click where it was would turn it

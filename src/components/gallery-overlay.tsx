@@ -4,8 +4,9 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 
 import type { FlightStage } from '#/components/gallery-flight-stage'
-import { galleryBackdropClass } from '#/components/gallery-lightbox'
+import { galleryBackdropClass, returnFocus } from '#/components/gallery-lightbox'
 import { OverlayPhoto } from '#/components/gallery-photo-tile'
+import type { OpenPhoto } from '#/components/gallery-photo-tile'
 import { IconButton } from '#/components/ui/icon-button'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
@@ -177,6 +178,7 @@ export function useSeeMoreOverlay({
   const listRef = useRef<HTMLDivElement>(null)
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
   const flightToken = useRef(0)
+  const returnTo = useRef<{ tile: HTMLElement; keyboard: boolean } | null>(null)
 
   // The tile stays empty while its photos are out, in flight or in the overlay.
   const tileLifted = shown?.lifted ?? false
@@ -293,13 +295,24 @@ export function useSeeMoreOverlay({
 
   return {
     open: shown !== null,
-    onOpenChange: (open: boolean, { reason }: Dialog.Root.ChangeEventDetails) => {
-      if (open) openOverlay()
+    onOpenChange: (open: boolean, { reason, event }: Dialog.Root.ChangeEventDetails) => {
+      if (open) {
+        // A click from the keyboard (Enter or Space) has no click count.
+        const keyboard = event instanceof MouseEvent ? event.detail === 0 : true
+        const trigger = tileRef.current?.closest('button')
+        returnTo.current = trigger ? { tile: trigger, keyboard } : null
+        openOverlay()
+      }
       // The tile sits under the overlay once it opens, so a press on it can only be the second
       // click of a double click landing before the overlay did: that opens it, it doesn't close it.
       else if (reason !== 'trigger-press') closeOverlay()
     },
     close: closeOverlay,
+    /**
+     * For the popup's `finalFocus`: back to the See more tile, as keyboard focus only if a key
+     * opened the overlay, since keyboard focus zooms the tile's grid out.
+     */
+    finalFocus: () => returnFocus(returnTo.current),
     prepare,
     /** The first cells are empty while the flight shows their photos. */
     cellsLifted: shown !== null && shown.phase !== 'open',
@@ -325,6 +338,7 @@ export function GalleryOverlay({
   closing,
   onClose,
   onOpenPhoto,
+  finalFocus,
 }: {
   /** Every photo, the See more tile's first. */
   photos: readonly GalleryPhoto[]
@@ -336,7 +350,9 @@ export function GalleryOverlay({
   cellsLifted: boolean
   closing: boolean
   onClose: () => void
-  onOpenPhoto: (photo: GalleryPhoto, tile: HTMLElement) => void
+  onOpenPhoto: OpenPhoto
+  /** Where focus goes when it closes (useSeeMoreOverlay's `finalFocus`). */
+  finalFocus: () => boolean
 }) {
   const columns = masonryColumns(
     photos.map((photo) => photo.height / photo.width),
@@ -353,6 +369,7 @@ export function GalleryOverlay({
       {/* A click beside the photos and the header closes it, as a click on an open photo closes
           that: from a photo opened in the grid, two clicks lead back to the page. */}
       <Dialog.Popup
+        finalFocus={finalFocus}
         className={cn(
           'fixed inset-0 z-50 cursor-zoom-out overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
           // Closing, it lets clicks through: a photo opened from it now would fly in a closing dialog.
