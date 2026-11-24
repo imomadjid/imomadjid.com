@@ -18,7 +18,7 @@ export const galleryControls = {
   },
   /** A featured photo expanding to full screen, one corner at a time. */
   expand: {
-    motion: { type: 'easing', duration: 0.55, ease: [0.32, 0.72, 0, 1] },
+    motion: { type: 'easing', duration: 0.8, ease: [0.32, 0.72, 0, 1] },
     /** Seconds between one corner starting and the next. */
     stagger: [0.02, 0, 0.25, 0.005],
   },
