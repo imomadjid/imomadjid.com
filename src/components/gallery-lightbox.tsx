@@ -6,6 +6,7 @@ import {
   ExposureReadout,
   measureReadout,
   readoutGap,
+  readoutRow,
   readoutSpace,
 } from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
@@ -30,7 +31,6 @@ import { playGalleryClose, playGalleryOpen } from '#/lib/gallery-sounds'
 import { fullScaleRect } from '#/lib/page-recede'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
-import { wrapLines } from '#/lib/wrap-lines'
 
 type Phase = 'opening' | 'open' | 'closing'
 
@@ -84,16 +84,16 @@ function useViewport(active: boolean): Rect {
 const screenMargin = (viewport: Rect) => (viewport.width < 640 ? 12 : 24)
 
 /**
- * Where the full-screen photo sits: as large as fits, an even margin from the edges, and room
- * under it for its exposure readout, as many lines as its items (`readoutWidths`) wrap onto
- * across the photo. A narrower photo can need another line, which narrows it again, so it tries
- * again with that many until they fit.
+ * Where the full-screen photo sits, as large as fits an even margin from the edges, and its
+ * exposure readout under it, with room for as many lines as the readout's items
+ * (`readoutWidths`) wrap onto (readoutRow). A smaller photo can need another line, which makes
+ * it smaller again, so it tries again with that many until they fit.
  */
-function fullScreenRect(
+function fullScreenLayout(
   viewport: Rect,
   photo: GalleryPhoto,
   readoutWidths: readonly number[] | null,
-): Rect {
+) {
   const side = screenMargin(viewport)
   const gap = readoutGap(viewport.width)
   let lines = 1
@@ -104,10 +104,12 @@ function fullScreenRect(
       bottom: side + readoutSpace(lines),
       left: side,
     })
-    const needed = readoutWidths ? wrapLines(readoutWidths, rect.width, gap) : 1
+    const readout = readoutRow(rect, viewport, side, readoutWidths, gap)
     // Each pass adds a line, and the items can't take more lines than there are of them.
-    if (needed <= lines || lines >= (readoutWidths?.length ?? 1)) return rect
-    lines = needed
+    if (readout.lines <= lines || lines >= (readoutWidths?.length ?? 1)) {
+      return { photo: rect, readout }
+    }
+    lines = readout.lines
   }
 }
 
@@ -118,7 +120,7 @@ function fullScreenPose(
   readoutWidths: readonly number[] | null,
 ): FlightPose {
   return {
-    corners: quadOf(fullScreenRect(viewport, photo, readoutWidths)),
+    corners: quadOf(fullScreenLayout(viewport, photo, readoutWidths).photo),
     texels: quadOf(wholeImage),
     radius: TILE_RADIUS,
   }
@@ -289,7 +291,7 @@ export function useGalleryLightbox(
   }
 
   const photo = shown?.photo
-  const target = photo ? fullScreenRect(viewport, photo, shown.readoutWidths) : null
+  const layout = photo ? fullScreenLayout(viewport, photo, shown.readoutWidths) : null
   // Without the flight renderer the photo fades in by itself.
   const fades = !stage.ready
 
@@ -317,14 +319,14 @@ export function useGalleryLightbox(
             if (event.target === event.currentTarget) requestClose()
           }}
         >
-          {photo && target && (
+          {photo && layout && (
             <>
               <Dialog.Title className="sr-only">{photo.alt}</Dialog.Title>
               <img
                 ref={imageRef}
                 src={photo.large}
                 srcSet={`${photo.small} 640w, ${photo.large} 1600w`}
-                sizes={`${Math.round(target.width)}px`}
+                sizes={`${Math.round(layout.photo.width)}px`}
                 alt=""
                 width={photo.width}
                 height={photo.height}
@@ -336,16 +338,16 @@ export function useGalleryLightbox(
                     'transition-[opacity,scale] duration-300 ease-out motion-reduce:transition-none starting:scale-95 starting:opacity-0',
                 )}
                 style={{
-                  left: target.x,
-                  top: target.y,
-                  width: target.width,
-                  height: target.height,
+                  left: layout.photo.x,
+                  top: layout.photo.y,
+                  width: layout.photo.width,
+                  height: layout.photo.height,
                 }}
               />
               <ExposureReadout
                 ref={readoutRef}
                 photo={photo}
-                rect={target}
+                row={layout.readout}
                 gap={readoutGap(viewport.width)}
                 shown={shown.readout && shown.phase !== 'closing'}
                 tuning={tuning.readout}

@@ -7,6 +7,7 @@ import type { GalleryPhoto } from '#/lib/gallery'
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import type { GalleryTuning } from '#/lib/gallery-settings'
 import { cn } from '#/lib/utils'
+import { wrapLines } from '#/lib/wrap-lines'
 
 /** The gap between the full-screen photo and the readout under it. */
 const READOUT_GAP = 12
@@ -21,29 +22,59 @@ export const readoutGap = (viewportWidth: number) => (viewportWidth < 640 ? 16 :
 export const readoutSpace = (lines: number) =>
   READOUT_GAP + lines * LINE_HEIGHT + (lines - 1) * LINE_GAP
 
-/** Each readout's width, recipe included, for wrapLines: they don't change with the photo's. */
+/**
+ * Each readout's width, recipe included, rounded up so a line they fit on doesn't wrap by a
+ * fraction of a pixel. They don't change with the photo's size.
+ */
 export const measureReadout = (readout: HTMLElement) =>
-  Array.from(readout.children, (item) => (item instanceof HTMLElement ? item.offsetWidth : 0))
+  Array.from(readout.children, (item) => Math.ceil(item.getBoundingClientRect().width))
+
+/** Where the readout sits under the photo, and how many lines it takes. */
+export type ReadoutRow = { x: number; y: number; width: number; lines: number }
+
+/**
+ * The readout's row under `photo`: as wide as the photo, or wider, centred under it, where its
+ * items need more room for one line, up to the viewport less its `margin` either side. They wrap
+ * only past that, as on a phone. Without measured `widths` it takes the photo's width and a line.
+ */
+export function readoutRow(
+  photo: Rect,
+  viewport: Rect,
+  margin: number,
+  widths: readonly number[] | null,
+  gap: number,
+): ReadoutRow {
+  const room = viewport.width - 2 * margin
+  const oneLine = widths
+    ? widths.reduce((sum, width) => sum + width, 0) + gap * (widths.length - 1)
+    : 0
+  const width = Math.min(room, Math.max(photo.width, oneLine))
+  const centred = photo.x + (photo.width - width) / 2
+  return {
+    x: Math.min(Math.max(centred, margin), viewport.width - margin - width),
+    y: photo.y + photo.height + READOUT_GAP,
+    width,
+    lines: widths ? wrapLines(widths, width, gap) : 1,
+  }
+}
 
 /**
  * The photo's exposure under it, set like a camera's info display: each label beside its
- * readout, in Allo's tabular figures with a slashed zero, from the photo's left edge, and the
- * recipe its settings match, if any, linked on the right. The readouts wrap onto more lines where
- * the photo is too narrow for one. They come up one after another, each rising a little out of a
+ * readout, in Allo's tabular figures with a slashed zero, from the row's left edge, and the recipe
+ * its settings match, if any, linked on the right. The row is `readoutRow`'s. They come up one after another, each rising a little out of a
  * blur on `tuning.motion`'s spring, and go together as the photo's close starts.
  */
 export function ExposureReadout({
   ref,
   photo,
-  rect,
+  row,
   gap,
   shown,
   tuning,
 }: {
   ref: Ref<HTMLDListElement>
   photo: GalleryPhoto
-  /** The full-screen photo's rect. */
-  rect: Rect
+  row: ReadoutRow
   /** readoutGap's. */
   gap: number
   shown: boolean
@@ -80,9 +111,9 @@ export function ExposureReadout({
       // A click on it closes the photo, as one beside it does; only the recipe's link takes one.
       className="pointer-events-none fixed flex flex-wrap items-baseline gap-y-1"
       style={{
-        left: rect.x,
-        top: rect.y + rect.height + READOUT_GAP,
-        width: rect.width,
+        left: row.x,
+        top: row.y,
+        width: row.width,
         columnGap: gap,
       }}
     >
