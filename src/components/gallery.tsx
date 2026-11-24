@@ -1,6 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { useDialKit } from 'dialkit'
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 
 import cameraPhoto from '#/assets/camera/fujifilm-x-t30-iii.webp'
 import { useFlightStage } from '#/components/gallery-flight-stage'
@@ -11,6 +11,7 @@ import { SeeMoreTile } from '#/components/gallery-see-more'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
 import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-settings'
+import { recedePage } from '#/lib/page-recede'
 
 // The build-time constant keeps hook order stable and drops DialKit from production.
 const useGalleryTuning = import.meta.env.DEV_TOOLS
@@ -53,6 +54,19 @@ function Gallery({
   const stage = useFlightStage(tuning.expand, sectionRef)
   const lightbox = useGalleryLightbox(stage)
   const overlay = useSeeMoreOverlay({ stage, photos: preview, tileRef, zoomedOutRef })
+
+  // The page shrinks behind an open photo or the overlay, and grows back as either starts to
+  // close, so a photo flying home lands on a page already on its way back.
+  const receded = (overlay.open && !overlay.closing) || lightbox.holding
+  useLayoutEffect(() => {
+    if (sectionRef.current) recedePage(sectionRef.current, receded, tuning.recede)
+  }, [receded, tuning.recede])
+  useLayoutEffect(() => {
+    const section = sectionRef.current
+    return () => {
+      if (section) recedePage(section, false, defaultGalleryTuning.recede)
+    }
+  }, [])
 
   return (
     <Dialog.Root open={overlay.open} onOpenChange={overlay.onOpenChange}>

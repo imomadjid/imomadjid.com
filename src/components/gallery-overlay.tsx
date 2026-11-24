@@ -8,8 +8,10 @@ import { IconButton } from '#/components/ui/icon-button'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
 import { centerOutLags, coverCrop, quadOf, wholeImage } from '#/lib/gallery-flight-geometry'
+import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import { masonryColumns } from '#/lib/gallery-masonry'
+import { fullScaleRect } from '#/lib/page-recede'
 import {
   SEE_MORE_CELL_RADIUS,
   seeMoreCellRect,
@@ -59,11 +61,11 @@ function cellPose(cell: HTMLElement): FlightPose {
 }
 
 /**
- * The tile's photos in its cells, magnified as the tile shows them now: the whole grid when
- * zoomed out, else the 2x crop, where the outer cells lie outside the tile and start unseen.
+ * The tile's photos in its cells, its box at `rect`, magnified as the tile shows them now: the
+ * whole grid when zoomed out, else the 2x crop, where the outer cells lie outside the tile and
+ * start unseen.
  */
-function tilePoses(photos: readonly GalleryPhoto[], tile: HTMLElement, zoomedOut: boolean) {
-  const rect = tile.getBoundingClientRect()
+function tilePoses(photos: readonly GalleryPhoto[], rect: Rect, zoomedOut: boolean) {
   const zoom = zoomedOut ? 1 : seeMoreRestZoom(rect.width)
   return photos.map((photo, index): FlightPose => {
     const cell = seeMoreCellRect(rect, index, zoom)
@@ -81,8 +83,7 @@ function tilePoses(photos: readonly GalleryPhoto[], tile: HTMLElement, zoomedOut
  * the tile's middle lead and the rim follows, so the grid morphs open from its centre (as the
  * tile's own zoom does); closing runs the other way, the rim first and the middle landing last.
  */
-function cellLags(inTile: readonly FlightPose[], tile: HTMLElement, direction: 'open' | 'close') {
-  const rect = tile.getBoundingClientRect()
+function cellLags(inTile: readonly FlightPose[], rect: Rect, direction: 'open' | 'close') {
   const lags = centerOutLags(
     inTile.flatMap((pose) => pose.corners),
     [rect.x + rect.width / 2, rect.y + rect.height / 2],
@@ -140,7 +141,8 @@ export function useSeeMoreOverlay({
     }
     // The overlay mounts with the first cells empty, to be filled by the flight.
     setShown({ phase: 'opening', lifted: false })
-    const from = tilePoses(photos, tile, zoomedOutRef.current)
+    const tileRect = tile.getBoundingClientRect()
+    const from = tilePoses(photos, tileRect, zoomedOutRef.current)
     let cells: HTMLElement[] = []
     Promise.all(photos.map((photo) => decodedImage(photo.small)))
       .then(async (images) => {
@@ -152,7 +154,7 @@ export function useSeeMoreOverlay({
           photos: images,
           from,
           to,
-          lags: cellLags(from, tile, 'open'),
+          lags: cellLags(from, tileRect, 'open'),
           direction: 'open',
         })
         setShown((shown) => (shown && current() ? { ...shown, lifted: true } : shown))
@@ -195,12 +197,14 @@ export function useSeeMoreOverlay({
       [...cells]
         .sort((a, b) => Number(a.dataset.heroCell) - Number(b.dataset.heroCell))
         .map(cellPose)
-    const to = tilePoses(photos, tile, zoomedOutRef.current)
+    // Where the tile will be once the page behind the overlay has grown back.
+    const tileRect = fullScaleRect(tile)
+    const to = tilePoses(photos, tileRect, zoomedOutRef.current)
     const landing = flight.flyCells({
       photos: images.filter((image) => image !== undefined),
       from,
       to,
-      lags: cellLags(to, tile, 'close'),
+      lags: cellLags(to, tileRect, 'close'),
       direction: 'close',
     })
     setShown({ phase: 'closing', lifted: true })
@@ -265,7 +269,7 @@ export function GalleryOverlay({
     <Dialog.Portal>
       <Dialog.Backdrop
         className={cn(
-          'fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
+          'fixed inset-0 z-50 bg-surface-1/60 backdrop-blur-md transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
           closing && 'opacity-0 duration-200',
         )}
       />

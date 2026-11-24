@@ -30,11 +30,21 @@ export const galleryControls = {
     /** Seconds a closed photo takes to fade into its tile, bringing the Sunlit light back in. */
     relight: [0.3, 0, 1, 0.05],
   },
+  /**
+   * The page shrinking behind an open photo or the See more overlay, on Apple's Home Screen
+   * spring (0.7s, damping ratio 0.88), and back on a quicker one.
+   */
+  recede: {
+    /** How small the page gets: 0.94 is 94%. */
+    scale: [0.94, 0.8, 1, 0.005],
+    open: { type: 'spring', visualDuration: 0.7, bounce: 0.12 },
+    close: { type: 'spring', visualDuration: 0.45, bounce: 0 },
+  },
 } satisfies DialConfig
 
 export type GalleryTuning = ResolvedValues<typeof galleryControls>
 
-const { seeMore, photo, expand } = galleryControls
+const { seeMore, photo, expand, recede } = galleryControls
 
 // Production values; DialKit's Gallery panel tunes these in development.
 export const defaultGalleryTuning: GalleryTuning = {
@@ -46,4 +56,5 @@ export const defaultGalleryTuning: GalleryTuning = {
     spread: expand.spread[0],
     relight: expand.relight[0],
   },
+  recede: { scale: recede.scale[0], open: recede.open, close: recede.close },
 }

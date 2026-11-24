@@ -68,3 +68,24 @@ export function stepSprings(
   }
   return settled
 }
+
+/**
+ * A spring from rest at 0 to 1 as a CSS transition: how long it takes to settle, and a `linear()`
+ * easing sampled along it, overshoot included.
+ */
+export function cssSpring(config: TransitionConfig) {
+  const spring = springOf(config)
+  const frame = 1 / 120
+  const state = { values: [0], velocities: [0] }
+  const samples = [0]
+  while (samples.length < 600 && !stepSprings(state, [1], [spring], [1e-3], frame))
+    samples.push(state.values[0])
+  samples.push(1)
+  // About 40 stops follow the curve closely without a long string.
+  const stride = Math.max(1, Math.round(samples.length / 40))
+  const stops = samples.filter((_, index) => index % stride === 0 || index === samples.length - 1)
+  return {
+    duration: (samples.length - 1) * frame,
+    easing: `linear(${stops.map((value) => Number(value.toFixed(4))).join(', ')})`,
+  }
+}

@@ -16,6 +16,7 @@ import {
 } from '#/lib/gallery-flight-geometry'
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
+import { fullScaleRect } from '#/lib/page-recede'
 import { cn } from '#/lib/utils'
 
 type Phase = 'opening' | 'open' | 'closing'
@@ -78,9 +79,11 @@ function fullScreenPose(viewport: Rect, photo: GalleryPhoto): FlightPose {
   }
 }
 
-/** A photo filling its tile, as object-fit: cover shows it, with the tile's own corners. */
-function tilePose(photo: GalleryPhoto, tile: HTMLElement): FlightPose {
-  const rect = tile.getBoundingClientRect()
+/**
+ * A photo filling its tile, its box at `rect`, as object-fit: cover shows it, with the tile's own
+ * corners.
+ */
+function tilePose(photo: GalleryPhoto, tile: HTMLElement, rect: Rect): FlightPose {
   return {
     corners: quadOf(rect),
     texels: quadOf(coverCrop(photo.width / photo.height, rect.width / rect.height)),
@@ -123,7 +126,7 @@ export function useGalleryLightbox(stage: FlightStage) {
     const token = ++flightToken.current
     setShown({ photo, tile, phase: flight ? 'opening' : 'open', airborne: false })
     if (!flight) return
-    const from = tilePose(photo, tile)
+    const from = tilePose(photo, tile, tile.getBoundingClientRect())
     const screen = readViewport()
     const current = () => flightToken.current === token
     // The sharp photo if hovering already decoded it; otherwise the tile's own, swapped on landing.
@@ -176,7 +179,8 @@ export function useGalleryLightbox(stage: FlightStage) {
     }
     const screen = readViewport()
     const from = flight.pose() ?? fullScreenPose(screen, photo)
-    const to = tilePose(photo, tile)
+    // Where the tile will be once the page behind the photo has grown back.
+    const to = tilePose(photo, tile, fullScaleRect(tile))
     const landing = flight.fly({
       photo: image,
       from,
@@ -215,7 +219,7 @@ export function useGalleryLightbox(stage: FlightStage) {
         <Dialog.Backdrop
           forceRender
           className={cn(
-            'fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
+            'fixed inset-0 z-50 bg-surface-1/60 backdrop-blur-md transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
             shown?.phase === 'closing' && 'opacity-0',
           )}
         />
@@ -262,5 +266,10 @@ export function useGalleryLightbox(stage: FlightStage) {
     </Dialog.Root>
   )
 
-  return { openPhoto, element }
+  return {
+    openPhoto,
+    element,
+    /** True while a photo is open or opening, until its close starts. */
+    holding: shown !== null && shown.phase !== 'closing',
+  }
 }

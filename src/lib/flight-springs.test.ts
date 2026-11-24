@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 
-import { springOf, stepSprings } from './flight-springs'
+import { cssSpring, springOf, stepSprings } from './flight-springs'
 
 const run = (response: number, seconds: number) => {
   const state = { values: [0], velocities: [0] }
@@ -37,4 +37,12 @@ void test('a new target turns a moving value around with its speed', () => {
   stepSprings(state, [0], [spring], [0.05], 1 / 60)
   // Still moving outward for a moment: it carries its speed into the turn.
   assert.ok(state.values[0] > before)
+})
+
+void test('cssSpring samples a spring from 0 to 1 as a linear() easing', () => {
+  const { duration, easing } = cssSpring({ type: 'spring', visualDuration: 0.5, bounce: 0 })
+  assert.ok(duration > 0.5 && duration < 1.5, `${duration}`)
+  assert.match(easing, /^linear\(0, .*, 1\)$/)
+  const stops = easing.slice(7, -1).split(', ').map(Number)
+  assert.ok(stops.every((stop, index) => index === 0 || stop >= stops[index - 1]))
 })
