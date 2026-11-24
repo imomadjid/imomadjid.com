@@ -261,8 +261,7 @@ export function useSeeMoreOverlay({
     }
     // Mid-open, the overlay is at its top, so these are the tile's photos, still in the air, and
     // the flight turns them around where they are (Flight.flyCells).
-    const header = list.parentElement?.querySelector('header')
-    const flown = closingCells(list, header?.getBoundingClientRect().bottom ?? 0, heroes)
+    const flown = closingCells(list, 0, heroes)
     const sources = flown.map(({ image }) => image)
     const from = flown.map(({ cell }) => cellPose(cell))
     // Where the tile will be once the page behind the overlay has grown back.
@@ -350,8 +349,8 @@ export function GalleryOverlay({
     // the blind wand.
     <Dialog.Portal>
       <Dialog.Backdrop className={cn(galleryBackdropClass, closing && 'opacity-0 duration-200')} />
-      {/* A click beside the photos and the header closes it, as a click on an open photo closes
-          that: from a photo opened in the grid, two clicks lead back to the page. */}
+      {/* A click beside the photos closes it, as a click on an open photo closes that: from a
+          photo opened in the grid, two clicks lead back to the page. */}
       <Dialog.Popup
         className={cn(
           'fixed inset-0 z-50 cursor-zoom-out overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
@@ -362,18 +361,12 @@ export function GalleryOverlay({
           // Not while the tile's photos are still flying in: a second click where See more was
           // would turn them straight back. Escape and the close button still can.
           if (cellsLifted) return
-          if (event.target instanceof Element && !event.target.closest('button, header')) onClose()
+          if (event.target instanceof Element && !event.target.closest('button')) onClose()
         }}
       >
-        <div className="px-2 pb-16 sm:px-4">
-          <header className="sticky top-0 z-10 -mx-2 mb-1 flex cursor-auto items-center justify-between bg-surface-1/80 px-2 py-3 backdrop-blur-xl sm:-mx-4 sm:px-4">
-            <Dialog.Title className="text-base font-semibold text-neutral-950 dark:text-neutral-50">
-              Gallery
-            </Dialog.Title>
-            <Dialog.Close render={<IconButton aria-label="Close gallery" />}>
-              <IconX size={18} stroke={1.75} aria-hidden="true" />
-            </Dialog.Close>
-          </header>
+        <Dialog.Title className="sr-only">Gallery</Dialog.Title>
+        {/* pb-28 lets the last row scroll clear of the close button. */}
+        <div className="px-2 pt-2 pb-28 sm:px-4 sm:pt-4">
           {/* Shrinks behind a photo opened from it (src/lib/page-recede.ts). */}
           <div
             ref={listRef}
@@ -414,6 +407,24 @@ export function GalleryOverlay({
             ))}
           </div>
         </div>
+        {/* Floats over the photos, which scroll under it. */}
+        <Dialog.Close
+          render={
+            <IconButton
+              aria-label="Close gallery"
+              size="2xl"
+              glass
+              className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2"
+            />
+          }
+        >
+          <IconX
+            size={20}
+            stroke={1.5}
+            aria-hidden="true"
+            className="transition-[stroke-width] duration-80 group-hover:stroke-2"
+          />
+        </Dialog.Close>
       </Dialog.Popup>
     </Dialog.Portal>
   )
