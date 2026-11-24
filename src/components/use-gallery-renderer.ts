@@ -1,30 +1,39 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 
-export type StartRenderer<T> = (
+type StartRenderer<T, Tuning> = (
   canvas: HTMLCanvasElement,
+  tuning: Tuning,
   signal: AbortSignal,
   onFail: (error: Error) => void,
 ) => Promise<T>
 
 /**
  * Starts a Gallery WebGPU renderer on `canvasRef` once `nearRef` (the canvas by default) comes
- * within half a screen of the viewport, and restarts it when `key` changes. `ready` turns true
- * after the renderer's first frame, so the caller can hide its CSS fallback without a flash, and
- * false again if the renderer fails.
+ * within half a screen of the viewport, and restarts it when `key` changes. It starts with the
+ * current `tuning` and gets every later one through `update`. `ready` turns true after the
+ * renderer's first frame, so the caller can hide its CSS fallback without a flash, and false again
+ * if the renderer fails or restarts.
  */
-export function useGalleryRenderer<T>(
+export function useGalleryRenderer<T extends { update: (tuning: Tuning) => void }, Tuning>(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   key: string,
-  start: StartRenderer<T>,
+  tuning: Tuning,
+  start: StartRenderer<T, Tuning>,
   nearRef: RefObject<Element | null> = canvasRef,
 ) {
   const rendererRef = useRef<T | null>(null)
   const [ready, setReady] = useState(false)
-  const startRef = useRef(start)
+  const startRenderer = useEffectEvent(
+    (canvas: HTMLCanvasElement, signal: AbortSignal, onFail: (error: Error) => void) =>
+      start(canvas, tuning, signal, onFail),
+  )
+  // Tuning that changed while the renderer was starting.
+  const catchUp = useEffectEvent((renderer: T) => renderer.update(tuning))
+
   useEffect(() => {
-    startRef.current = start
-  })
+    rendererRef.current?.update(tuning)
+  }, [tuning])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -37,12 +46,12 @@ export function useGalleryRenderer<T>(
       console.warn('The Gallery is using its CSS fallback:', error)
     }
     const begin = () => {
-      startRef
-        .current(canvas, abort.signal, fallBack)
+      startRenderer(canvas, abort.signal, fallBack)
         .then((renderer) => {
           // A start that finished after cleanup has already disposed itself.
           if (abort.signal.aborted) return
           rendererRef.current = renderer
+          catchUp(renderer)
           // The renderer draws its first frame in the next animation frame, before this callback.
           // One that failed in between has cleared the ref and must not hide the fallback.
           requestAnimationFrame(() => {

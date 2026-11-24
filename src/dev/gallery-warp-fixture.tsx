@@ -3,12 +3,12 @@ import type { DialConfig } from 'dialkit'
 import { useEffect, useRef, useState } from 'react'
 
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
+import { galleryControls } from '#/lib/gallery-settings'
 import { startGalleryWarp } from '#/lib/gallery-warp'
 import type { GalleryWarp, WarpTuning } from '#/lib/gallery-warp'
-import { galleryWarpControls } from '#/lib/gallery-warp-settings'
 
 const warpControls = {
-  ...galleryWarpControls,
+  ...galleryControls.seeMore,
   /** Holds every tile zoomed out, to inspect the grid. */
   zoomedOut: false,
 } satisfies DialConfig
@@ -92,7 +92,7 @@ export function GalleryWarpFixture() {
         <p className="text-body text-muted-foreground">
           The homepage's See more tile, drawn with WebGPU. Hover a tile: the middle of the grid
           zooms before the edges, ring by ring. Tune it in the Warp panel, then copy the values into
-          src/lib/gallery-warp-settings.ts; at zero lead and bulge it moves like the CSS fallback.
+          src/lib/gallery-settings.ts; at zero lead and bulge it moves like the CSS fallback.
         </p>
       </header>
 

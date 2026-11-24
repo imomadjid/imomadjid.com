@@ -1,16 +1,23 @@
 import type { TransitionConfig } from 'dialkit'
-import { effect, frame, sampler, surface } from 'vgpu'
+import { effect, frame } from 'vgpu'
 
 import { transitionTiming } from '#/lib/ambient-transition'
 import { mixPoint } from '#/lib/gallery-flight-geometry'
 import type { Quad } from '#/lib/gallery-flight-geometry'
-import { acquireGalleryGpu, photoTexture, rendererLife, watchCanvasPixels } from '#/lib/gallery-gpu'
+import {
+  TILE_RADIUS,
+  acquireGalleryGpu,
+  gallerySurface,
+  photoSampler,
+  photoTexture,
+  rendererLife,
+  watchCanvasPixels,
+} from '#/lib/gallery-gpu'
+import { delayedEase } from '#/lib/ring-motion'
 import flightSource from '#/shaders/gallery-flight.wgsl'
 
 // Full-screen photos come from the 1600px files.
 const MAX_TEXTURE_SIZE = 2048
-// The tiles' and the full-screen photo's rounded-xl corners.
-const RADIUS = 12
 
 export type FlightTuning = {
   /** Each corner's own move. */
@@ -24,13 +31,12 @@ export type FlightPose = { corners: Quad; texels: Quad }
 
 export type Flight = {
   /**
-   * Moves `photo` from `from` (or wherever the last flight left it) to `to`, corners in `order`.
-   * Resolves true when it lands, holding the last frame until `clear`, or false when a newer
-   * flight takes over.
+   * Moves `photo` from `from` to `to`, corners in `order`. Resolves true when it lands, holding
+   * the last frame until `clear`, or false when a newer flight or a failure ends it first.
    */
   fly: (options: {
     photo: HTMLImageElement
-    from?: FlightPose
+    from: FlightPose
     to: FlightPose
     order: readonly number[]
   }) => Promise<boolean>
@@ -66,46 +72,26 @@ export async function startGalleryFlight(
   const life = rendererLife(handle, signal, onFail)
   try {
     life.assertLive()
-    const output = surface(gpu, canvas, { clearColor: [0, 0, 0, 0], dpr: [1, 4] })
-    const photoSampler = sampler(gpu, {
-      minFilter: 'linear',
-      magFilter: 'linear',
-      mipmapFilter: 'linear',
-    })
+    const output = gallerySurface(gpu, canvas, life)
+    const sampler = photoSampler(gpu)
     const flight = effect(gpu, flightSource, { label: 'gallery-flight', blend: 'premultiplied' })
+    life.onDispose(() => flight.dispose())
     // Compile now, so the first expand doesn't wait on the pipeline.
     await flight.compile(output)
     life.assertLive()
 
-    let texture: { photo: HTMLImageElement; gpu: GPUTexture } | null = null
-    const dropTexture = () => {
-      texture?.gpu.destroy()
-      texture = null
-    }
-    life.signal.addEventListener(
-      'abort',
-      () => {
-        dropTexture()
-        flight.dispose()
-        output.dispose()
-      },
-      { once: true },
-    )
-
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     let tuning = initialTuning
     let timing = transitionTiming(tuning.motion)
+    let texture: { photo: HTMLImageElement; gpu: GPUTexture } | null = null
     let leg: Leg | null = null
     let current: FlightPose | null = null
     let frameId = 0
-    life.signal.addEventListener(
-      'abort',
-      () => {
-        cancelAnimationFrame(frameId)
-        leg?.land(false)
-      },
-      { once: true },
-    )
+    life.onDispose(() => {
+      cancelAnimationFrame(frameId)
+      leg?.land(false)
+      texture?.gpu.destroy()
+    })
 
     function render(pose: FlightPose | null) {
       try {
@@ -121,7 +107,7 @@ export async function startGalleryFlight(
             params: {
               size: [canvas.clientWidth, canvas.clientHeight],
               dpr: output.dpr,
-              radius: RADIUS,
+              radius: TILE_RADIUS,
               topCorners: [...a, ...b],
               bottomCorners: [...c, ...d],
               topTexels: [...ta, ...tb],
@@ -143,9 +129,9 @@ export async function startGalleryFlight(
       const stagger = reducedMotion.matches ? 0 : tuning.stagger
       let landed = true
       const amounts = leg.rank.map((rank) => {
-        const local = duration > 0 ? (elapsed - rank * stagger) / duration : 1
-        if (local < 1) landed = false
-        return local <= 0 ? 0 : local >= 1 ? 1 : timing.ease(local)
+        const eased = delayedEase(elapsed, rank * stagger, duration, timing.ease)
+        if (eased.moving) landed = false
+        return eased.value
       })
       const { from, to } = leg
       const corner = (i: 0 | 1 | 2 | 3) => mixPoint(from.corners[i], to.corners[i], amounts[i])
@@ -178,19 +164,17 @@ export async function startGalleryFlight(
       fly({ photo, from, to, order }) {
         life.assertLive()
         if (texture?.photo !== photo) {
-          dropTexture()
+          texture?.gpu.destroy()
           texture = { photo, gpu: photoTexture(gpu, photo, MAX_TEXTURE_SIZE, 'gallery-flight') }
-          flight.set({ photo: texture.gpu, photoSampler })
+          flight.set({ photo: texture.gpu, photoSampler: sampler })
         }
-        const start = from ?? current
-        if (!start) throw new Error('A first flight needs a starting pose')
         leg?.land(false)
         const rank = [0, 0, 0, 0]
         order.forEach((cornerIndex, position) => {
           rank[cornerIndex] = position
         })
         return new Promise<boolean>((land) => {
-          leg = { from: start, to, rank, start: performance.now(), land }
+          leg = { from, to, rank, start: performance.now(), land }
           cancelAnimationFrame(frameId)
           // Draw the starting pose now, so it is on screen in the same frame as the caller's swap.
           step(performance.now())

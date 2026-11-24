@@ -11,7 +11,7 @@ import { SeeMoreTile } from '#/components/gallery-see-more'
 import { IconButton } from '#/components/ui/icon-button'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
-import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-warp-settings'
+import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-settings'
 
 // The build-time constant keeps hook order stable and drops DialKit from production.
 const useGalleryTuning = import.meta.env.DEV_TOOLS

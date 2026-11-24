@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 
 import { useGalleryRenderer } from '#/components/use-gallery-renderer'
 import type { GalleryPhoto } from '#/lib/gallery'
@@ -29,23 +29,18 @@ export function FeaturedPhoto({
   const buttonRef = useRef<HTMLButtonElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const zoomedInRef = useRef(false)
-  const tuningRef = useRef(tuning)
 
-  const { rendererRef, ready } = useGalleryRenderer<PhotoZoom>(
+  const { rendererRef, ready } = useGalleryRenderer<PhotoZoom, PhotoZoomTuning>(
     canvasRef,
     photo.small,
-    async (canvas, signal, onFail) => {
+    tuning,
+    async (canvas, initialTuning, signal, onFail) => {
       const { startPhotoZoom } = await import('#/lib/gallery-photo-zoom')
-      const zoom = await startPhotoZoom(canvas, photo.small, tuningRef.current, signal, onFail)
+      const zoom = await startPhotoZoom(canvas, photo.small, initialTuning, signal, onFail)
       zoom.setZoomedIn(zoomedInRef.current)
       return zoom
     },
   )
-
-  useEffect(() => {
-    tuningRef.current = tuning
-    rendererRef.current?.update(tuning)
-  }, [tuning, rendererRef])
 
   const zoomIn = (zoomedIn: boolean) => {
     zoomedInRef.current = zoomedIn

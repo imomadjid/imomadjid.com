@@ -42,10 +42,9 @@ export function createRingMotion(): RingMotion {
       let settled = true
       for (let i = 0; i < RING_COUNT; i += 1) {
         const radius = i / (RING_COUNT - 1)
-        const local = duration > 0 ? (elapsed - lead * radius) / duration : 1
-        if (local < 1) settled = false
-        const eased = local <= 0 ? 0 : local >= 1 ? 1 : ease(local)
-        progress[i] = start[i] + (target - start[i]) * eased
+        const eased = delayedEase(elapsed, lead * radius, duration, ease)
+        if (eased.moving) settled = false
+        progress[i] = start[i] + (target - start[i]) * eased.value
       }
       return settled
     },
@@ -53,16 +52,30 @@ export function createRingMotion(): RingMotion {
 }
 
 /**
+ * How far along an eased move that starts `delay` seconds in and lasts `duration` is at `elapsed`,
+ * and whether it is still moving. Clamped before the ease, so a spring may overshoot.
+ */
+export function delayedEase(
+  elapsed: number,
+  delay: number,
+  duration: number,
+  ease: (progress: number) => number,
+) {
+  const local = duration > 0 ? (elapsed - delay) / duration : 1
+  return { value: local <= 0 ? 0 : local >= 1 ? 1 : ease(local), moving: local < 1 }
+}
+
+/**
  * Turns each ring's zoom into grid pixels per screen pixel for the shaders, packed four to a
  * vec4. It keeps radius / zoom nondecreasing: a ring may never show content nearer the middle
  * than the ring inside it, or the image folds over itself.
  */
-export function ringUniforms(zoomAt: (ring: number) => number): number[][] {
+export function ringUniforms(zoomAt: (ring: number, radius: number) => number): number[][] {
   const values: number[] = []
   let previousReach = 0
   for (let i = 0; i < RING_COUNT; i += 1) {
     const radius = i / (RING_COUNT - 1)
-    const zoom = zoomAt(i)
+    const zoom = zoomAt(i, radius)
     const reach = Math.max(radius / zoom, previousReach)
     previousReach = reach
     values.push(i === 0 ? 1 / zoom : reach / radius)

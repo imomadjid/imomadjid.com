@@ -34,6 +34,3 @@ export const defaultGalleryTuning: GalleryTuning = {
   photo: { motion: photo.motion, lead: photo.lead[0], zoom: photo.zoom[0] },
   expand: { motion: expand.motion, stagger: expand.stagger[0] },
 }
-
-/** The See more tile's controls alone, for /dev/gallery-warp. */
-export const galleryWarpControls = seeMore

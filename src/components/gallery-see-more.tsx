@@ -1,5 +1,5 @@
 import { Dialog } from '@base-ui/react/dialog'
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 
 import { useGalleryRenderer } from '#/components/use-gallery-renderer'
 import type { GalleryPhoto } from '#/lib/gallery'
@@ -47,7 +47,6 @@ export function SeeMoreTile({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const zoomedOutRef = useRef(false)
-  const tuningRef = useRef(tuning)
   // Strings, so the renderer restarts only when the photos change, not on every new array.
   const thumbUrls = photos.map((photo) => photo.thumb).join(' ')
   const smallUrls = photos.map((photo) => photo.small).join(' ')
@@ -58,24 +57,20 @@ export function SeeMoreTile({
     ),
   )
 
-  const { rendererRef, ready } = useGalleryRenderer<GalleryWarp>(
+  const { rendererRef, ready } = useGalleryRenderer<GalleryWarp, WarpTuning>(
     canvasRef,
     `${thumbUrls} ${smallUrls}`,
-    async (canvas, signal, onFail) => {
+    tuning,
+    async (canvas, initialTuning, signal, onFail) => {
       // Device pixels across a resting cell: half the tile.
       const cellPixels = (canvas.clientWidth / 2) * devicePixelRatio
       const urls = (cellPixels > thumbCrop ? smallUrls : thumbUrls).split(' ')
       const { startGalleryWarp } = await import('#/lib/gallery-warp')
-      const warp = await startGalleryWarp(canvas, urls, tuningRef.current, signal, onFail)
+      const warp = await startGalleryWarp(canvas, urls, initialTuning, signal, onFail)
       warp.setZoomedOut(zoomedOutRef.current)
       return warp
     },
   )
-
-  useEffect(() => {
-    tuningRef.current = tuning
-    rendererRef.current?.update(tuning)
-  }, [tuning, rendererRef])
 
   const zoomOut = (zoomedOut: boolean) => {
     zoomedOutRef.current = zoomedOut
