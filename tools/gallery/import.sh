@@ -4,8 +4,9 @@
 # Usage: tools/gallery/import.sh DSCF0123.JPG DSCF0456.HIF ...
 #
 # Each photo becomes <stem>-240.webp, -640.webp and -1600.webp, rotated upright and stripped of
-# all metadata (EXIF can carry GPS). photos.json records every imported photo's size for layout.
-# Needs rclone with the `mhmmadjid@gmail.com:` remote, ImageMagick with HEIF, and jq.
+# all metadata (EXIF can carry GPS). photos.json records every imported photo's size for layout,
+# and metadata.ts adds its exposure and Fujifilm settings from the original's EXIF.
+# Needs rclone with the `mhmmadjid@gmail.com:` remote, ImageMagick with HEIF, jq, and exiftool.
 # GALLERY_SRC=<dir> reads already downloaded originals from <dir> instead of Drive.
 set -euo pipefail
 
@@ -28,8 +29,14 @@ trap 'rm -rf "$work"' EXIT
 src_dir="${GALLERY_SRC:-$work/src}"
 if [ -z "${GALLERY_SRC:-}" ]; then
   printf '%s\n' "$@" >"$work/files.txt"
-  rclone copy "$remote" "$src_dir" --drive-root-folder-id "$folder" \
-    --files-from "$work/files.txt" --transfers 8 2>&1 | grep -v NOTICE || true
+  # Report rclone's own error, such as an expired token, rather than a missing file below.
+  if ! rclone copy "$remote" "$src_dir" --drive-root-folder-id "$folder" \
+    --files-from "$work/files.txt" --transfers 8 2>"$work/rclone.log"; then
+    grep -v NOTICE "$work/rclone.log" >&2 || true
+    echo "rclone could not download from Drive" >&2
+    exit 1
+  fi
+  grep -v NOTICE "$work/rclone.log" >&2 || true
 fi
 
 for file in "$@"; do
@@ -51,3 +58,7 @@ for file in "$@"; do
   jq -S . "$work/manifest.json" >"$manifest"
   echo "$stem ${w}x$h"
 done
+
+originals=()
+for file in "$@"; do originals+=("$src_dir/$file"); done
+bun "$root/tools/gallery/metadata.ts" "${originals[@]}"

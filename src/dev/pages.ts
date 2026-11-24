@@ -1,4 +1,4 @@
-import { Component, GlassWater, Layers, LayoutGrid } from 'lucide-react'
+import { Component, GlassWater, Grid2x2, Layers, LayoutGrid } from 'lucide-react'
 
 // Single source for the /dev sidebar and the overview page.
 export const devPages = [
@@ -13,6 +13,12 @@ export const devPages = [
     label: 'Components',
     icon: Component,
     description: 'Every installed Fluid Functionalism atom in each variant, size, and state.',
+  },
+  {
+    to: '/dev/gallery-warp',
+    label: 'Gallery warp',
+    icon: Grid2x2,
+    description: "Tune the See more tile's WebGPU warp, which zooms from the middle out.",
   },
   {
     to: '/dev/glass',

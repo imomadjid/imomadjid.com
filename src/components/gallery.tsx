@@ -1,15 +1,22 @@
 import { Dialog } from '@base-ui/react/dialog'
-import { IconX } from '@tabler/icons-react'
-import type { CSSProperties } from 'react'
+import { useDialKit } from 'dialkit'
+import { useLayoutEffect, useRef } from 'react'
 
 import cameraPhoto from '#/assets/camera/fujifilm-x-t30-iii.webp'
-import { IconButton } from '#/components/ui/icon-button'
+import { useFlightStage } from '#/components/gallery-flight-stage'
+import { useGalleryLightbox } from '#/components/gallery-lightbox'
+import { GalleryOverlay, HERO_CELLS, useSeeMoreOverlay } from '#/components/gallery-overlay'
+import { FeaturedPhoto } from '#/components/gallery-photo-tile'
+import { SeeMoreTile } from '#/components/gallery-see-more'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
-import { playGallerySound } from '#/lib/gallery-sounds'
-import { cn } from '#/lib/utils'
+import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-settings'
+import { recedePage } from '#/lib/page-recede'
 
-const tileClass = 'aspect-square w-full rounded-xl bg-neutral-200 dark:bg-neutral-800'
+// The build-time constant keeps hook order stable and drops DialKit from production.
+const useGalleryTuning = import.meta.env.DEV_TOOLS
+  ? () => useDialKit('Gallery', galleryControls)
+  : () => defaultGalleryTuning
 
 // Allo's open figures (ss03), slashed zero, and tabular figures, as on the project years.
 const figuresClass = "[font-feature-settings:'ss03'] whitespace-nowrap slashed-zero tabular-nums"
@@ -27,52 +34,6 @@ function Figures({ text }: { text: string }) {
   )
 }
 
-// Overlay photos past this index enter together, so a long list doesn't trail in.
-const maxStagger = 12
-
-function enterIndex(index: number): CSSProperties & { '--enter-index': number } {
-  return { '--enter-index': Math.min(index, maxStagger) }
-}
-
-// The See more tile's preview: the photos past the grid, then from the top, 16 in all.
-function previewPhotos(photos: readonly GalleryPhoto[], featuredCount: number) {
-  return [...photos.slice(featuredCount), ...photos.slice(0, featuredCount)].slice(0, 16)
-}
-
-/**
- * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
- * out to the whole grid and shows the label. The grid overhangs the tile by half a gap on each
- * side, so the 2x crop's edges land on cell edges; cells have half the tiles' radius for the same
- * reason. Cells are squares sized by width: a 100% height fills its row in Chrome but takes the
- * image's own proportions in Safari.
- */
-function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total: number }) {
-  return (
-    <Dialog.Trigger
-      aria-label={`See all ${total} photos`}
-      className="group relative block w-full cursor-pointer rounded-xl outline-none"
-    >
-      <span className="relative block aspect-square w-full overflow-hidden rounded-xl">
-        <span className="absolute -inset-px grid scale-200 grid-cols-4 content-start gap-0.5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:transition-none">
-          {photos.map((photo) => (
-            <img
-              key={photo.id}
-              src={photo.thumb}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="aspect-square w-full rounded-md bg-neutral-200 object-cover dark:bg-neutral-800"
-            />
-          ))}
-        </span>
-      </span>
-      <span className="pointer-events-none absolute inset-x-0 top-full mt-2 translate-y-1 text-center text-sm text-neutral-600 opacity-0 transition-[opacity,translate] duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 motion-reduce:transition-none dark:text-neutral-400 pointer-coarse:translate-y-0 pointer-coarse:opacity-100">
-        See more
-      </span>
-    </Dialog.Trigger>
-  )
-}
-
 /** The Gallery section: the camera, the favourites, and a tile that opens every photo. */
 function Gallery({
   photos,
@@ -82,10 +43,44 @@ function Gallery({
   featuredCount: number
 }) {
   const featured = photos.slice(0, featuredCount)
+  // The overlay's order: the photos past the featured ones first, so the See more tile can
+  // preview what the page doesn't show yet. Its 16 are the overlay's first.
+  const overlayPhotos = [...photos.slice(featuredCount), ...featured]
+  const preview = overlayPhotos.slice(0, HERO_CELLS)
+  const tuning = useGalleryTuning()
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const tileRef = useRef<HTMLSpanElement>(null)
+  const zoomedOutRef = useRef(false)
+  const stage = useFlightStage(tuning.expand, sectionRef)
+  const lightbox = useGalleryLightbox(stage)
+  const overlay = useSeeMoreOverlay({ stage, photos: preview, tileRef, zoomedOutRef })
+
+  // The page shrinks behind an open photo or the overlay, and grows back as either starts to
+  // close, so a photo flying home lands on a page already on its way back. A photo opened from
+  // the overlay shrinks the overlay's photos behind it the same way, a layer further back.
+  const holdingTile = lightbox.holdingTile
+  const receded = (overlay.open && !overlay.closing) || holdingTile !== null
+  useLayoutEffect(() => {
+    if (sectionRef.current) recedePage(sectionRef.current, receded, tuning.recede)
+  }, [receded, tuning.recede])
+  const { listRef } = overlay
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (list) recedePage(list, holdingTile !== null && list.contains(holdingTile), tuning.recede)
+  }, [holdingTile, listRef, tuning.recede])
+  useLayoutEffect(() => {
+    const section = sectionRef.current
+    return () => {
+      if (section) recedePage(section, false, defaultGalleryTuning.recede)
+    }
+  }, [])
 
   return (
-    <Dialog.Root onOpenChange={playGallerySound}>
-      <div className="flex flex-col gap-10">
+    <Dialog.Root open={overlay.open} onOpenChange={overlay.onOpenChange}>
+      {/* Inside the See more dialog's root, so a photo opened from its grid nests in it: closing
+          the photo returns to the grid. */}
+      {lightbox.element}
+      <div ref={sectionRef} className="flex flex-col gap-10">
         <div className="flex items-center justify-between gap-6 sm:gap-8">
           <img
             src={cameraPhoto}
@@ -106,61 +101,35 @@ function Gallery({
         <ul className="grid w-full grid-cols-3 gap-2">
           {featured.map((photo) => (
             <li key={photo.id}>
-              <img
-                src={photo.small}
-                alt={photo.alt}
-                width={photo.width}
-                height={photo.height}
-                loading="lazy"
-                decoding="async"
-                className={cn(tileClass, 'object-cover')}
-              />
+              <FeaturedPhoto photo={photo} tuning={tuning.photo} onOpen={lightbox.openPhoto} />
             </li>
           ))}
           <li>
-            <SeeMoreTile photos={previewPhotos(photos, featuredCount)} total={photos.length} />
+            <SeeMoreTile
+              photos={preview}
+              total={photos.length}
+              tuning={tuning.seeMore}
+              tileRef={tileRef}
+              zoomedOutRef={zoomedOutRef}
+              onIntent={overlay.prepare}
+            />
           </li>
         </ul>
       </div>
 
-      {/* Portalled to the body, outside main's stacking context, so it covers the Sunlit light
-          and the blind wand. */}
-      <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-1/85 backdrop-blur-2xl transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none" />
-        <Dialog.Popup className="fixed inset-0 z-50 overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none">
-          <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
-            <div className="sticky top-0 z-10 -mx-4 mb-1 flex items-center justify-between bg-surface-1/80 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
-              <Dialog.Title className="text-base font-semibold text-neutral-950 dark:text-neutral-50">
-                Gallery
-              </Dialog.Title>
-              <Dialog.Close render={<IconButton aria-label="Close gallery" />}>
-                <IconX size={18} stroke={1.75} aria-hidden="true" />
-              </Dialog.Close>
-            </div>
-            <ul className="columns-2 gap-3 sm:columns-3">
-              {photos.map((photo, index) => (
-                <li
-                  key={photo.id}
-                  className="mb-3 animate-enter break-inside-avoid [--enter-step:30ms]"
-                  style={enterIndex(index)}
-                >
-                  <img
-                    src={photo.small}
-                    srcSet={`${photo.small} 640w, ${photo.large} 1600w`}
-                    sizes="(min-width: 1024px) 330px, (min-width: 640px) 33vw, 50vw"
-                    alt={photo.alt}
-                    width={photo.width}
-                    height={photo.height}
-                    loading="lazy"
-                    decoding="async"
-                    className="h-auto w-full rounded-lg bg-neutral-200 dark:bg-neutral-800"
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Dialog.Popup>
-      </Dialog.Portal>
+      <GalleryOverlay
+        photos={overlayPhotos}
+        photoTuning={tuning.photo}
+        listRef={overlay.listRef}
+        flies={overlay.flies}
+        cellsLifted={overlay.cellsLifted}
+        flightAirborne={stage.airborne}
+        closing={overlay.closing}
+        onClose={overlay.close}
+        onOpenPhoto={lightbox.openPhoto}
+        finalFocus={overlay.finalFocus}
+      />
+      {stage.canvas}
     </Dialog.Root>
   )
 }
