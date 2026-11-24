@@ -359,6 +359,7 @@ export function GalleryOverlay({
     ROWS,
   )
   const gap = 'gap-1.5 sm:gap-2'
+  const popupRef = useRef<HTMLDivElement>(null)
 
   return (
     // Portalled to the body, outside main's stacking context, so it covers the Sunlit light and
@@ -368,6 +369,10 @@ export function GalleryOverlay({
       {/* A click beside the photos closes it, as a click on an open photo closes that: from a
           photo opened in the grid, two clicks lead back to the page. */}
       <Dialog.Popup
+        ref={popupRef}
+        // The popup, not its first tabbable element: that's the first photo not flying in, further
+        // down, or the close button at the end, and focusing either scrolls the list down to it.
+        initialFocus={popupRef}
         finalFocus={finalFocus}
         className={cn(
           'fixed inset-0 z-50 cursor-zoom-out overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
