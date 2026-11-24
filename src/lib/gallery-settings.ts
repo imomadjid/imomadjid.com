@@ -16,13 +16,17 @@ export const galleryControls = {
     /** How far the photo zooms in: 0.06 is 6%. */
     zoom: [0.06, 0, 0.2, 0.005],
   },
-  /** A photo expanding to full screen, corners starting by how far each has to go. */
+  /**
+   * A photo flying out of its tile, or the See more grid into the overlay, and back: a spring per
+   * corner without bounce, its visual duration the response of the corner that lands last. It
+   * settles in about one and a half responses.
+   */
   expand: {
-    open: { type: 'easing', duration: 0.8, ease: [0.32, 0.72, 0, 1] },
+    open: { type: 'spring', visualDuration: 0.55, bounce: 0 },
     /** Back into the tile: quicker than the open. */
-    close: { type: 'easing', duration: 0.55, ease: [0.32, 0.72, 0, 1] },
-    /** Seconds the nearest corner can trail the farthest, for a move across the whole screen. */
-    spread: [0.12, 0, 0.5, 0.005],
+    close: { type: 'spring', visualDuration: 0.38, bounce: 0 },
+    /** How much quicker the leading corner's spring is than the last one's: 0.45 is 45%. */
+    spread: [0.45, 0, 0.9, 0.01],
     /** Seconds a closed photo takes to fade into its tile, bringing the Sunlit light back in. */
     relight: [0.3, 0, 1, 0.05],
   },

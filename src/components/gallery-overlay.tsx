@@ -92,9 +92,10 @@ function cellLags(inTile: readonly FlightPose[], tile: HTMLElement, direction: '
 
 /**
  * Opens and closes the See more overlay. Where WebGPU runs, the tile's 16 photos fly out of its
- * cells into the first row of each masonry column and the four below, each corner on its own
- * clock (src/lib/gallery-flight.ts), the tile's middle first. Closing flies them
- * back into the tile, which takes them in as the canvas fades. Without WebGPU it fades.
+ * cells into the first rows of the masonry columns, each corner on its own spring
+ * (src/lib/gallery-flight.ts), the tile's middle first. Closing flies them back into the tile,
+ * turning around with their speed if the open is still under way, and the tile takes them in as
+ * the canvas fades. Without WebGPU it fades.
  *
  * `photos` are the tile's, in its order; `tileRef` is its grid's box, and `zoomedOutRef` whether
  * it shows the whole grid. Returns the dialog root's `open` and `onOpenChange`, `prepare` to warm

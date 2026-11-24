@@ -1,9 +1,9 @@
 import type { TransitionConfig } from 'dialkit'
 import { effect } from 'vgpu'
 
-import { transitionTiming } from '#/lib/ambient-transition'
-import { mixPoint } from '#/lib/gallery-flight-geometry'
-import type { Quad } from '#/lib/gallery-flight-geometry'
+import { springOf, stepSprings } from '#/lib/flight-springs'
+import type { Spring, SpringState } from '#/lib/flight-springs'
+import type { Point, Quad } from '#/lib/gallery-flight-geometry'
 import {
   acquireGalleryGpu,
   drawPass,
@@ -14,7 +14,6 @@ import {
   squarePhotoLayers,
   watchCanvasPixels,
 } from '#/lib/gallery-gpu'
-import { delayedEase } from '#/lib/ring-motion'
 import cellsFlightSource from '#/shaders/gallery-cells-flight.wgsl'
 import flightSource from '#/shaders/gallery-flight.wgsl'
 
@@ -26,11 +25,14 @@ const MAX_CELL_TEXTURE_SIZE = 512
 const MAX_CELLS = 16
 
 export type FlightTuning = {
-  /** Each corner's own move out to full screen. */
+  /** The spring out of a tile, for the corner that lands last. */
   open: TransitionConfig
-  /** Each corner's own move back into its tile, quicker than the open. */
+  /** The spring back into a tile, quicker than the open. */
   close: TransitionConfig
-  /** Seconds the nearest corner can trail the farthest; each lags by its share of it. */
+  /**
+   * How much quicker the leading corner's spring is than the last one's, as a fraction of its
+   * response; each corner between gets its share by its lag (see cornerLags).
+   */
   spread: number
   /** Seconds a photo landed back in its tile takes to fade into the lit tile beneath. */
   relight: number
@@ -46,9 +48,12 @@ type Direction = 'open' | 'close'
 
 export type Flight = {
   /**
-   * Moves `photo` from `from` to `to` with the open or the close timing, each corner starting
-   * `lags[i]` of the spread late (see cornerLags). Resolves true when it lands, holding the last
-   * frame until `clear`, or false when a newer flight or a failure ends it first.
+   * Moves `photo` from `from` to `to` on the open or the close spring, each corner on its own:
+   * one with a lag of 0 leads, quicker by the spread, and one with a lag of 1 takes the whole
+   * response (see cornerLags). A flight that interrupts another of the same kind turns its
+   * corners around from where they are, keeping their speed, and ignores `from`. Resolves true
+   * when it lands, holding the last frame until `clear`, or false when a newer flight or a
+   * failure ends it first.
    */
   fly: (options: {
     photo: HTMLImageElement
@@ -81,31 +86,56 @@ type Kind = 'photo' | 'cells'
 
 type Leg = {
   kind: Kind
-  from: readonly FlightPose[]
-  to: readonly FlightPose[]
-  /** Each corner's start, as a fraction of the spread. */
-  lags: readonly (readonly number[])[]
-  direction: Direction
-  start: number
+  /** Every pose's values, flattened (see poseValues). */
+  targets: readonly number[]
+  springs: readonly Spring[]
+  tolerances: readonly number[]
+  /** When the last frame stepped the springs. */
+  last: number
   land: (landed: boolean) => void
 }
 
-const mean = (values: readonly number[]) =>
-  values.reduce((sum, value) => sum + value, 0) / values.length
+// A pose's values: its corners' x and y, its texels' u and v, its radius and its opacity.
+const POSE_VALUES = 18
+// Each value snaps on once this close: a tenth of a pixel, a ten-thousandth of the photo.
+const POSE_TOLERANCES = [
+  ...Array.from({ length: 8 }, () => 0.1),
+  ...Array.from({ length: 8 }, () => 1e-4),
+  0.1,
+  1e-3,
+]
 
-/** `from` moved toward `to`, each corner by its own amount; the rest at their average. */
-function mixPose(from: FlightPose, to: FlightPose, amounts: readonly number[]): FlightPose {
-  const corner = (i: 0 | 1 | 2 | 3) => mixPoint(from.corners[i], to.corners[i], amounts[i])
-  const texel = (i: 0 | 1 | 2 | 3) => mixPoint(from.texels[i], to.texels[i], amounts[i])
-  // The corners round and the photo fades over the whole move, at the corners' average pace.
-  const along = mean(amounts)
-  const fromOpacity = from.opacity ?? 1
+function poseValues(pose: FlightPose): number[] {
+  return [...pose.corners.flat(), ...pose.texels.flat(), pose.radius, pose.opacity ?? 1]
+}
+
+function poseAt(values: readonly number[], index: number): FlightPose {
+  const base = index * POSE_VALUES
+  const point = (offset: number): Point => [values[base + offset], values[base + offset + 1]]
+  const quad = (offset: number): Quad => [
+    point(offset),
+    point(offset + 2),
+    point(offset + 4),
+    point(offset + 6),
+  ]
   return {
-    corners: [corner(0), corner(1), corner(2), corner(3)],
-    texels: [texel(0), texel(1), texel(2), texel(3)],
-    radius: from.radius + (to.radius - from.radius) * along,
-    opacity: fromOpacity + ((to.opacity ?? 1) - fromOpacity) * along,
+    corners: quad(0),
+    texels: quad(8),
+    radius: values[base + 16],
+    opacity: values[base + 17],
   }
+}
+
+/**
+ * Each value's spring: a corner and its texel share the corner's, quickened by the spread for a
+ * leading corner; the radius and opacity keep the response itself, on their own clock.
+ */
+function poseSprings(config: TransitionConfig, spread: number, lags: readonly number[]): Spring[] {
+  const corners = lags.map((lag) => springOf(config, 1 - spread * (1 - lag)))
+  const own = springOf(config)
+  return Array.from({ length: POSE_VALUES }, (_, value) =>
+    value < 16 ? corners[Math.floor((value % 8) / 2)] : own,
+  )
 }
 
 /** A pose's corners as two vec4s: top left and top right, then bottom right and bottom left. */
@@ -150,7 +180,6 @@ export async function startGalleryFlight(
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     let tuning = initialTuning
-    let timings = { open: transitionTiming(tuning.open), close: transitionTiming(tuning.close) }
     let photoTextureFor: { photo: HTMLImageElement; gpu: GPUTexture } | null = null
     let cellsTextureFor: {
       photos: readonly HTMLImageElement[]
@@ -158,7 +187,13 @@ export async function startGalleryFlight(
       size: number
     } | null = null
     let leg: Leg | null = null
-    let current: { kind: Kind; poses: readonly FlightPose[] } | null = null
+    // Where the poses are and how fast they move, mid-flight or landed; null when cleared.
+    let motion: {
+      kind: Kind
+      photos: readonly HTMLImageElement[]
+      count: number
+      state: SpringState
+    } | null = null
     let frameId = 0
     life.onDispose(() => {
       cancelAnimationFrame(frameId)
@@ -203,30 +238,27 @@ export async function startGalleryFlight(
       drawPass(gpu, life, output, cellsFlight)
     }
 
+    const posesOf = ({ count, state }: { count: number; state: SpringState }) =>
+      Array.from({ length: count }, (_, index) => poseAt(state.values, index))
+
     function render() {
-      if (!current) drawPass(gpu, life, output, null)
-      else if (current.kind === 'photo') renderPhoto(current.poses[0])
-      else renderCells(current.poses)
+      if (!motion) drawPass(gpu, life, output, null)
+      else if (motion.kind === 'photo') renderPhoto(poseAt(motion.state.values, 0))
+      else renderCells(posesOf(motion))
     }
 
     function step(now: number) {
       frameId = 0
-      if (life.disposed() || !leg) return
-      const elapsed = (now - leg.start) / 1000
-      const timing = timings[leg.direction]
-      const duration = reducedMotion.matches ? 0 : timing.duration
-      const spread = reducedMotion.matches ? 0 : tuning.spread
-      let landed = true
-      const { from, to, lags } = leg
-      const poses = from.map((start, index) => {
-        const amounts = lags[index].map((lag) => {
-          const eased = delayedEase(elapsed, lag * spread, duration, timing.ease)
-          if (eased.moving) landed = false
-          return eased.value
-        })
-        return mixPose(start, to[index], amounts)
-      })
-      current = { kind: leg.kind, poses }
+      if (life.disposed() || !leg || !motion) return
+      // Long frames still move the springs on in real time, up to a second at once.
+      const dt = Math.min(1, Math.max(0, (now - leg.last) / 1000))
+      leg.last = now
+      // Reduced motion lands at once.
+      if (reducedMotion.matches)
+        motion.state = { values: [...leg.targets], velocities: leg.targets.map(() => 0) }
+      const landed =
+        reducedMotion.matches ||
+        stepSprings(motion.state, leg.targets, leg.springs, leg.tolerances, dt)
       render()
       if (life.disposed()) return
       if (landed) {
@@ -238,10 +270,43 @@ export async function startGalleryFlight(
       }
     }
 
-    function start(flight: Omit<Leg, 'start' | 'land'>) {
+    function start(
+      kind: Kind,
+      photos: readonly HTMLImageElement[],
+      {
+        from,
+        to,
+        lags,
+        direction,
+      }: {
+        from: readonly FlightPose[]
+        to: readonly FlightPose[]
+        lags: readonly (readonly number[])[]
+        direction: Direction
+      },
+    ) {
+      // A flight still in the air with the same photos turns around where it is, at its speed.
+      const turning =
+        leg !== null &&
+        motion?.kind === kind &&
+        motion.photos.length === photos.length &&
+        motion.photos.every((photo, index) => photo === photos[index])
       leg?.land(false)
+      if (!turning) {
+        const values = from.flatMap(poseValues)
+        motion = {
+          kind,
+          photos,
+          count: from.length,
+          state: { values, velocities: values.map(() => 0) },
+        }
+      }
+      const config = direction === 'open' ? tuning.open : tuning.close
+      const springs = lags.flatMap((cornerLags) => poseSprings(config, tuning.spread, cornerLags))
       return new Promise<boolean>((land) => {
-        leg = { ...flight, start: performance.now(), land }
+        const targets = to.flatMap(poseValues)
+        const tolerances = targets.map((_, index) => POSE_TOLERANCES[index % POSE_VALUES])
+        leg = { kind, targets, springs, tolerances, last: performance.now(), land }
         cancelAnimationFrame(frameId)
         // Draw the starting pose now, so it is on screen in the same frame as the caller's swap.
         step(performance.now())
@@ -252,7 +317,7 @@ export async function startGalleryFlight(
     watchCanvasPixels(
       canvas,
       () => {
-        if (!leg && current) render()
+        if (!leg && motion) render()
       },
       life.signal,
     )
@@ -268,7 +333,7 @@ export async function startGalleryFlight(
           }
           photoFlight.set({ photo: photoTextureFor.gpu, photoSampler: sampler })
         }
-        return start({ kind: 'photo', from: [from], to: [to], lags: [lags], direction })
+        return start('photo', [photo], { from: [from], to: [to], lags: [lags], direction })
       },
       flyCells({ photos, from, to, lags, direction }) {
         life.assertLive()
@@ -287,21 +352,20 @@ export async function startGalleryFlight(
           cellsTextureFor = { photos, layers, size }
           cellsFlight.set({ photos: layers, photoSampler: sampler })
         }
-        return start({ kind: 'cells', from, to, lags, direction })
+        return start('cells', photos, { from, to, lags, direction })
       },
-      pose: () => (current?.kind === 'photo' ? current.poses[0] : null),
-      cellPoses: () => (current?.kind === 'cells' ? current.poses : null),
+      pose: () => (motion?.kind === 'photo' ? poseAt(motion.state.values, 0) : null),
+      cellPoses: () => (motion?.kind === 'cells' ? posesOf(motion) : null),
       clear() {
         leg?.land(false)
         leg = null
-        current = null
+        motion = null
         cancelAnimationFrame(frameId)
         frameId = 0
         if (!life.disposed()) render()
       },
       update(nextTuning) {
         tuning = nextTuning
-        timings = { open: transitionTiming(tuning.open), close: transitionTiming(tuning.close) }
       },
       dispose: life.dispose,
     }

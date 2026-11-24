@@ -50,10 +50,10 @@ export function coverCrop(imageAspect: number, boxAspect: number): Rect {
 export const wholeImage: Rect = { x: 0, y: 0, width: 1, height: 1 }
 
 /**
- * How long each corner waits behind the one farthest from its partner in `toward`, as a fraction
- * of `scale` (the viewport's diagonal): its distance short of the farthest one's, over `scale`,
- * up to 1. Corners as far as each other start together, so a tile centred across the screen moves
- * its top or bottom edge as one, and the spread grows the more lopsided the move is.
+ * How far each corner lags the one farthest from its partner in `toward`, from 0 (it leads) to 1:
+ * its distance short of the farthest one's, over `scale` (the viewport's diagonal), up to 1.
+ * Corners as far as each other move together, so a tile centred across the screen moves its top
+ * or bottom edge as one, and the lead grows the more lopsided the move is.
  */
 export function cornerLags(
   from: readonly Point[],
@@ -78,8 +78,8 @@ export function mixPoint(from: Point, to: Point, amount: number): Point {
 }
 
 /**
- * How long each point waits, as a fraction of the spread, when a group opens from its middle:
- * its distance from `center` over the farthest point's, so the middle leads and the rim follows.
+ * How far each point lags when a group opens from its middle, from 0 (it leads) to 1: its
+ * distance from `center` over the farthest point's, so the middle leads and the rim follows.
  */
 export function centerOutLags(points: readonly Point[], center: Point): number[] {
   const distances = points.map((point) => Math.hypot(point[0] - center[0], point[1] - center[1]))
