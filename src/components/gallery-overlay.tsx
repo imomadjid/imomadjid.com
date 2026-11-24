@@ -183,6 +183,8 @@ export function useSeeMoreOverlay({
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
   const flightToken = useRef(0)
   const returnTo = useRef<{ tile: HTMLElement; keyboard: boolean } | null>(null)
+  /** Stops the opening run's notes still to come, so a quick close doesn't sound like an open. */
+  const stopOpenRun = useRef<(() => void) | null>(null)
 
   // The tile stays empty while its photos are out, in flight or in the overlay.
   const tileLifted = shown?.lifted ?? false
@@ -256,6 +258,7 @@ export function useSeeMoreOverlay({
   /** `voiced` unless the close button asked: it carries its own cue, which bind() plays. */
   const closeOverlay = (voiced = true) => {
     if (!shown || shown.phase === 'closing') return
+    stopOpenRun.current?.()
     if (voiced) play('close')
     const flight = stage.flightRef.current
     const tile = tileRef.current
@@ -306,7 +309,7 @@ export function useSeeMoreOverlay({
         const keyboard = event instanceof MouseEvent ? event.detail === 0 : true
         const trigger = tileRef.current?.closest('button')
         returnTo.current = trigger ? { tile: trigger, keyboard } : null
-        playOpenRun()
+        stopOpenRun.current = playOpenRun()
         openOverlay()
       }
       // The tile sits under the overlay once it opens, so a press on it can only be the second

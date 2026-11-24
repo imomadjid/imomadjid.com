@@ -16,7 +16,8 @@ export function SiteFooter() {
  * off, as cuelume starts. Neutral utilities, as the text links use: dark: follows the Sunlit scene.
  */
 function SoundSwitch() {
-  // The prerendered page can't know the choice; it shows on, the default, until hydration reads it.
+  // The prerendered page can't know the choice, so the word follows `data-sound`, which the head
+  // script sets before the page paints; the state only drives what the switch announces.
   const on = useSyncExternalStore(subscribeSound, getSoundOn, () => true)
   return (
     <button
@@ -29,7 +30,8 @@ function SoundSwitch() {
       Sound
       {/* The switch's state is announced through aria-checked; the word is for the eye. */}
       <span aria-hidden="true" className="text-neutral-900 dark:text-neutral-100">
-        {on ? 'On' : 'Off'}
+        <span className="in-data-[sound=off]:hidden">On</span>
+        <span className="not-in-data-[sound=off]:hidden">Off</span>
       </span>
     </button>
   )

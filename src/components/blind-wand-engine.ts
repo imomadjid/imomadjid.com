@@ -2,6 +2,7 @@ import { play } from 'cuelume'
 
 import type { AmbientSettings } from '#/lib/ambient-settings'
 import { lightFrame, lightOverscan } from '#/lib/light-frame'
+import { wakeSound } from '#/lib/sound'
 import { sceneLight, wandPose } from '#/lib/sunlit-scene'
 import type { SceneLight } from '#/lib/sunlit-scene'
 import { getResolvedScheme, toggleScheme } from '#/lib/theme'
@@ -586,6 +587,8 @@ export function startBlindWand(
     const shown = getResolvedScheme()
     const next: Scheme = (pending ?? shown) === 'dark' ? 'light' : 'dark'
     voiced = true
+    // The ticks play from animation frames, so audio has to start here, in the gesture.
+    wakeSound()
     pending = next === shown ? null : next
     twistFrom = turn
     twistStartedAt = performance.now()
