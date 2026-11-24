@@ -40,9 +40,10 @@ function previewPhotos(photos: readonly GalleryPhoto[], featuredCount: number) {
 
 /**
  * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
- * out to the whole grid and shows the label. The grid overhangs the tile by half a gap on each
- * side, so the 2x crop's edges land on cell edges; cells have half the tiles' radius for the same
- * reason. Cells are squares sized by width: a 100% height fills its row in Chrome but takes the
+ * out to the whole grid and shows the label. At 2x the grid overhangs the tile by half a gap on
+ * each side, so the crop's edges land on cell edges; cells have half the tiles' radius for the same
+ * reason. The overhang shrinks to nothing as it zooms out, or the tile would clip the edge cells'
+ * corners at 1x. Cells are squares sized by width: a 100% height fills its row in Chrome but takes the
  * image's own proportions in Safari.
  */
 function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total: number }) {
@@ -52,7 +53,7 @@ function SeeMoreTile({ photos, total }: { photos: readonly GalleryPhoto[]; total
       className="group relative block w-full cursor-pointer rounded-xl outline-none"
     >
       <span className="relative block aspect-square w-full overflow-hidden rounded-xl">
-        <span className="absolute -inset-px grid scale-200 grid-cols-4 content-start gap-0.5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-100 group-focus-visible:scale-100 motion-reduce:transition-none">
+        <span className="absolute -inset-px grid scale-200 grid-cols-4 content-start gap-0.5 transition-[scale,inset] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:inset-0 group-hover:scale-100 group-focus-visible:inset-0 group-focus-visible:scale-100 motion-reduce:transition-none">
           {photos.map((photo) => (
             <img
               key={photo.id}
