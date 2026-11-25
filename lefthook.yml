@@ -4,7 +4,13 @@ pre-commit:
     format:
       glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,css,md,yml,yaml,html}'
       exclude:
-        &vendored ['tools/oxlint/anti-slop/**', '.agents/**', '.claude/**', 'src/routeTree.gen.ts']
+        &vendored [
+          'tools/oxlint/anti-slop/**',
+          '.agents/**',
+          '.claude/**',
+          'src/routeTree.gen.ts',
+          'tools/stamps/candidates/**',
+        ]
       run: bun run format:check {staged_files}
     lint:
       glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'
