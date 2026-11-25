@@ -3,7 +3,9 @@
 // captures and evaluates it the same way (except the 1-device-pixel edge antialiasing and the
 // shadow's overlay form); src/lib/live-glass.ts runs the passes:
 //   sample = p - n * pull(d)            inside, d pt in from the edge, n its outward normal
-//   base   = mix(narrow, wide, wide) at sample   the backdrop at the frost's two blurs
+//   base   = mix(narrow, wide, wide) at sample, ^ (1 / gamma)
+//            the backdrop raised to gamma, at half resolution and widely blurred, mixed and
+//            brought back from the frost's power space
 //   base   = luma + saturation * (base - luma)
 //   out    = offset + gain * base + curve * base^2   from the material table at (d, normal)
 // Outside the shape the table holds the drop shadow and hairline: their tone of the backdrop is
@@ -30,6 +32,8 @@ struct GlassParams {
   region: vec4f,
   wide: f32,
   saturation: f32,
+  // The power the backdrop textures hold, which the frost mixes in.
+  gamma: f32,
   // Material table rows: d of the first row in pt, pt per row; then the row and angle counts.
   tableMin: f32,
   tableStep: f32,
@@ -93,6 +97,11 @@ fn materialAt(d: f32, normal: vec2f) -> vec3f {
   return textureSampleLevel(material, materialSampler, vec2f(u, v), i32(params.scheme), 0.0).rgb;
 }
 
+// Back from the frost's power space to sRGB.
+fn fromFrost(c: vec3f) -> vec3f {
+  return pow(max(c, vec3f(0.0)), vec3f(1.0 / params.gamma));
+}
+
 fn hash(p: vec2f) -> f32 {
   return fract(sin(dot(p, vec2f(12.9898, 78.233))) * 43758.5453);
 }
@@ -115,9 +124,9 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   // the backdrop here is drawn as black (darker) or white (lighter) at the alpha that reaches it
   // over that backdrop.
   let under = dot(
-    textureSampleLevel(
+    fromFrost(textureSampleLevel(
       narrow, backdropSampler, (params.origin + p * params.zoom - params.region.xy) / params.region.zw, 0.0
-    ).rgb,
+    ).rgb),
     vec3f(0.2126, 0.7152, 0.0722)
   );
   let toned = clamp(m.x + m.y * under + m.z * under * under + dither, 0.0, 1.0);
@@ -133,11 +142,11 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let scale = params.scale;
   let q = params.origin + (p - normal * pull(d / scale) * scale) * params.zoom;
   let at = (q - params.region.xy) / params.region.zw;
-  var base = mix(
+  var base = fromFrost(mix(
     textureSampleLevel(narrow, backdropSampler, at, 0.0).rgb,
     textureSampleLevel(wideBlur, backdropSampler, at, 0.0).rgb,
     params.wide
-  );
+  ));
   let luma = dot(base, vec3f(0.2126, 0.7152, 0.0722));
   // Unclamped, as fit.py fits it: a saturated channel may leave 0-1 before the tone.
   base = vec3f(luma) + params.saturation * (base - vec3f(luma));

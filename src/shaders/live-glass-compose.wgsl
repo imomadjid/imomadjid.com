@@ -1,6 +1,7 @@
 // Live glass, first pass: the backdrop behind the glass (photos over a flat colour) drawn into an
-// offscreen texture that covers the glass and as far around it as the frost reaches. The blur
-// passes (live-glass-blur.wgsl) soften it, and live-glass.wgsl bends and tones it.
+// offscreen texture that covers the glass and as far around it as the frost reaches, raised to
+// the frost's power (gamma). The blur passes (live-glass-blur.wgsl) soften the wide copy, and
+// live-glass.wgsl bends, mixes and tones both.
 import { roundedBox } from "./rings.wgsl";
 
 struct ComposeParams {
@@ -10,9 +11,9 @@ struct ComposeParams {
   // CSS pixels per texel, for the photos' antialiased edges, and how many photos are listed.
   texel: f32,
   count: f32,
-  // Edge length of each photo layer in texels.
+  // Edge length of each photo layer in texels, and the power the frost works in.
   layerSize: f32,
-  _pad: f32,
+  gamma: f32,
   // The viewport in CSS pixels: past its edges the frost sees the edge repeated, as iOS's does,
   // not content scrolled out of view.
   viewport: vec2f,
@@ -51,5 +52,5 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     let sampled = textureSampleLevel(photos, photoSampler, texel, i32(params.styles[i].y), lod);
     color = mix(color, sampled.rgb, coverage);
   }
-  return vec4f(color, 1.0);
+  return vec4f(pow(max(color, vec3f(0.0)), vec3f(params.gamma)), 1.0);
 }

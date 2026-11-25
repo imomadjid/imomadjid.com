@@ -22,8 +22,9 @@ import glassSource from '#/shaders/live-glass.wgsl'
 // tone, rim and shadow tables) is fitted to iOS simulator captures by tools/glass-live/fit.py.
 // WebGPU can't read the page's pixels, so a LiveGlassSource lists what is behind the glass:
 // photos as <img> elements on a flat colour. Where neither is known the glass shows the colour.
-// Each frame composes that backdrop around the glass twice, sharp at up to 2x for the frost's
-// narrow blur and at 1x for its wide one, blurs each across and down, then draws the glass.
+// Each frame composes that backdrop around the glass at the screen's resolution, raised to the
+// frost's power, and box-averages it to half that for the sharp share; the wide share takes that
+// down to 1x and blurs it across and down. Then it draws the glass.
 
 // The fitted shape: a 56 pt circle. Smaller shapes narrow the refraction in proportion.
 const FITTED_SIZE = material.size
@@ -69,16 +70,14 @@ export async function startLiveGlass(
       life.onDispose(() => made.color.destroy())
       return made
     }
-    // Sharp and wide, each with a second target for the blur's first direction.
-    const sharp = [backdropTarget('live-glass-sharp'), backdropTarget('live-glass-sharp-2')]
+    // The sharp share, composed at the screen's resolution and box-averaged to half of it, as iOS
+    // draws it, and the wide one with a second target for its blur's first direction.
+    const full = backdropTarget('live-glass-sharp-full')
+    const sharp = backdropTarget('live-glass-sharp')
     const soft = [backdropTarget('live-glass-wide'), backdropTarget('live-glass-wide-2')]
     const photoBindings = { photos: pool.layers, photoSampler: photoSampler(gpu) }
     const composeSharp = effect(gpu, composeSource, {
       label: 'live-glass-compose',
-      set: photoBindings,
-    })
-    const composeWide = effect(gpu, composeSource, {
-      label: 'live-glass-compose-wide',
       set: photoBindings,
     })
     // One per blur pass: a frame's passes read their uniforms when it's submitted.
@@ -99,7 +98,7 @@ export async function startLiveGlass(
         }),
       },
     })
-    const made: Effect[] = [composeSharp, composeWide, ...blurs, glass]
+    const made: Effect[] = [composeSharp, ...blurs, glass]
     life.onDispose(() => {
       for (const fx of made) fx.dispose()
     })
@@ -146,11 +145,16 @@ export async function startLiveGlass(
       const scale = Math.min(1, Math.min(glassWidth, glassHeight) / FITTED_SIZE)
       // The backdrop the glass reads: the canvas, grown by the pull and the wide blur's reach.
       const reach = Math.ceil(MAX_PULL * scale + 3 * scheme.wideBlur + 2)
+      // On whole pairs of device pixels, so the half-resolution sharp share's texels sit on the
+      // screen's pixel grid as iOS's do: the glass reads it back across them bilinearly.
+      const pair = 2 / output.dpr
+      const left = Math.floor((box.x - reach) / pair) * pair
+      const top = Math.floor((box.y - reach) / pair) * pair
       const region = new DOMRect(
-        box.x - reach,
-        box.y - reach,
-        box.width + 2 * reach,
-        box.height + 2 * reach,
+        left,
+        top,
+        Math.ceil((box.right + reach - left) / pair) * pair,
+        Math.ceil((box.bottom + reach - top) / pair) * pair,
       )
       const scene = source.scene(region)
       const photos = nearest(scene.photos, region, box)
@@ -187,10 +191,16 @@ export async function startLiveGlass(
       placed = new Map(photos.map((photo) => [photo.image, photo.rect]))
 
       const layers = pool.place(photos.map((photo) => photo.image))
-      const sharpScale = Math.min(output.dpr, 2)
-      const sharpSize = texels(region, sharpScale)
+      // The region spans whole pairs of device pixels, so the half size is exact: one bilinear
+      // tap at each half texel's centre averages the 2x2 block under it.
+      const fullSize = [
+        Math.round(region.width * output.dpr),
+        Math.round(region.height * output.dpr),
+      ]
+      const halfSize = [fullSize[0] / 2, fullSize[1] / 2]
       const wideSize = texels(region, 1)
-      resize(sharp, sharpSize)
+      resize([full], fullSize)
+      resize([sharp], halfSize)
       resize(soft, wideSize)
       const background = [...cssColor(scene.background), 1]
       const composed = {
@@ -198,7 +208,7 @@ export async function startLiveGlass(
         span: [region.width, region.height],
         count: photos.length,
         layerSize: LAYER_SIZE,
-        _pad: 0,
+        gamma: scheme.gamma,
         viewport: [document.documentElement.clientWidth, document.documentElement.clientHeight],
         _pad2: [0, 0],
         background,
@@ -221,8 +231,7 @@ export async function startLiveGlass(
         ),
         styles: slots(photos.map((photo, i) => [photo.radius, layers[i], 0, 0])),
       }
-      composeSharp.set({ params: { ...composed, texel: 1 / sharpScale } })
-      composeWide.set({ params: { ...composed, texel: 1 } })
+      composeSharp.set({ params: { ...composed, texel: 1 / output.dpr } })
       const blur = (i: number, from: Target, size: number[], across: boolean, sigma: number) => {
         blurs[i].set({
           source: from,
@@ -231,7 +240,7 @@ export async function startLiveGlass(
         return blurs[i]
       }
       glass.set({
-        narrow: sharp[0],
+        narrow: sharp,
         wideBlur: soft[0],
         params: {
           size: [width, height],
@@ -246,6 +255,7 @@ export async function startLiveGlass(
           region: [region.x, region.y, region.width, region.height],
           wide: scheme.wide,
           saturation: scheme.saturation,
+          gamma: scheme.gamma,
           tableMin: material.dMin,
           tableStep: material.dStep,
           tableRows: scheme.gain.length,
@@ -256,12 +266,14 @@ export async function startLiveGlass(
         },
       })
       frame(gpu, (now) => {
-        now.pass(sharp[0], composeSharp)
-        now.pass(sharp[1], blur(0, sharp[0], sharpSize, true, scheme.blur * sharpScale))
-        now.pass(sharp[0], blur(1, sharp[1], sharpSize, false, scheme.blur * sharpScale))
-        now.pass(soft[0], composeWide)
-        now.pass(soft[1], blur(2, soft[0], wideSize, true, scheme.wideBlur))
-        now.pass(soft[0], blur(3, soft[1], wideSize, false, scheme.wideBlur))
+        now.pass(full, composeSharp)
+        now.pass(sharp, blur(2, full, fullSize, true, 0))
+        // The wide share starts from the sharp one, already in the frost's power: composed apart
+        // from the photos' mips, it would average before the power, not after, and shift the tone
+        // of anything finely patterned.
+        now.pass(soft[0], blur(3, sharp, halfSize, true, 0))
+        now.pass(soft[1], blur(0, soft[0], wideSize, true, scheme.wideBlur))
+        now.pass(soft[0], blur(1, soft[1], wideSize, false, scheme.wideBlur))
         now.pass(output, glass)
       })
       return true

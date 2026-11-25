@@ -1,17 +1,23 @@
 # Fits the live-glass model to iOS simulator captures (capture.sh) of the scenes in
 # Scenes/scenes.json. Usage, from tools/glass-live:
-#   uv run --with pillow --with numpy --with scipy python fit.py <dir> [--write]
+#   uv run --with pillow --with numpy --with scipy python fit.py <dir> [--resume] [--bevel] [--write]
 # The model, which src/shaders/live-glass.wgsl evaluates the same way, per pixel at distance d
 # inside the shape's edge (pt) with outward normal n:
-#   sample = p - n * pull(d)                               (refraction: pull is a monotone cubic
-#                                                           through KNOTS, 0 from the last one in)
-#   base   = mix(gaussian(backdrop, blur), gaussian(backdrop, wideBlur), wide) at sample  (frost)
-#   base   = luma + saturation * (base - luma)              (vibrancy)
-#   out    = offset + gain * base + curve * base^2         (sRGB 0-1, tables over d and angle)
-# offset, gain and curve carry the tone, rim light and drop shadow. For given refraction and blur they
-# solve per pixel by least squares across every scene of a scheme, then reduce to a table over
-# (d, angle) that the shader reads. The refraction and blur are searched to minimise what's left.
-# --write saves the tables and parameters to src/lib/live-glass-material.json.
+#   sample = p - n * pull(d)                    (refraction: a monotone cubic through KNOTS, from
+#                                                about 23 pt at the rim to 0 by 14 pt in)
+#   b      = backdrop ^ gamma                   (the frost works in a power space, per scheme)
+#   base   = mix(half(b), gaussian(b, wideBlur), wide) at sample, ^ (1 / gamma)
+#   base   = luma + saturation * (base - luma)  (vibrancy)
+#   out    = offset + gain * base + curve * base^2   (sRGB 0-1, tables over d and angle)
+# half() is the sharp share as iOS draws it: a 2x box downsample on the screen's pixel grid,
+# read back bilinearly. offset, gain and curve carry the tone, rim light and drop shadow: for
+# given refraction and frost they solve per pixel by least squares across every scene of a
+# scheme, then reduce to a table over (d, angle) that the shader reads. The frost is searched to
+# minimise what's left; --bevel also refits the knots to the image error, over both schemes.
+# The motion stills at 150, 450, 750, 1050 and 1350 pt are held out of every search and
+# reported apart; the tables written use every scene.
+# --resume starts from the material already written; --write saves to
+# src/lib/live-glass-material.json.
 import json, sys
 import numpy as np
 from PIL import Image
@@ -95,10 +101,9 @@ def geometry():
 PX, PY, D, NX, NY, ANG = geometry()
 
 
-# The bevel's pull, pt inward, at these distances from the edge (pt), out to the middle, where it
-# is 0: the whole disc is a lens, magnifying a little in the middle and folding hard at the rim.
-KNOTS = np.array([0, 1.5, 3, 4.5, 6, 8, 11, 15, 20, 28.0])
-PROFILE = None
+# The bevel's pull, pt inward, at these distances from the edge (pt); 0 from the last on.
+KNOTS = np.array([0, 1.5, 3, 4.5, 6, 8, 10, 12, 14, 28.0])
+PROFILE = np.array([22.9, 15.3, 10.4, 7.4, 4.95, 2.66, 1.16, 0.32, 0.0])
 
 
 def bevel(profile):
@@ -107,26 +112,13 @@ def bevel(profile):
     return interpolate.PchipInterpolator(KNOTS, np.append(profile, 0.0))
 
 
-def pull():
-    if PROFILE is not None:
-        return bevel(PROFILE)(np.clip(D, 0, KNOTS[-1]))
-    return None
-
-
-def refracted(blurred, params):
-    depth, bevel, power = params[:3]
-    shift = pull()
-    if shift is None:
-        t = np.clip(1 - D / bevel, 0, 1) ** power
-        shift = depth * t
-    shift = np.where(D > 0, shift, 0)
-    sx = PX - NX * shift
-    sy = PY - NY * shift
-    # Backdrop pixel coordinates over the PAD square.
-    u = (sx - (CX - PAD)) * SCALE - 0.5
-    v = (sy - (CY - PAD)) * SCALE - 0.5
+def refracted(image, profile):
+    """`image` (over the PAD square) read where each crop pixel samples it through the bevel."""
+    shift = np.where(D > 0, bevel(profile)(np.clip(D, 0, KNOTS[-1])), 0)
+    u = (PX - NX * shift - (CX - PAD)) * SCALE - 0.5
+    v = (PY - NY * shift - (CY - PAD)) * SCALE - 0.5
     return np.stack(
-        [ndimage.map_coordinates(blurred[:, :, c], [v, u], order=1, mode='nearest') for c in range(3)],
+        [ndimage.map_coordinates(image[:, :, c], [v, u], order=1, mode='nearest') for c in range(3)],
         -1,
     )
 
@@ -142,44 +134,49 @@ def gaussian(back, sigma):
     return np.pad(up, ((0, back.shape[0] - up.shape[0]), (0, back.shape[1] - up.shape[1]), (0, 0)), mode='edge')
 
 
-BEND_FIRST = '--bend-first' in sys.argv
-
-
-def blurred_backdrops(scenes, params):
-    blur, wide, wide_blur = params[3], params[5], params[6]
-    out = []
-    for scene, back in scenes:
-        if BEND_FIRST:
-            out.append((scene, back, None))
-            continue
-        b = (1 - wide) * gaussian(back, blur) + wide * gaussian(back, wide_blur)
-        out.append((scene, back, b))
-    return out
+def half(back):
+    """The sharp share: a 2x box downsample in blocks on even screen pixels, read back bilinearly.
+    iOS's line spread has the half-pixel tails toward -x and +y this leaves."""
+    ox, oy = round((CX - PAD) * SCALE) % 2, round((CY - PAD) * SCALE) % 2
+    b = np.pad(back, ((oy, 0), (ox, 0), (0, 0)), mode='edge')
+    h, w = b.shape[:2]
+    b = np.pad(b, ((0, h % 2), (0, w % 2), (0, 0)), mode='edge')
+    small = b.reshape(b.shape[0] // 2, 2, b.shape[1] // 2, 2, 3).mean((1, 3))
+    gy, gx = np.meshgrid((np.arange(h) + 0.5) / 2 - 0.5, (np.arange(w) + 0.5) / 2 - 0.5, indexing='ij')
+    up = np.stack([ndimage.map_coordinates(small[:, :, c], [gy, gx], order=1, mode='nearest') for c in range(3)], -1)
+    return up[oy : oy + back.shape[0], ox : ox + back.shape[1]]
 
 
 LUMA = np.array([0.2126, 0.7152, 0.0722])
+FROST = ('saturation', 'wide', 'wideBlur', 'gamma')
+layer_cache = {}
 
 
-def model_inputs(prepared, params):
+def layers(scene, back, gamma, wide_blur):
+    """The sharp and wide layers of a scene's backdrop in the frost's power space, cached."""
+    key = (scene['name'], round(gamma, 4), round(wide_blur, 3))
+    if key not in layer_cache:
+        if len(layer_cache) > 400:
+            layer_cache.clear()
+        b = (back / 255) ** gamma
+        layer_cache[key] = (half(b).astype(np.float32), gaussian(b, wide_blur).astype(np.float32))
+    return layer_cache[key]
+
+
+def model_inputs(data, frost, profile):
     """Per scene: the base the material sees, frosted, refracted and saturated inside, plain
     outside, in 0-1."""
     inside = (D > 0)[..., None]
     lo = int(round((PAD - CROP) * SCALE))
     hi = lo + D.shape[0]
     bases = []
-    for scene, back, blurred in prepared:
-        plain = back[lo:hi, lo:hi] / 255
-        if BEND_FIRST:
-            # The core blur runs on the bent image, in screen space; the wide one is bent.
-            sharp = refracted(back, params)
-            core = gaussian(sharp, params[3]) if params[3] >= 0.05 else sharp
-            wide = refracted(gaussian(back, params[6]), params)
-            glass = ((1 - params[5]) * core + params[5] * wide) / 255
-        else:
-            glass = refracted(blurred, params) / 255
+    for scene, back, _, _ in data:
+        sharp, soft = layers(scene, back, frost['gamma'], frost['wideBlur'])
+        mixed = (1 - frost['wide']) * refracted(sharp, profile) + frost['wide'] * refracted(soft, profile)
+        glass = np.maximum(mixed, 0) ** (1 / frost['gamma'])
         luma = (glass @ LUMA)[..., None]
-        glass = luma + params[4] * (glass - luma)
-        bases.append(np.where(inside, glass, plain))
+        glass = luma + frost['saturation'] * (glass - luma)
+        bases.append(np.where(inside, glass, back[lo:hi, lo:hi] / 255))
     return bases
 
 
@@ -270,139 +267,91 @@ def scheme_data(scheme):
     return data
 
 
-def evaluate(data, params, detail=False):
-    prepared = blurred_backdrops([(s, b) for s, b, _, _ in data], params)
-    bases = model_inputs(prepared, params)
+def held_out(scene):
+    name = scene['name']
+    return '@' in name and int(name.split('@')[1]) % 300 == 150
+
+
+def evaluate(data, frost, profile, detail=False, train=True):
+    """Mean error over the button and its shadow, with the tables solved on the training scenes
+    (or every scene, `train=False`)."""
+    bases = model_inputs(data, frost, profile)
     refs = [r for _, _, r, _ in data]
-    tables = table(solve_maps(bases, refs))
+    use = [i for i, (scene, *_) in enumerate(data) if not (train and held_out(scene))]
+    tables = table(solve_maps([bases[i] for i in use], [refs[i] for i in use]))
     O, G, Q = (lookup(t)[..., None] for t in tables)
     renders = [np.clip(O + G * b + Q * b * b, 0, 1) * 255 for b in bases]
     # Scored inside the button and its shadow only, where the model has a say.
     near = D > -12
-    errs = [np.abs(m - r)[near].mean() for m, r in zip(renders, refs)]
+    errs = np.array([np.abs(m - r)[near].mean() for m, r in zip(renders, refs)])
     if detail:
         return errs, tables, renders
-    return float(np.mean(errs))
+    return float(np.mean([e for e, i in zip(errs, range(len(errs))) if i in use]))
 
 
-# The ramp captures' first reading of the bevel, a power-law pull: inside about 19 pt from the
-# middle the glass is 1:1, and across the outer bevel pixels sample from ~6.5 pt inside the edge.
-# Only used when no PROFILE is set; the main run starts PROFILE from it and fits the knots.
-REFRACTION = [6.5, 10.0, 1.8]
+def report(scheme, data, frost, profile):
+    errs, _, _ = evaluate(data, frost, profile, detail=True)
+    test = np.array([held_out(scene) for scene, *_ in data])
+    print(f'{scheme}: ' + ' '.join(f'{k} {frost[k]:.3f}' for k in FROST)
+          + f' -> train {errs[~test].mean():.2f} held out {errs[test].mean():.2f}')
+    for (scene, *_), e in zip(data, errs):
+        print(f"  {scene['name']:18s} {e:5.2f}")
 
 
-def fit(scheme, start):
+def fit(scheme, frost, profile):
+    """Searches the frost of one scheme, the bevel fixed."""
     data = scheme_data(scheme)
     for scene, _, _, err in data:
-        print(f"  align {scene['name']:16s} {err:5.2f}")
-    bounds = [(0.05, 6), (0.5, 3), (0, 0.95), (3, 32)]
+        print(f"  align {scene['name']:18s} {err:5.2f}")
+    bounds = np.array([(0.5, 3), (0, 0.95), (3, 30), (0.4, 2.5)])
 
-    def full(q):
-        q = np.clip(q, [b[0] for b in bounds], [b[1] for b in bounds])
-        return [*REFRACTION, *q]
+    def unpack(q):
+        return dict(zip(FROST, np.clip(q, bounds[:, 0], bounds[:, 1])))
 
     res = optimize.minimize(
-        lambda q: evaluate(data, full(q)),
-        start,
+        lambda q: evaluate(data, unpack(q), profile),
+        [frost[k] for k in FROST],
         method='Nelder-Mead',
-        options={'xatol': 0.02, 'fatol': 0.002, 'maxiter': 120},
+        options={'xatol': 0.01, 'fatol': 0.002, 'maxiter': 80},
     )
-    p = full(res.x)
-    errs, tables, _ = evaluate(data, p, detail=True)
-    print(
-        f'{scheme}: blur {p[3]:.2f} saturation {p[4]:.2f} wide {p[5]:.2f} '
-        f'wideBlur {p[6]:.2f} -> {np.mean(errs):.2f}'
-    )
-    for (scene, *_), e in zip(data, errs):
-        print(f"  {scene['name']:16s} {e:5.2f}")
-    return p, tables
+    best = {k: float(v) for k, v in unpack(res.x).items()}
+    report(scheme, data, best, profile)
+    return best
 
 
-def edge_samples():
-    """(d, pull) pairs read off the motion stills where the column gap behind the glass (6 pt wide,
-    centred under it) separates cleanly from the photos: a pixel on the gap's boundary at p, r
-    from the centre, samples the gap's edge 3 pt across, radially inward, so
-    pull = r * (1 - 3 / |p.x|). Tone-free, and it reaches the rim, where the gap sweeps out."""
-    import os
+def fit_bevel(frost, profile):
+    """Fits the knots to the image error over both schemes' training scenes, the frost fixed,
+    keeping the pull non-increasing from the rim in."""
+    sets = {scheme: scheme_data(scheme) for scheme in frost}
 
-    n = int(2 * RADIUS * SCALE)
-    yy, xx = np.mgrid[0:n, 0:n]
-    px = (xx + 0.5) / SCALE - RADIUS
-    py = (yy + 0.5) / SCALE - RADIUS
-    r = np.hypot(px, py)
-    d = RADIUS - r
-    x0, y0 = int(round((CX - RADIUS) * SCALE)), int(round((CY - RADIUS) * SCALE))
-    c, band = n // 2, slice(int(n * 0.32), int(n * 0.68))
-    pts = []
-    for file in sorted(os.listdir(f'{DIR}/ref')):
-        if '@' not in file or not file.endswith('-bare.png'):
-            continue
-        luma = (load(f'{DIR}/ref/{file}') @ [0.299, 0.587, 0.114])[y0 : y0 + n, x0 : x0 + n]
-        gap = luma[band, c - 3 : c + 3].mean()
-        photo = np.median(np.r_[luma[band, c - 44 : c - 24].ravel(), luma[band, c + 24 : c + 44].ravel()])
-        if abs(gap - photo) < 15:
-            continue
-        inside = (luma - (gap + photo) / 2) * np.sign(gap - photo) > 0
-        labels, _ = ndimage.label(inside & (d > 0.7))
-        region = labels == labels[c, c]
-        # Only where the gap stands alone: its own width through the flat middle and no wider
-        # than its cap anywhere, so a photo as light as the gap can't leak into the trace.
-        widths = region[band].sum(1) / SCALE
-        if labels[c, c] == 0 or widths.min() < 5 or widths.max() > 8 or (region & (abs(px) > 16)).any():
-            continue
-        # The cap, where the edges sweep out: whole boundary pixels are precise enough there.
-        edge = region & ~ndimage.binary_erosion(region)
-        edge &= ndimage.binary_dilation(~region & (d > 0.7)) & (abs(px) > 3.4) & (d < 7)
-        pts += [(d[y, x], r[y, x] * (1 - 3 / abs(px[y, x]))) for y, x in zip(*np.nonzero(edge))]
-        # The straight middle, where the pull is small and 3 / |p.x| needs sub-pixel edges: each
-        # row's crossings of the half level, either side.
-        level = (gap + photo) / 2
-        for y in range(n):
-            row = (luma[y] - level) * np.sign(gap - photo)
-            for side in (1, -1):
-                x = c
-                while 0 < x < n - 1 and row[x] > 0 and region[y, x]:
-                    x += side
-                if not (0 < x < n - 1) or row[x] > 0:
-                    continue
-                inner = x - side
-                cross = inner + side * row[inner] / (row[inner] - row[x])
-                ex, ey = abs((cross + 0.5) / SCALE - RADIUS), (y + 0.5) / SCALE - RADIUS
-                er = np.hypot(ex, ey)
-                if RADIUS - er >= 7 and ex > 3:
-                    pts.append((RADIUS - er, er * (1 - 3 / ex)))
-    return np.array(pts)
+    def monotone(q):
+        return np.minimum.accumulate(np.maximum(q, 0))
 
+    def loss(q):
+        return np.mean([evaluate(sets[k], frost[k], monotone(q)) for k in sets])
 
-def edge_profile():
-    """The bevel's pull at KNOTS, fitted to the gap edges' geometry with a robust loss: the
-    rim's few pixels hardly move a tone-weighted error, so it can't place them."""
-    pts = edge_samples()
-    pts = pts[pts[:, 0] <= KNOTS[-1]]
-
-    def residual(knots):
-        # A light bend penalty keeps it smooth where samples are few.
-        bends = np.diff(np.append(knots, 0.0), 2)
-        return np.r_[bevel(knots)(pts[:, 0]) - pts[:, 1], 3 * bends]
-
-    start = np.interp(KNOTS[:-1], [0, 4, 8, 16, KNOTS[-1]], [18, 7, 3.5, 1.2, 0])
-    res = optimize.least_squares(residual, start, loss='soft_l1', f_scale=1.0, bounds=(0, 30))
-    print(f'profile from {len(pts)} edge samples', np.round(res.x, 2).tolist())
-    return res.x
+    res = optimize.minimize(loss, profile, method='Powell', options={'maxiter': 3, 'xtol': 0.05, 'ftol': 0.001})
+    best = monotone(res.x)
+    print('bevel', np.round(best, 3).tolist(), '->', round(res.fun, 3))
+    return best
 
 
 if __name__ == '__main__':
-    # The bevel from the motion stills' gap edges, then the frost (per scheme) around it. The frost
-    # starts from the step captures' line spread: about 30% passes nearly sharp, the rest blurs
-    # ~14 pt wide; --resume starts it from the material already written instead.
-    PROFILE = edge_profile()
-    frost = {'light': [0.5, 1.7, 0.71, 14.9], 'dark': [0.3, 1.5, 0.66, 12.7]}
+    # The frost starts from the review that found the power space: about 30% passes at half
+    # resolution, the rest blurs ~15 pt wide.
+    frost = {
+        'light': dict(saturation=2.02, wide=0.693, wideBlur=14.9, gamma=1.56),
+        'dark': dict(saturation=1.50, wide=0.693, wideBlur=16.6, gamma=0.70),
+    }
     if '--resume' in sys.argv:
         last = json.load(open(f'{HERE}/../../src/lib/live-glass-material.json'))
-        frost = {k: [last[k][p] for p in ('blur', 'saturation', 'wide', 'wideBlur')] for k in frost}
+        if last['knots'] == KNOTS.tolist():
+            PROFILE = np.array(last['pulls'][:-1])
+        frost = {k: {**frost[k], **{p: last[k][p] for p in FROST if p in last[k]}} for k in frost}
+    if '--bevel' in sys.argv:
+        PROFILE = fit_bevel(frost, PROFILE)
     for scheme in frost:
-        p, _ = fit(scheme, frost[scheme])
-        frost[scheme] = p[3:]
+        frost[scheme] = fit(scheme, frost[scheme], PROFILE)
     out = {
         'dMin': D_MIN,
         'dStep': D_STEP,
@@ -413,14 +362,10 @@ if __name__ == '__main__':
         'slopes': np.round(bevel(PROFILE).derivative()(KNOTS), 4).tolist(),
     }
     for scheme in frost:
-        errs, (o, g, q), _ = evaluate(scheme_data(scheme), [0, 1, 1, *frost[scheme]], detail=True)
-        print(scheme, 'final', round(float(np.mean(errs)), 2), [round(float(e), 2) for e in errs])
-        blur, saturation, wide, wide_blur = frost[scheme]
+        # The tables written are solved over every scene.
+        _, (o, g, q), _ = evaluate(scheme_data(scheme), frost[scheme], PROFILE, detail=True, train=False)
         out[scheme] = {
-            'blur': round(float(blur), 3),
-            'saturation': round(float(saturation), 3),
-            'wide': round(float(wide), 3),
-            'wideBlur': round(float(wide_blur), 3),
+            **{k: round(frost[scheme][k], 4) for k in FROST},
             'offset': np.round(o, 4).tolist(),
             'gain': np.round(g, 4).tolist(),
             'curve': np.round(q, 4).tolist(),
