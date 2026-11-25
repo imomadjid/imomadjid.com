@@ -61,9 +61,21 @@ export const galleryBackdropClass = cn(
   'z-50 transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
 )
 
+// On touch screens Safari bands its bars in the page's colour over a blurred backdrop
+// (src/lib/dialog-layer.ts), which leaves a seam where the blur shows darker photos. A strip of
+// that colour at each edge, fading into the blur, makes the band read as part of it.
+const edgeFadeClass =
+  'pointer-events-none fixed inset-x-0 hidden h-3 bg-surface-1 pointer-coarse:block after:absolute after:inset-x-0 after:h-12 after:from-surface-1 after:to-transparent'
+
 /** The Gallery backdrop's colour and blur, in its Dialog.Backdrop (galleryBackdropClass). */
 export function GalleryBackdropFill() {
-  return <span className="absolute inset-0 bg-surface-1/60 backdrop-blur-md" />
+  return (
+    <>
+      <span className="absolute inset-0 bg-surface-1/60 backdrop-blur-md" />
+      <span className={cn(edgeFadeClass, '-top-[7px] after:top-full after:bg-linear-to-b')} />
+      <span className={cn(edgeFadeClass, '-bottom-[7px] after:bottom-full after:bg-linear-to-t')} />
+    </>
+  )
 }
 
 // The full-screen photo follows the viewport the flight measures (viewportRect), so it lands
