@@ -148,6 +148,7 @@ export function OverlayPhoto({
   photo,
   tuning,
   eager,
+  sizes,
   heroCell,
   className,
   onOpen,
@@ -156,6 +157,8 @@ export function OverlayPhoto({
   tuning: PhotoZoomTuning
   /** Load it straight away, for the photos the overlay's flight lands in. */
   eager: boolean
+  /** Its width across the viewport, for srcSet: a column's. */
+  sizes: string
   /** Its place among the See more tile's photos, which the overlay's flight finds it by. */
   heroCell?: number
   className?: string
@@ -182,7 +185,7 @@ export function OverlayPhoto({
       <img
         src={photo.small}
         srcSet={`${photo.small} 640w, ${photo.large} 1600w`}
-        sizes="25vw"
+        sizes={sizes}
         alt={photo.alt}
         width={photo.width}
         height={photo.height}

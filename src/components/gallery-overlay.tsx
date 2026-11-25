@@ -1,7 +1,7 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { IconX } from '@tabler/icons-react'
 import { play } from 'cuelume'
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 
 import type { FlightStage } from '#/components/gallery-flight-stage'
@@ -32,11 +32,27 @@ import { SEE_MORE_CELL_RADIUS, seeMoreCellRect, seeMoreRestZoom } from '#/lib/se
 import { playOpenRun } from '#/lib/sound'
 import { cn } from '#/lib/utils'
 
-// The overlay's columns, and the See more tile's rows and columns: the tile's cell in row r and
-// column c leads row r of column c, so its photos fly straight up into their places.
-const COLUMNS = 4
+// The See more tile's photos, a grid TILE_COLUMNS wide, lead the overlay's columns: four
+// columns take one of the tile's each, so its cell in row r and column c leads row r of column c,
+// and a phone's two take two each, row by row, so its photos fly straight up into their places.
 export const HERO_CELLS = 16
-const ROWS = HERO_CELLS / COLUMNS
+const TILE_COLUMNS = 4
+
+const wideQuery = '(min-width: 40rem)'
+function subscribeWide(change: () => void) {
+  const query = matchMedia(wideQuery)
+  query.addEventListener('change', change)
+  return () => query.removeEventListener('change', change)
+}
+
+/** The overlay's columns: four, or two below sm, where four would leave thumbnails. */
+function useOverlayColumns() {
+  return useSyncExternalStore(
+    subscribeWide,
+    () => (matchMedia(wideQuery).matches ? 4 : 2),
+    () => 4,
+  )
+}
 
 // Overlay photos past this index enter together, so a long list doesn't trail in.
 const maxStagger = 12
@@ -93,11 +109,11 @@ function tilePoses(aspects: readonly number[], rect: Rect, zoomedOut: boolean) {
 
 /**
  * The overlay cells that fly back into the tile, by tile cell: in each masonry column, the first
- * four not scrolled up past `top`, or its last four near its end, into that column of the tile,
- * row by row. At the top of the overlay these are the tile's own photos; scrolled down, the photos
- * in view fly home and turn into the tile's on the way, so the close starts from what's on
- * screen. A cell whose photo hasn't loaded flies the tile's own photo from its place, and a short
- * column's missing cells fly the tile's own cells.
+ * as many as it leads with (masonryColumns) not scrolled up past `top`, or its last near its end,
+ * into the tile's columns it leads, row by row. At the top of the overlay these are the tile's
+ * own photos; scrolled down, the photos in view fly home and turn into the tile's on the way, so
+ * the close starts from what's on screen. A cell whose photo hasn't loaded flies the tile's own
+ * photo from its place, and a short column's missing cells fly the tile's own cells.
  */
 function closingCells(
   list: HTMLElement,
@@ -105,11 +121,17 @@ function closingCells(
   heroes: readonly HTMLImageElement[],
 ): { cell: HTMLElement; image: HTMLImageElement }[] {
   const picked: (HTMLElement | undefined)[] = []
+  // The tile's columns each overlay column leads, and how many of the tile's cells that is.
+  const span = TILE_COLUMNS / list.children.length
+  const led = HERO_CELLS / list.children.length
   for (const [column, ul] of [...list.children].entries()) {
     const cells = [...ul.querySelectorAll<HTMLElement>('button')]
     const first = cells.findIndex((cell) => cell.getBoundingClientRect().bottom > top)
-    const start = Math.max(0, Math.min(first < 0 ? cells.length : first, cells.length - ROWS))
-    for (let row = 0; row < ROWS; row += 1) picked[row * COLUMNS + column] = cells[start + row]
+    const start = Math.max(0, Math.min(first < 0 ? cells.length : first, cells.length - led))
+    for (let place = 0; place < led; place += 1) {
+      const tileCell = Math.floor(place / span) * TILE_COLUMNS + column * span + (place % span)
+      picked[tileCell] = cells[start + place]
+    }
   }
   return heroes.map((hero, index) => {
     const cell = picked[index]
@@ -306,7 +328,8 @@ export function useSeeMoreOverlay({
     onOpenChange: (open: boolean, { reason, event }: Dialog.Root.ChangeEventDetails) => {
       if (open) {
         // A click from the keyboard (Enter or Space) has no click count.
-        const keyboard = event instanceof MouseEvent ? event.detail === 0 : true
+        const keyboard =
+          event instanceof KeyboardEvent || (event instanceof MouseEvent && event.detail === 0)
         const trigger = tileRef.current?.closest('button')
         returnTo.current = trigger ? { tile: trigger, keyboard } : null
         stopOpenRun.current = playOpenRun()
@@ -366,10 +389,12 @@ export function GalleryOverlay({
   /** Where focus goes when it closes (useSeeMoreOverlay's `finalFocus`). */
   finalFocus: () => boolean
 }) {
+  const columnCount = useOverlayColumns()
   const columns = masonryColumns(
     photos.map((photo) => photo.height / photo.width),
-    COLUMNS,
-    ROWS,
+    columnCount,
+    HERO_CELLS,
+    TILE_COLUMNS,
   )
   const gap = 'gap-1.5 sm:gap-2'
   const popupRef = useRef<HTMLDivElement>(null)
@@ -408,7 +433,8 @@ export function GalleryOverlay({
             ref={listRef}
             data-recede
             className={cn(
-              'grid grid-cols-4 items-start',
+              'grid items-start',
+              columnCount === 2 ? 'grid-cols-2' : 'grid-cols-4',
               gap,
               recedeClass,
               // Its photos open only once the tile's have landed, so a click can't cut the flight.
@@ -432,6 +458,7 @@ export function GalleryOverlay({
                         tuning={photoTuning}
                         // The tile's photos land here straight away.
                         eager={hero}
+                        sizes={columnCount === 2 ? '50vw' : '25vw'}
                         heroCell={hero ? index : undefined}
                         className={cn(flown && cellsLifted && 'invisible')}
                         onOpen={onOpenPhoto}
