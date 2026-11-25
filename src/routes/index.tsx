@@ -177,17 +177,17 @@ const projects = [
 // Sections still being built. They show only with the dev tools, so merging dev into master
 // never puts them on imomadjid.com. Guestbook says Coming soon for now.
 const draftSections = [
-  { id: 'gallery', label: 'Gallery' },
   { id: 'guestbook', label: 'Guestbook' },
 ] as const satisfies readonly PageSection[]
 
-// Lazy behind the flag, so production builds emit neither its code nor its photos.
-const GallerySection = import.meta.env.DEV_TOOLS ? lazy(() => import('#/components/gallery')) : null
+// Lazy, so the first load carries neither its code nor its photos.
+const GallerySection = lazy(() => import('#/components/gallery'))
 
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
   { id: 'about', label: 'About', mark: Logo },
   { id: 'projects', label: 'Random bullshit' },
+  { id: 'gallery', label: 'Gallery' },
   ...(import.meta.env.DEV_TOOLS ? draftSections : []),
 ] as const satisfies readonly PageSection[]
 
@@ -341,17 +341,18 @@ function Home() {
             <ProjectList projects={projects} />
           </Section>
 
+          <Section id="gallery" className="mt-32">
+            <Suspense>
+              <GallerySection />
+            </Suspense>
+          </Section>
+
           {import.meta.env.DEV_TOOLS && (
-            <>
-              <Section id="gallery" className="mt-32">
-                <Suspense>{GallerySection && <GallerySection />}</Suspense>
-              </Section>
-              <Section id="guestbook" className="mt-32">
-                <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
-                  Coming soon
-                </div>
-              </Section>
-            </>
+            <Section id="guestbook" className="mt-32">
+              <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
+                Coming soon
+              </div>
+            </Section>
           )}
 
           <SiteFooter />
