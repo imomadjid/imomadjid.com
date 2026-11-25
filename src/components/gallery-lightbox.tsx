@@ -135,7 +135,7 @@ export function GalleryBackdropFill({ closing = false }: { closing?: boolean }) 
     <>
       <span
         className={cn(
-          'absolute inset-0 bg-surface-1/60 backdrop-blur-md',
+          'absolute inset-0 bg-surface-1/80 backdrop-blur-md',
           fillMotion,
           fillHidden.starting,
           closing && cn(fillHidden.tint, 'duration-200'),
@@ -312,6 +312,24 @@ function steppedLayers(
 /** The layers left once the step `key` brought in has finished: the ones it sent out are gone. */
 const settledLayers = (layers: readonly Layer[], key: number) =>
   layers.filter((layer) => !layer.leaving || layer.key > key)
+
+/**
+ * Fades the photo's place from tile `from` to tile `to` in the grid behind as a step hands it on:
+ * `data-step-fade` gives both a transition while `data-lifted` moves from one to the other, and
+ * goes once they have faded, so a takeoff or a landing hides or shows a tile at once.
+ */
+function fadeHandOff(from: HTMLElement, to: HTMLElement) {
+  for (const tile of [from, to]) {
+    tile.setAttribute('data-step-fade', '')
+    clearTimeout(Number(tile.dataset.stepFadeTimer))
+    tile.dataset.stepFadeTimer = String(
+      window.setTimeout(() => {
+        tile.removeAttribute('data-step-fade')
+        delete tile.dataset.stepFadeTimer
+      }, 400),
+    )
+  }
+}
 
 /**
  * The popup's ways to step: the arrow keys, and a swipe across on a touch screen. A swipe ends in
@@ -667,6 +685,7 @@ export function useGalleryLightbox(
     play('select', { emphasis: 'subtle', direction: step > 0 ? 'forward' : 'back' })
     // Behind the backdrop, so the close flies home to a tile on screen.
     revealReceded(tile)
+    fadeHandOff(shown.tile, tile)
     if (returnTo.current) returnTo.current = { ...returnTo.current, tile }
     // An arrow that has run out of photos lets go of focus to the popup, which keeps the keys.
     if (!shown.set[index + step] && document.activeElement?.matches('[data-step]'))

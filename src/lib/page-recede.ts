@@ -24,7 +24,7 @@ export const recedeClass =
  * src/routes/index.tsx, or the See more overlay's photos) about the middle of the viewport, or
  * brings it back, as iOS shrinks the Home Screen behind an opening app. The wrapper scales in CSS, on a spring sampled into a
  * `linear()` easing; it scales only while receded, so it forms a stacking context only then.
- * Scrolling is locked while a dialog is open over it, so the middle it shrinks about stays put.
+ * The point it shrinks about is in its own box, so it scrolls with it (revealReceded).
  */
 export function recedePage(from: Element, receded: boolean, tuning: RecedeTuning) {
   const page = from.closest<HTMLElement>('[data-recede]')
@@ -43,33 +43,41 @@ export function recedePage(from: Element, receded: boolean, tuning: RecedeTuning
 }
 
 /**
- * Sets the point `page` shrinks about to the viewport's middle in its own box, from its layout
- * position, so a shrink that starts while the last one is still easing back measures it unscaled.
- * The overlay's photos sit in a scrolling popup, so its scroll counts too.
+ * Where `page`'s box sits on screen at full size: its layout position, which its scale doesn't
+ * move. The overlay's photos sit in a scrolling popup, so its scroll counts too.
  */
-function placeOrigin(page: HTMLElement) {
+function layoutBox(page: HTMLElement) {
   const parent = page.offsetParent ?? document.documentElement
   const box = parent.getBoundingClientRect()
-  const left = box.left + parent.clientLeft + page.offsetLeft - parent.scrollLeft
-  const top = box.top + parent.clientTop + page.offsetTop - parent.scrollTop
-  const x = window.innerWidth / 2
-  const y = window.innerHeight / 2
-  page.style.setProperty('--recede-origin', `${x - left}px ${y - top}px`)
+  return {
+    left: box.left + parent.clientLeft + page.offsetLeft - parent.scrollLeft,
+    top: box.top + parent.clientTop + page.offsetTop - parent.scrollTop,
+  }
+}
+
+/**
+ * Sets the point `page` shrinks about to the viewport's middle, in its own box (from its layout
+ * position, so a shrink that starts while the last one is still easing back measures it
+ * unscaled). Being in the page's box, it scrolls with the page.
+ */
+function placeOrigin(page: HTMLElement) {
+  const { left, top } = layoutBox(page)
+  const x = window.innerWidth / 2 - left
+  const y = window.innerHeight / 2 - top
+  page.style.setProperty('--recede-origin', `${x}px ${y}px`)
   page.dataset.recedeOrigin = `${x} ${y}`
 }
 
 /**
- * Scrolls `element` into the middle of the viewport if it isn't all in view, and re-centres the
- * receded page around it on the viewport's middle, so `fullScaleRect` finds it there. The open
- * photo's lightbox does this behind its backdrop when it steps to a photo whose tile is out of view,
- * so the close flies home to a tile on screen.
+ * Scrolls `element` smoothly into view if it isn't all in view, as little as it takes. The open
+ * photo's lightbox does this behind its backdrop when it steps to a photo whose tile is out of
+ * view, so the close flies home to a tile on screen. The receded page scrolls about the point it
+ * shrinks about, which moves with it, so it keeps its place and `fullScaleRect` still holds.
  */
 export function revealReceded(element: Element) {
   const rect = element.getBoundingClientRect()
   if (rect.top >= 0 && rect.bottom <= window.innerHeight) return
-  element.scrollIntoView({ block: 'center', behavior: 'instant' })
-  const page = element.closest<HTMLElement>('[data-recede]')
-  if (page?.hasAttribute('data-receded')) placeOrigin(page)
+  element.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
 }
 
 /**
@@ -82,8 +90,11 @@ export function fullScaleRect(element: Element): Rect {
   const page = element.closest<HTMLElement>('[data-recede]')
   const scale = page ? Number.parseFloat(getComputedStyle(page).scale) : Number.NaN
   const origin = page?.dataset.recedeOrigin?.split(' ').map(Number)
-  if (!origin || !(scale > 0) || scale === 1) return rect
-  const [x, y] = origin
+  if (!page || !origin || !(scale > 0) || scale === 1) return rect
+  // The point it shrinks about, on screen now: the page may have scrolled since it receded.
+  const { left, top } = layoutBox(page)
+  const x = left + origin[0]
+  const y = top + origin[1]
   return {
     x: x + (rect.x - x) / scale,
     y: y + (rect.y - y) / scale,

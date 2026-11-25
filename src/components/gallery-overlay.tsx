@@ -527,7 +527,7 @@ export function GalleryOverlay({
 
 /**
  * What the close button's live glass sees: the overlay's photos near it, on the dialog's
- * backdrop, read as --surface-1 (the backdrop is that colour at 60% over the blurred page).
+ * backdrop, read as --surface-1 (the backdrop is that colour at 80% over the blurred page).
  * A photo lifted out for a flight is left out, as it is hidden.
  */
 function useOverlayGlassBackdrop(
