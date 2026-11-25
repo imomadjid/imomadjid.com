@@ -1,0 +1,3012 @@
+{
+  "width": 402,
+  "height": 874,
+  "scenes": [
+    {
+      "name": "gallery-light",
+      "scheme": "light",
+      "background": "#fafafa",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "dscf0055-640.webp",
+          "x": 8,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 8,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 8,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 8,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 8,
+          "y": 354.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 8,
+          "y": 497.97127694470475,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 8,
+          "y": 565.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 8,
+          "y": 632.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 8,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 106,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 106,
+          "y": 142.70499999999998,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 106,
+          "y": 210.05749999999998,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 106,
+          "y": 277.40999999999997,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 106,
+          "y": 344.76249999999993,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 106,
+          "y": 488.7193884723523,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 106,
+          "y": 556.0718884723523,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 204,
+          "y": 8,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 204,
+          "y": 151.9568884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 204,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 204,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 204,
+          "y": 354.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 204,
+          "y": 497.97127694470475,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 204,
+          "y": 565.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 204,
+          "y": 632.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 302,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 302,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 302,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 302,
+          "y": 430.6187769447048,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 302,
+          "y": 574.5756654170572,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 302,
+          "y": 641.9281654170571,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        }
+      ]
+    },
+    {
+      "name": "gallery-dark",
+      "scheme": "dark",
+      "background": "#171717",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "dscf0055-640.webp",
+          "x": 8,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 8,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 8,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 8,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 8,
+          "y": 354.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 8,
+          "y": 497.97127694470475,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 8,
+          "y": 565.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 8,
+          "y": 632.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 8,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 106,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 106,
+          "y": 142.70499999999998,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 106,
+          "y": 210.05749999999998,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 106,
+          "y": 277.40999999999997,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 106,
+          "y": 344.76249999999993,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 106,
+          "y": 488.7193884723523,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 106,
+          "y": 556.0718884723523,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 204,
+          "y": 8,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 204,
+          "y": 151.9568884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 204,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 204,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 204,
+          "y": 354.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 204,
+          "y": 497.97127694470475,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 204,
+          "y": 565.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 204,
+          "y": 632.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 302,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 302,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 302,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 302,
+          "y": 430.6187769447048,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 302,
+          "y": 574.5756654170572,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 302,
+          "y": 641.9281654170571,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        }
+      ]
+    },
+    {
+      "name": "scrolled-light",
+      "scheme": "light",
+      "background": "#fafafa",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "dscf0055-640.webp",
+          "x": 8,
+          "y": 158,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 8,
+          "y": 225.3525,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 8,
+          "y": 369.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 8,
+          "y": 436.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 8,
+          "y": 504.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 8,
+          "y": 647.9712769447048,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 8,
+          "y": 715.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 8,
+          "y": 782.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 8,
+          "y": 850.0287769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 106,
+          "y": 158,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 225.3525,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 106,
+          "y": 292.705,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 106,
+          "y": 360.0575,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 106,
+          "y": 427.40999999999997,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 106,
+          "y": 494.76249999999993,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 106,
+          "y": 638.7193884723523,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 106,
+          "y": 706.0718884723523,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 850.0287769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 204,
+          "y": 158,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 204,
+          "y": 301.9568884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 204,
+          "y": 369.30938847235234,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 204,
+          "y": 436.6618884723523,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 204,
+          "y": 504.01438847235227,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 204,
+          "y": 647.9712769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 204,
+          "y": 715.3237769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 204,
+          "y": 782.6762769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 158,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 302,
+          "y": 225.3525,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 302,
+          "y": 369.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 302,
+          "y": 436.6618884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 302,
+          "y": 580.6187769447048,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 302,
+          "y": 724.5756654170572,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 302,
+          "y": 791.9281654170571,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        }
+      ]
+    },
+    {
+      "name": "scrolled-dark",
+      "scheme": "dark",
+      "background": "#171717",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "dscf0055-640.webp",
+          "x": 8,
+          "y": 158,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 8,
+          "y": 225.3525,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 8,
+          "y": 369.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 8,
+          "y": 436.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 8,
+          "y": 504.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 8,
+          "y": 647.9712769447048,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 8,
+          "y": 715.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 8,
+          "y": 782.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 8,
+          "y": 850.0287769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 106,
+          "y": 158,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 225.3525,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 106,
+          "y": 292.705,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 106,
+          "y": 360.0575,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 106,
+          "y": 427.40999999999997,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 106,
+          "y": 494.76249999999993,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 106,
+          "y": 638.7193884723523,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 106,
+          "y": 706.0718884723523,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 850.0287769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 204,
+          "y": 158,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 204,
+          "y": 301.9568884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 204,
+          "y": 369.30938847235234,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 204,
+          "y": 436.6618884723523,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 204,
+          "y": 504.01438847235227,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 204,
+          "y": 647.9712769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 204,
+          "y": 715.3237769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 204,
+          "y": 782.6762769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 158,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 302,
+          "y": 225.3525,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 302,
+          "y": 369.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 302,
+          "y": 436.6618884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 302,
+          "y": 580.6187769447048,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 302,
+          "y": 724.5756654170572,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 302,
+          "y": 791.9281654170571,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        }
+      ]
+    },
+    {
+      "name": "grid-light",
+      "scheme": "light",
+      "background": "#ffffff",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "grid.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "grid-dark",
+      "scheme": "dark",
+      "background": "#ffffff",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "grid.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "ramp-x-light",
+      "scheme": "light",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "ramp-x.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "ramp-y-light",
+      "scheme": "light",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "ramp-y.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "ramp-x-dark",
+      "scheme": "dark",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "ramp-x.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "ramp-y-dark",
+      "scheme": "dark",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "ramp-y.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "saw-x-light",
+      "scheme": "light",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "saw-x.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "saw-y-light",
+      "scheme": "light",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "saw-y.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "saw-x-dark",
+      "scheme": "dark",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "saw-x.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "saw-y-dark",
+      "scheme": "dark",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "saw-y.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "step-light",
+      "scheme": "light",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "step.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "step-dark",
+      "scheme": "dark",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "step.png",
+          "x": 105,
+          "y": 716,
+          "width": 192,
+          "height": 192,
+          "radius": 0
+        }
+      ]
+    },
+    {
+      "name": "motion-light",
+      "scheme": "light",
+      "background": "#fafafa",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "dscf0055-640.webp",
+          "x": 8,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 8,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 8,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 8,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 8,
+          "y": 354.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 8,
+          "y": 497.97127694470475,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 8,
+          "y": 565.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 8,
+          "y": 632.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 8,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 8,
+          "y": 767.3812769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 8,
+          "y": 834.7337769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 8,
+          "y": 978.690665417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 8,
+          "y": 1046.043165417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 8,
+          "y": 1113.395665417057,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 8,
+          "y": 1257.3525538894094,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 8,
+          "y": 1324.7050538894093,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0055-640.webp",
+          "x": 8,
+          "y": 1468.6619423617617,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 8,
+          "y": 1536.0144423617617,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 8,
+          "y": 1679.971330834114,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 8,
+          "y": 1823.9282193064664,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 8,
+          "y": 1967.8851077788188,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 8,
+          "y": 2111.841996251171,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 8,
+          "y": 2179.194496251171,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 106,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 106,
+          "y": 142.70499999999998,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 106,
+          "y": 210.05749999999998,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 106,
+          "y": 277.40999999999997,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 106,
+          "y": 344.76249999999993,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 106,
+          "y": 488.7193884723523,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 106,
+          "y": 556.0718884723523,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 843.985665417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 106,
+          "y": 911.338165417057,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 106,
+          "y": 1055.2950538894095,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 106,
+          "y": 1122.6475538894094,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 106,
+          "y": 1266.6044423617618,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 106,
+          "y": 1333.9569423617618,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 106,
+          "y": 1401.3094423617617,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 1468.6619423617617,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 1612.618830834114,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 106,
+          "y": 1679.971330834114,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 106,
+          "y": 1747.323830834114,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 106,
+          "y": 1814.676330834114,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 106,
+          "y": 1882.028830834114,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 106,
+          "y": 2025.9857193064663,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 106,
+          "y": 2093.3382193064663,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 106,
+          "y": 2160.6907193064662,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 2228.043219306466,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 204,
+          "y": 8,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 204,
+          "y": 151.9568884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 204,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 204,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 204,
+          "y": 354.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 204,
+          "y": 497.97127694470475,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 204,
+          "y": 565.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 204,
+          "y": 632.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0055-640.webp",
+          "x": 204,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 204,
+          "y": 767.3812769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 204,
+          "y": 911.338165417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 204,
+          "y": 978.690665417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 204,
+          "y": 1046.043165417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 204,
+          "y": 1113.395665417057,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 204,
+          "y": 1257.3525538894094,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 204,
+          "y": 1324.7050538894093,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 204,
+          "y": 1392.0575538894093,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 204,
+          "y": 1459.4100538894093,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 204,
+          "y": 1526.7625538894092,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 204,
+          "y": 1594.1150538894092,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 204,
+          "y": 1738.0719423617616,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 204,
+          "y": 1805.4244423617615,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 204,
+          "y": 1872.7769423617615,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 204,
+          "y": 2016.7338308341139,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 204,
+          "y": 2084.086330834114,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 204,
+          "y": 2228.0432193064667,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 302,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 302,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 302,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 302,
+          "y": 430.6187769447048,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 302,
+          "y": 574.5756654170572,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 302,
+          "y": 641.9281654170571,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 785.8850538894095,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 302,
+          "y": 853.2375538894095,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 302,
+          "y": 920.5900538894094,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 302,
+          "y": 987.9425538894094,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 302,
+          "y": 1055.2950538894095,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 302,
+          "y": 1199.2519423617618,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 302,
+          "y": 1343.2088308341142,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 302,
+          "y": 1410.5613308341142,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 1554.5182193064666,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 302,
+          "y": 1621.8707193064665,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 302,
+          "y": 1689.2232193064665,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 302,
+          "y": 1756.5757193064665,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 302,
+          "y": 1823.9282193064664,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 302,
+          "y": 1891.2807193064664,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 302,
+          "y": 2035.2376077788188,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 302,
+          "y": 2102.590107778819,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 302,
+          "y": 2169.942607778819,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        }
+      ],
+      "motion": {
+        "height": 2375,
+        "speed": 400,
+        "hold": 2
+      }
+    },
+    {
+      "name": "motion-dark",
+      "scheme": "dark",
+      "background": "#171717",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": [
+        {
+          "file": "dscf0055-640.webp",
+          "x": 8,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 8,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 8,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 8,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 8,
+          "y": 354.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 8,
+          "y": 497.97127694470475,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 8,
+          "y": 565.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 8,
+          "y": 632.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 8,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 8,
+          "y": 767.3812769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 8,
+          "y": 834.7337769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 8,
+          "y": 978.690665417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 8,
+          "y": 1046.043165417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 8,
+          "y": 1113.395665417057,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 8,
+          "y": 1257.3525538894094,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 8,
+          "y": 1324.7050538894093,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0055-640.webp",
+          "x": 8,
+          "y": 1468.6619423617617,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 8,
+          "y": 1536.0144423617617,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 8,
+          "y": 1679.971330834114,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 8,
+          "y": 1823.9282193064664,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 8,
+          "y": 1967.8851077788188,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 8,
+          "y": 2111.841996251171,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 8,
+          "y": 2179.194496251171,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 106,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 106,
+          "y": 142.70499999999998,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 106,
+          "y": 210.05749999999998,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 106,
+          "y": 277.40999999999997,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 106,
+          "y": 344.76249999999993,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 106,
+          "y": 488.7193884723523,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 106,
+          "y": 556.0718884723523,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 843.985665417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 106,
+          "y": 911.338165417057,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 106,
+          "y": 1055.2950538894095,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 106,
+          "y": 1122.6475538894094,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 106,
+          "y": 1266.6044423617618,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 106,
+          "y": 1333.9569423617618,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 106,
+          "y": 1401.3094423617617,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 1468.6619423617617,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0157-640.webp",
+          "x": 106,
+          "y": 1612.618830834114,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 106,
+          "y": 1679.971330834114,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 106,
+          "y": 1747.323830834114,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 106,
+          "y": 1814.676330834114,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 106,
+          "y": 1882.028830834114,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 106,
+          "y": 2025.9857193064663,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 106,
+          "y": 2093.3382193064663,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 106,
+          "y": 2160.6907193064662,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0737-640.webp",
+          "x": 106,
+          "y": 2228.043219306466,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 204,
+          "y": 8,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 204,
+          "y": 151.9568884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 204,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 204,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 204,
+          "y": 354.0143884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 204,
+          "y": 497.97127694470475,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 204,
+          "y": 565.3237769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 204,
+          "y": 632.6762769447047,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0055-640.webp",
+          "x": 204,
+          "y": 700.0287769447046,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0104-640.webp",
+          "x": 204,
+          "y": 767.3812769447046,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0405-640.webp",
+          "x": 204,
+          "y": 911.338165417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 204,
+          "y": 978.690665417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0095-640.webp",
+          "x": 204,
+          "y": 1046.043165417057,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0131-640.webp",
+          "x": 204,
+          "y": 1113.395665417057,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0319-640.webp",
+          "x": 204,
+          "y": 1257.3525538894094,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0370-640.webp",
+          "x": 204,
+          "y": 1324.7050538894093,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0634-640.webp",
+          "x": 204,
+          "y": 1392.0575538894093,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 204,
+          "y": 1459.4100538894093,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0102-640.webp",
+          "x": 204,
+          "y": 1526.7625538894092,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0127-640.webp",
+          "x": 204,
+          "y": 1594.1150538894092,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0747-640.webp",
+          "x": 204,
+          "y": 1738.0719423617616,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0093-640.webp",
+          "x": 204,
+          "y": 1805.4244423617615,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0121-640.webp",
+          "x": 204,
+          "y": 1872.7769423617615,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0186-640.webp",
+          "x": 204,
+          "y": 2016.7338308341139,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0359-640.webp",
+          "x": 204,
+          "y": 2084.086330834114,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0703-640.webp",
+          "x": 204,
+          "y": 2228.0432193064667,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 8,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0235-640.webp",
+          "x": 302,
+          "y": 75.35249999999999,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0016-640.webp",
+          "x": 302,
+          "y": 219.3093884723524,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 302,
+          "y": 286.6618884723524,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 302,
+          "y": 430.6187769447048,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 302,
+          "y": 574.5756654170572,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 302,
+          "y": 641.9281654170571,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 785.8850538894095,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 302,
+          "y": 853.2375538894095,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 302,
+          "y": 920.5900538894094,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 302,
+          "y": 987.9425538894094,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0111-640.webp",
+          "x": 302,
+          "y": 1055.2950538894095,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0142-640.webp",
+          "x": 302,
+          "y": 1199.2519423617618,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0623-640.webp",
+          "x": 302,
+          "y": 1343.2088308341142,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0679-640.webp",
+          "x": 302,
+          "y": 1410.5613308341142,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0119-640.webp",
+          "x": 302,
+          "y": 1554.5182193064666,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0215-640.webp",
+          "x": 302,
+          "y": 1621.8707193064665,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0620-640.webp",
+          "x": 302,
+          "y": 1689.2232193064665,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0086-640.webp",
+          "x": 302,
+          "y": 1756.5757193064665,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0112-640.webp",
+          "x": 302,
+          "y": 1823.9282193064664,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0136-640.webp",
+          "x": 302,
+          "y": 1891.2807193064664,
+          "width": 92,
+          "height": 137.9568884723524,
+          "radius": 8
+        },
+        {
+          "file": "dscf0355-640.webp",
+          "x": 302,
+          "y": 2035.2376077788188,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0403-640.webp",
+          "x": 302,
+          "y": 2102.590107778819,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        },
+        {
+          "file": "dscf0664-640.webp",
+          "x": 302,
+          "y": 2169.942607778819,
+          "width": 92,
+          "height": 61.3525,
+          "radius": 8
+        }
+      ],
+      "motion": {
+        "height": 2375,
+        "speed": 400,
+        "hold": 2
+      }
+    },
+    {
+      "name": "white",
+      "scheme": "light",
+      "background": "#ffffff",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": []
+    },
+    {
+      "name": "grey",
+      "scheme": "light",
+      "background": "#f2f1f6",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": []
+    },
+    {
+      "name": "dark",
+      "scheme": "dark",
+      "background": "#1c1c1e",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": []
+    },
+    {
+      "name": "black",
+      "scheme": "dark",
+      "background": "#000000",
+      "button": {
+        "x": 173,
+        "y": 784,
+        "size": 56
+      },
+      "images": []
+    }
+  ]
+}

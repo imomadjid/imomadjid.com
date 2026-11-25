@@ -1,6 +1,5 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
-  "entry": ["tools/stamps/fetch.ts", "tools/stamps/import.ts"],
   "ignorePatterns": ["tools/oxlint/anti-slop/**", "dist/**", ".tanstack/**", ".wrangler/**"],
   "ignoreFindings": [
     "src/components/fluid-hover-highlight.tsx",
@@ -35,5 +34,16 @@
   },
   "health": {
     "ignore": ["tools/oxlint/anti-slop/**"]
-  }
+  },
+  "entry": [
+    "tools/gallery/metadata.ts",
+    "tools/glass-live/scenes.ts",
+    "tools/glass-live/shoot.ts",
+    "tools/glass-live/motion.ts",
+    "tools/glass-live/lag.ts",
+    "tools/og/shoot.ts",
+    "tools/stamps/fetch.ts",
+    "tools/stamps/import.ts"
+  ],
+  "ignoreBinaries": ["exiftool"]
 }

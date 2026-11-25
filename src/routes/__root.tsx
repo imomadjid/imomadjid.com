@@ -5,11 +5,12 @@ import { DialRoot } from 'dialkit'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
+import { overlayLayerId } from '#/lib/dialog-layer'
 import { ShapeProvider } from '#/lib/shape-context'
+import { SOUND_SCRIPT, startSounds } from '#/lib/sound'
 import { SurfaceProvider } from '#/lib/surface-context'
 import { textLinkClass } from '#/lib/text-link'
 import { THEME_SCRIPT, useTheme } from '#/lib/theme'
-import { warmSoundsOnGesture } from '#/lib/ui-sound'
 import { cn } from '#/lib/utils'
 
 import appCss from '#/styles.css?url'
@@ -56,21 +57,27 @@ function NotFound() {
   )
 }
 
+// DialRoot renders nothing in production builds unless told otherwise. dev.imomadjid.com is one,
+// and DEV_TOOLS already keeps this out of the real production site.
 function ThemedDialKit() {
-  return <DialRoot theme={useTheme()} defaultOpen={false} />
+  return <DialRoot theme={useTheme()} defaultOpen={false} productionEnabled />
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
-  useEffect(warmSoundsOnGesture, [])
+  useEffect(startSounds, [])
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* The script inlines a function's compiled source, which differs between the server
             and client bundles. It only matters on the server: it has run before hydration. */}
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: SOUND_SCRIPT }} />
         <HeadContent />
       </head>
       <body className="bg-surface-1 text-neutral-950 dark:text-neutral-50">
+        {/* The See more overlay portals here, so on touch screens its photos lie first in the
+            page's flow (src/lib/dialog-layer.ts). */}
+        <div id={overlayLayerId} className="contents" />
         {/* Site-wide FF corner style. */}
         <ShapeProvider defaultShape="pill">
           <SurfaceProvider value={1}>{children}</SurfaceProvider>

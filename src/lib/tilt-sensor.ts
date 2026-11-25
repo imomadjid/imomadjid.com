@@ -1,4 +1,5 @@
 import { toScreen, upFromOrientation } from './device-tilt'
+import { coarsePointerQuery } from './media-query'
 import type { Vec3 } from './vec3'
 
 // The motion sensor half of phone tilt. Only the lazily loaded renderer imports it; the wand
@@ -36,7 +37,7 @@ export function watchTilt(
   allowed: () => boolean,
 ) {
   if (!('DeviceOrientationEvent' in window)) return
-  if (!window.matchMedia('(pointer: coarse)').matches) return
+  if (!window.matchMedia(coarsePointerQuery).matches) return
   const options = { signal }
   let listening = false
 

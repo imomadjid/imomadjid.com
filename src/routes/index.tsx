@@ -10,10 +10,12 @@ import { ProfileAvatar } from '#/components/profile-avatar'
 import { ProjectList } from '#/components/project-list'
 import type { Project } from '#/components/project-list'
 import { Signature } from '#/components/signature'
+import { SiteFooter } from '#/components/site-footer'
 import { TableOfContents } from '#/components/table-of-contents'
 import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
 import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
+import { recedeClass } from '#/lib/page-recede'
 import { projectFile, projectVideo } from '#/lib/project-media'
 import { defaultSignatureTiming, signatureControls } from '#/lib/signature-settings'
 import { textLinkClass } from '#/lib/text-link'
@@ -24,8 +26,8 @@ const title = 'Imo’s Portfolio'
 const description =
   'I’m Imo, a design engineer and product designer based in Jakarta. I design and build interfaces, from early prototypes to shipped products.'
 const ogImage = {
-  url: `${siteUrl}og.png`,
-  alt: 'Imo Madjid, design engineer and product designer in Jakarta',
+  url: `${siteUrl}og.jpg`,
+  alt: 'The imo logo on a wall in dappled sunlight, through blinds and leaves',
 }
 
 const structuredData = {
@@ -67,7 +69,7 @@ export const Route = createFileRoute('/')({
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
       { property: 'og:image', content: ogImage.url },
-      { property: 'og:image:type', content: 'image/png' },
+      { property: 'og:image:type', content: 'image/jpeg' },
       { property: 'og:image:width', content: '1200' },
       { property: 'og:image:height', content: '630' },
       { property: 'og:image:alt', content: ogImage.alt },
@@ -175,17 +177,17 @@ const projects = [
 // Sections still being built. They show only with the dev tools, so merging dev into master
 // never puts them on imomadjid.com. Guestbook says Coming soon for now.
 const draftSections = [
-  { id: 'gallery', label: 'Gallery' },
   { id: 'guestbook', label: 'Guestbook' },
 ] as const satisfies readonly PageSection[]
 
-// Lazy behind the flag, so production builds emit neither its code nor its photos.
-const GallerySection = import.meta.env.DEV_TOOLS ? lazy(() => import('#/components/gallery')) : null
+// Lazy, so the first load carries neither its code nor its photos.
+const GallerySection = lazy(() => import('#/components/gallery'))
 
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
   { id: 'about', label: 'About', mark: Logo },
   { id: 'projects', label: 'Random bullshit' },
+  { id: 'gallery', label: 'Gallery' },
   ...(import.meta.env.DEV_TOOLS ? draftSections : []),
 ] as const satisfies readonly PageSection[]
 
@@ -330,23 +332,31 @@ function Home() {
           </div>
         </Section>
 
-        {/* Sections sit 8rem apart; About's bottom padding supplies half of the first gap. */}
-        <Section id="projects" className="mt-16">
-          <ProjectList projects={projects} />
-        </Section>
+        {/* Shrinks behind an open Gallery dialog (src/lib/page-recede.ts). About stays out: it
+            holds the wand, and scaling forms a stacking context that would hold the wand under
+            the light layer. While a dialog is open About is far above the screen anyway. */}
+        <div data-recede className={recedeClass}>
+          {/* Sections sit 8rem apart; About's bottom padding supplies half of the first gap. */}
+          <Section id="projects" className="mt-16">
+            <ProjectList projects={projects} />
+          </Section>
 
-        {import.meta.env.DEV_TOOLS && (
-          <>
-            <Section id="gallery" className="mt-32">
-              <Suspense>{GallerySection && <GallerySection />}</Suspense>
-            </Section>
+          <Section id="gallery" className="mt-32">
+            <Suspense>
+              <GallerySection />
+            </Suspense>
+          </Section>
+
+          {import.meta.env.DEV_TOOLS && (
             <Section id="guestbook" className="mt-32">
               <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
                 Coming soon
               </div>
             </Section>
-          </>
-        )}
+          )}
+
+          <SiteFooter />
+        </div>
       </div>
     </main>
   )
