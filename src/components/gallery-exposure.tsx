@@ -1,14 +1,12 @@
 import Scritto from '@scritto/react'
 import { IconArrowUpRight } from '@tabler/icons-react'
 import { useMemo, useState } from 'react'
-import type { Ref } from 'react'
 
 import { exposureReadouts } from '#/lib/exposure-format'
 import { figuresClass } from '#/lib/figures'
 import { cssSpring, cssTransition } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { GalleryTuning } from '#/lib/gallery-settings'
-import { gridColumns } from '#/lib/readout-layout'
 import type { ReadoutRow } from '#/lib/readout-layout'
 import { cn } from '#/lib/utils'
 
@@ -20,83 +18,84 @@ const valueClass = cn(
   'text-sm leading-5 font-medium text-neutral-950 dark:text-white',
   figuresClass,
 )
-// The recipe's cell sits at the end of the row, flush right, or in a phone's third column.
-const recipeCellClass = 'ml-auto items-end max-sm:ml-0 max-sm:items-start'
-const recipeIcon = <IconArrowUpRight aria-hidden="true" className="size-3.5 opacity-50" />
+
+type Rolling = { trend: 1 | -1; transition: { duration: number }; bounce: boolean }
 
 /**
- * Each cell's width, the recipe's included, rounded up so a slot they fit doesn't come up short
- * by a fraction of a pixel. They don't change with the photo's size or the viewport's.
+ * A value rolling over glyph by glyph on Scritto, over every value it takes across the set
+ * (`values`), stacked unseen in the same place, so its box is as wide as the widest of them and
+ * never moves what comes after it: Scritto's own width animation starts a frame late. The stack is
+ * set like Scritto sets its glyphs, without kerning or ligatures. Scritto's glyphs are hidden from
+ * screen readers, which read the plain value.
  */
-export const measureReadout = (readout: Element) =>
-  Array.from(readout.children, (cell) => Math.ceil(cell.getBoundingClientRect().width))
-
-/**
- * The readouts of every photo in `photos`, their cells set as ExposureReadout sets them but
- * unseen, for `measureReadout`: each cell keeps a slot as wide as its widest across the set, so
- * stepping between photos doesn't move it. Set like Scritto sets its glyphs, without kerning or
- * ligatures, so they measure what shows.
- */
-export function ReadoutMeasures({
-  ref,
-  photos,
+function RollingValue({
+  value,
+  values,
+  rolling,
+  className,
 }: {
-  ref: Ref<HTMLDivElement>
-  photos: readonly GalleryPhoto[]
+  value: string
+  values: readonly string[]
+  rolling: Rolling
+  className?: string
 }) {
   return (
-    <div
-      ref={ref}
-      aria-hidden="true"
-      className="pointer-events-none invisible fixed top-0 left-0 [font-kerning:none] [font-variant-ligatures:none]"
-    >
-      {photos.map((photo) => (
-        <div key={photo.id} className="flex w-max">
-          {exposureReadouts(photo.exposure).map(({ label, value }) => (
-            <div key={label} className={cellClass}>
-              <span className={labelClass}>{label}</span>
-              <span className={valueClass}>{value}</span>
-            </div>
-          ))}
-          {photo.recipe && (
-            <div className={cellClass}>
-              <span className={labelClass}>Recipe</span>
-              <span className={cn(valueClass, 'flex items-center gap-0.5')}>
-                {photo.recipe.name}
-                {recipeIcon}
-              </span>
-            </div>
-          )}
-        </div>
+    <span className={cn('grid [&>*]:[grid-area:1/1]', className)}>
+      {values.map((each) => (
+        <span
+          key={each}
+          aria-hidden="true"
+          className="invisible [font-kerning:none] [font-variant-ligatures:none]"
+        >
+          {each}
+        </span>
       ))}
-    </div>
+      <span aria-hidden="true">
+        <Scritto value={value} {...rolling} />
+      </span>
+      <span className="sr-only">{value}</span>
+    </span>
   )
+}
+
+/** Each value of `values` once. */
+const distinct = (values: readonly string[]) => [...new Set(values)]
+
+/** Each exposure cell's values across `set`, and the set's recipes' names. */
+function setValues(set: readonly GalleryPhoto[]) {
+  const all = set.map((each) => exposureReadouts(each.exposure))
+  return {
+    exposure: (all[0] ?? []).map((_, index) => distinct(all.map((cells) => cells[index].value))),
+    recipes: distinct(set.flatMap((each) => (each.recipe ? [each.recipe.name] : []))),
+  }
 }
 
 /**
  * The photo's exposure under it, set like a camera's info display: each label over its readout,
- * in Allo's tabular figures with a slashed zero, and the recipe its settings match, if any, linked
- * at the end. `row` places it (src/lib/readout-layout.ts): one row from `sm` up, the recipe flush
- * right; on a phone, a grid of three columns over two rows. Each cell keeps its slot (`slots`),
- * so nothing moves as values change. The cells come up one after another, `delay` in, each rising
- * a little out of a blur on `tuning.motion`'s spring, and go together as the photo's close
- * starts. Stepping to another photo rolls each value and the recipe's name over to the new one,
- * glyph by glyph on Scritto's bouncy preset, the way the step goes (`trend`); a recipe that the
- * new photo hasn't fades out with its last name, and its cell keeps its place. The bar follows
- * the photo's bottom on `follow`.
+ * in Allo's tabular figures with a slashed zero, and the recipe its settings match, if any of the
+ * set's do, linked at the end. `row` places it (src/lib/readout-layout.ts): one row, the recipe
+ * flush right, or on a phone a grid of three columns over two rows. Each cell keeps the width of
+ * its widest value across `set` (RollingValue), so nothing moves as values change or a recipe
+ * comes and goes. The cells come up one after another, `delay` in, each rising a little out of a
+ * blur on `tuning.motion`'s spring, and go together as the photo's close starts. Stepping to
+ * another photo rolls each value and the recipe's name over to the new one, on Scritto's bouncy
+ * preset, the way the step goes (`trend`); a recipe that the new photo hasn't fades out with its
+ * last name. The bar follows the photo's bottom on `follow`.
  */
 export function ExposureReadout({
   photo,
+  set,
   row,
   shown,
   delay,
   tuning,
   trend,
   roll,
-  slots,
   follow,
 }: {
   photo: GalleryPhoto
+  /** The photos it steps between, whose values size its cells. */
+  set: readonly GalleryPhoto[]
   row: ReadoutRow
   shown: boolean
   /** Seconds before the first cell comes up once `shown`. */
@@ -104,17 +103,13 @@ export function ExposureReadout({
   tuning: GalleryTuning['readout']
   /** Which way the values roll: up stepping forward, down stepping back. */
   trend: 1 | -1
-  /** Scritto's roll, each glyph's: a duration in ms, and an easing, or its own bouncy spring. */
-  roll: { duration: number; easing?: string }
-  /**
-   * Each cell's least width: the widest it takes across the photos it steps between
-   * (readoutSlots), so a value that grows doesn't push the cells after it. Empty until measured.
-   */
-  slots: readonly number[]
+  /** Each glyph's roll, in ms, on Scritto's own bouncy spring. */
+  roll: { duration: number }
   /** The bar's move to a photo of another shape's bottom: the photos' outline's spring. */
   follow: { duration: number; easing: string }
 }) {
   const enter = useMemo(() => cssSpring(tuning.motion), [tuning.motion])
+  const values = useMemo(() => setValues(set), [set])
   const readouts = exposureReadouts(photo.exposure)
   const { recipe } = photo
   // The last recipe shown, kept while the recipe fades out under a photo without one.
@@ -130,56 +125,58 @@ export function ExposureReadout({
       'starting:translate-y-1.5 starting:opacity-0 starting:blur-xs',
       !visible && 'translate-y-1.5 opacity-0 blur-xs',
     ),
-    style: {
-      minWidth: slots[index],
-      ...(visible
-        ? {
-            transitionDuration: `${enter.duration}s`,
-            transitionTimingFunction: enter.easing,
-            transitionDelay: `${delay + index * tuning.stagger}s`,
-          }
-        : { transitionDuration: '150ms', transitionTimingFunction: 'ease-in' }),
-    },
+    style: visible
+      ? {
+          transitionDuration: `${enter.duration}s`,
+          transitionTimingFunction: enter.easing,
+          transitionDelay: `${delay + index * tuning.stagger}s`,
+        }
+      : { transitionDuration: '150ms', transitionTimingFunction: 'ease-in' },
   })
-  // Scritto's bouncier spring, which overshoots a little as each glyph lands. Its glyphs are hidden
-  // from screen readers (a string: React writes `true` on a custom element as an empty attribute,
-  // which doesn't hide it), so the plain value is read beside it.
-  const rolling = { trend, transition: roll, bounce: true, 'aria-hidden': 'true' }
-  // A phone's three columns, each as wide as its widest cell across the set, so a recipe coming
-  // or going doesn't move them.
-  const columns = slots.length > 0 ? gridColumns(slots).map((width) => `${width}px`) : undefined
+  // Scritto's bouncier spring, which overshoots a little as each glyph lands.
+  const rolling: Rolling = { trend, transition: roll, bounce: true }
 
   return (
     <dl
       // A click on it closes the photo, as one beside it does; only the recipe's link takes one,
       // and only while it shows.
-      className="pointer-events-none fixed flex gap-x-8 motion-reduce:transition-none! max-sm:grid max-sm:grid-cols-[repeat(3,auto)] max-sm:justify-between max-sm:gap-x-5 max-sm:gap-y-3"
+      className={cn(
+        'pointer-events-none fixed w-max -translate-x-1/2 motion-reduce:transition-none!',
+        row.grid
+          ? 'grid grid-cols-[repeat(3,auto)] justify-between gap-x-5 gap-y-3'
+          : 'flex gap-x-8',
+      )}
       style={{
-        left: row.x,
+        left: row.center,
         top: row.y,
-        width: row.width,
+        minWidth: row.minWidth,
+        maxWidth: row.maxWidth,
         transition: cssTransition('top', follow),
-        gridTemplateColumns: columns?.join(' '),
       }}
     >
       {readouts.map(({ label, value }, index) => (
         <div key={label} {...motion(index, shown)}>
           <dt className={labelClass}>{label}</dt>
           <dd className={valueClass}>
-            <Scritto value={value} {...rolling} />
-            <span className="sr-only">{value}</span>
+            <RollingValue value={value} values={values.exposure[index]} rolling={rolling} />
           </dd>
         </div>
       ))}
-      {lastRecipe && (
+      {values.recipes.length > 0 && (
+        // In its place even before a photo with a recipe, so the cells never shift; in the row,
+        // flush right.
         <div
-          {...motion(readouts.length, shown && recipe !== null, recipeCellClass)}
+          {...motion(
+            readouts.length,
+            shown && recipe !== null,
+            row.grid ? undefined : 'ml-auto items-end',
+          )}
           aria-hidden={recipe ? undefined : true}
         >
           <dt className={labelClass}>Recipe</dt>
           <dd className={valueClass}>
             <a
-              href={lastRecipe.url}
+              href={lastRecipe?.url}
               target="_blank"
               rel="noreferrer"
               tabIndex={recipe ? undefined : -1}
@@ -188,9 +185,13 @@ export function ExposureReadout({
                 shown && recipe && 'pointer-events-auto',
               )}
             >
-              <Scritto value={lastRecipe.name} {...rolling} />
-              <span className="sr-only">{lastRecipe.name}</span>
-              {recipeIcon}
+              <RollingValue
+                value={lastRecipe?.name ?? ''}
+                values={values.recipes}
+                rolling={rolling}
+                className={row.grid ? undefined : 'justify-items-end'}
+              />
+              <IconArrowUpRight aria-hidden="true" className="size-3.5 opacity-50" />
             </a>
           </dd>
         </div>

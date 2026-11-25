@@ -50,8 +50,8 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [state, setState] = useState<'idle' | 'live' | 'failed'>('idle')
   const reduced = useMediaQuery('(prefers-reduced-transparency: reduce)')
-  const drawn = source !== null && !reduced
-  usePressScale(canvasRef, drawn && state !== 'failed')
+  const mounted = source !== null && !reduced && state !== 'failed'
+  usePressScale(canvasRef, mounted)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -87,7 +87,7 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
   return (
     <>
       {state !== 'live' && fallback}
-      {drawn && state !== 'failed' && (
+      {mounted && (
         <canvas
           ref={canvasRef}
           aria-hidden="true"

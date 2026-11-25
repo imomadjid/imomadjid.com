@@ -7,6 +7,7 @@ import type { CSSProperties, RefObject } from 'react'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import {
   GalleryBackdropFill,
+  floatingControlClass,
   galleryBackdropClass,
   returnFocus,
 } from '#/components/gallery-lightbox'
@@ -504,9 +505,8 @@ export function GalleryOverlay({
             it waits out every flight and enters once they have handed over. */}
         <div
           className={cn(
-            'fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 transition-[opacity,scale] duration-300 ease-out',
-            (cellsLifted || flightAirborne) &&
-              'pointer-events-none scale-90 opacity-0 duration-150 motion-reduce:scale-100',
+            'fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2',
+            floatingControlClass(cellsLifted || flightAirborne),
           )}
         >
           {/* Live glass refracts the photos scrolling under it. */}

@@ -65,7 +65,6 @@ function placeOrigin(page: HTMLElement) {
   const x = window.innerWidth / 2 - left
   const y = window.innerHeight / 2 - top
   page.style.setProperty('--recede-origin', `${x}px ${y}px`)
-  page.dataset.recedeOrigin = `${x} ${y}`
 }
 
 /**
@@ -97,12 +96,15 @@ export function fullScaleRect(element: Element): Rect {
   const rect = element.getBoundingClientRect()
   const page = element.closest<HTMLElement>('[data-recede]')
   const scale = page ? Number.parseFloat(getComputedStyle(page).scale) : Number.NaN
-  const origin = page?.dataset.recedeOrigin?.split(' ').map(Number)
-  if (!page || !origin || !(scale > 0) || scale === 1) return rect
-  // The point it shrinks about, on screen now: the page may have scrolled since it receded.
+  // The point it shrinks about, in its own box (placeOrigin), as `Xpx Ypx`.
+  const [originX, originY] = (page?.style.getPropertyValue('--recede-origin') ?? '')
+    .split(' ')
+    .map(Number.parseFloat)
+  if (!page || !Number.isFinite(originY) || !(scale > 0) || scale === 1) return rect
+  // On screen now: the page may have scrolled since it receded.
   const { left, top } = layoutBox(page)
-  const x = left + origin[0]
-  const y = top + origin[1]
+  const x = left + originX
+  const y = top + originY
   return {
     x: x + (rect.x - x) / scale,
     y: y + (rect.y - y) / scale,

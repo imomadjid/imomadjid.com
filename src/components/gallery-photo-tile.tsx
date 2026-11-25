@@ -17,6 +17,11 @@ import { cn } from '#/lib/utils'
  */
 export type OpenPhoto = (photo: GalleryPhoto, tile: HTMLElement, keyboard: boolean) => void
 
+// Hides a tile at once while its photo is lifted out (data-lifted), for a takeoff or a landing,
+// and fades it while the lightbox steps away from it or to it (data-step-fade, fadeHandOff).
+const liftedTileClass =
+  'data-lifted:invisible data-lifted:opacity-0 data-step-fade:transition-[opacity,visibility] data-step-fade:duration-300 data-step-fade:ease-out'
+
 // The CSS fallback's hover zoom, left off while the canvas draws the photo.
 const photoZoomClass =
   'transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06] group-focus-visible:scale-[1.06] motion-reduce:transition-none'
@@ -120,7 +125,10 @@ export function FeaturedPhoto({
       aria-haspopup="dialog"
       data-photo-id={photo.id}
       data-cuelume-open
-      className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-neutral-200 outline-none data-lifted:invisible data-lifted:opacity-0 data-step-fade:transition-[opacity,visibility] data-step-fade:duration-300 data-step-fade:ease-out dark:bg-neutral-800"
+      className={cn(
+        'group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-neutral-200 outline-none dark:bg-neutral-800',
+        liftedTileClass,
+      )}
       {...zoom.handlers}
       onClick={(event) => {
         zoom.zoomIn(false)
@@ -180,7 +188,8 @@ export function OverlayPhoto({
       data-photo-id={photo.id}
       data-cuelume-open
       className={cn(
-        'group relative block w-full cursor-zoom-in overflow-hidden rounded-lg bg-neutral-200 data-lifted:invisible data-lifted:opacity-0 data-step-fade:transition-[opacity,visibility] data-step-fade:duration-300 data-step-fade:ease-out dark:bg-neutral-800',
+        'group relative block w-full cursor-zoom-in overflow-hidden rounded-lg bg-neutral-200 dark:bg-neutral-800',
+        liftedTileClass,
         className,
       )}
       {...zoom.handlers}

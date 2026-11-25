@@ -3,13 +3,12 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { play } from 'cuelume'
 import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties, KeyboardEvent, MouseEvent, PointerEvent, RefObject } from 'react'
-import { flushSync } from 'react-dom'
 
-import { ExposureReadout, measureReadout, ReadoutMeasures } from '#/components/gallery-exposure'
+import { ExposureReadout } from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import { IconButton } from '#/components/ui/icon-button'
 import { dialogCoverClass } from '#/lib/dialog-layer'
-import { cssSpring, springResponse } from '#/lib/flight-springs'
+import { cssSpring, cssTransition, springResponse } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
 import {
@@ -27,7 +26,7 @@ import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import type { GalleryTuning } from '#/lib/gallery-settings'
 import { useMediaQuery } from '#/lib/media-query'
 import { fullScaleRect, revealReceded } from '#/lib/page-recede'
-import { readoutBar, readoutSlots, readoutSpace } from '#/lib/readout-layout'
+import { readoutBar, readoutGrid, readoutSpace } from '#/lib/readout-layout'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
@@ -47,8 +46,6 @@ type Layer = {
   photo: GalleryPhoto
   /** The step that brought it in, or 0 for the photo the lightbox opened on, which doesn't slide. */
   step: Step | 0
-  /** The photo it came in over, whose outline its own grows from. */
-  over?: GalleryPhoto
   /** Once it is leaving: the step that took it out, and its layer key, which clears it. */
   leaving?: { step: Step; by: number }
 }
@@ -62,8 +59,6 @@ type Shown = {
   airborne: boolean
   /** The photos the arrows step through, in order: the featured ones, or the overlay's. */
   set: readonly GalleryPhoto[]
-  /** Each readout cell's slot width across the set (readoutSlots); empty until measured. */
-  slots: readonly number[]
   /** The photos on screen, the current one last. */
   layers: readonly Layer[]
   /** The last step's way, which the readout's values roll. */
@@ -139,6 +134,16 @@ export function GalleryBackdropFill({ closing = false }: { closing?: boolean }) 
   )
 }
 
+/**
+ * A floating glass control's way in and out over a Gallery dialog: `hidden`, it shrinks a little
+ * and fades, and takes no clicks.
+ */
+export const floatingControlClass = (hidden: boolean) =>
+  cn(
+    'transition-[opacity,scale] duration-300 ease-out',
+    hidden && 'pointer-events-none scale-90 opacity-0 duration-150 motion-reduce:scale-100',
+  )
+
 // The full-screen photo follows the viewport the flight measures (viewportRect), so it lands
 // where the image shows.
 const viewportWidth = () => document.documentElement.clientWidth
@@ -158,59 +163,50 @@ function useViewport(active: boolean): Rect {
   return { x: 0, y: 0, width, height }
 }
 
-/** Phones: below `sm`, where the readout pins to the bottom. */
-const isPhone = (viewport: Rect) => viewport.width < 640
-
-/** The full-screen photo's margin from the viewport's edges. */
-const screenMargin = (viewport: Rect) => (isPhone(viewport) ? 12 : 24)
-
-const aspectOf = (photo: GalleryPhoto) => photo.width / photo.height
+/** The full-screen photo's margin from the viewport's edges: less on a phone. */
+const screenMargin = (viewport: Rect) => (readoutGrid(viewport.width) ? 12 : 24)
 
 /**
- * Where the full-screen photo sits, as large as fits an even margin from the edges and the room
- * its exposure readout takes under it, and the readout's bar. The bar is the same under every
- * photo of `set`: as wide as the widest of them shows (a landscape photo's), so a portrait one
- * narrows the photo but not the bar, and as wide as its cells' `slots` need.
+ * Where any photo sits full screen, as large as fits an even margin from the edges and the room
+ * its exposure readout takes under it.
  */
-function fullScreenLayout(
-  viewport: Rect,
-  photo: GalleryPhoto,
-  set: readonly GalleryPhoto[],
-  slots: readonly number[] = [],
-) {
+function fullScreenRect(viewport: Rect, photo: GalleryPhoto) {
   const side = screenMargin(viewport)
-  const insets = {
+  return containRect(viewport, photo.width / photo.height, {
     top: side,
     right: side,
     bottom: side + readoutSpace(viewport.width),
     left: side,
-  }
-  const rectOf = (aspect: number) => containRect(viewport, aspect, insets)
-  const span = Math.max(...[photo, ...set].map((each) => rectOf(aspectOf(each)).width))
-  const rect = rectOf(aspectOf(photo))
+  })
+}
+
+/**
+ * Where the full-screen photo sits, and the readout's bar, the same under every photo of `set`:
+ * at least as wide as the widest of them shows (a landscape photo's), so a portrait one narrows
+ * the photo but not the bar. On a phone the bar pins to the bottom, so a step to a photo of
+ * another shape doesn't move it.
+ */
+function fullScreenLayout(viewport: Rect, photo: GalleryPhoto, set: readonly GalleryPhoto[]) {
+  const side = screenMargin(viewport)
+  const rect = fullScreenRect(viewport, photo)
+  const span = Math.max(...set.map((each) => fullScreenRect(viewport, each).width))
   return {
     photo: rect,
-    // On a phone the readout pins to the bottom, so a step to a photo of another shape doesn't
-    // move it; the photo sits in the middle of the room above it.
-    readout: readoutBar(viewport, side, slots, span, isPhone(viewport) ? 'pinned' : rect),
+    readout: readoutBar(viewport, side, span, rect),
     side,
     /** Any photo's full-screen rect. */
-    rectOf: (each: GalleryPhoto) => rectOf(aspectOf(each)),
+    rectOf: (each: GalleryPhoto) => fullScreenRect(viewport, each),
     /** The middle of the room the photos take, which the arrows sit level with. */
-    middle: (insets.top + viewport.height - insets.bottom) / 2,
+    middle: (side + viewport.height - side - readoutSpace(viewport.width)) / 2,
     /** The step's slide and blur scale: in full from photos 800 px wide, less on a phone. */
     motionScale: Math.min(1, span / 800),
   }
 }
 
 /** The whole photo in its full-screen rect. */
-function fullScreenPose(
-  viewport: Rect,
-  photo: GalleryPhoto,
-  set: readonly GalleryPhoto[],
-): FlightPose {
+function fullScreenPose(viewport: Rect, photo: GalleryPhoto): FlightPose {
   return {
-    corners: quadOf(fullScreenLayout(viewport, photo, set).photo),
+    corners: quadOf(fullScreenRect(viewport, photo)),
     texels: quadOf(wholeImage),
     radius: TILE_RADIUS,
   }
@@ -262,8 +258,6 @@ function layerMotion(
   const way = layer.leaving ? -layer.leaving.step : layer.step
   const widens = from !== null && insetIn(rect, from) !== insetIn(rect, rect)
   const fade = widens ? transitions.reveal : transitions.motion
-  const css = (property: string, { duration, easing }: { duration: number; easing: string }) =>
-    `${property} ${duration}s ${easing}`
   const frame: CSSProperties & Record<`--${string}`, string> = {
     left: rect.x,
     top: rect.y,
@@ -271,7 +265,7 @@ function layerMotion(
     height: rect.height,
     '--layer-clip': insetIn(rect, outline),
     '--layer-clip-from': insetIn(rect, from ?? rect),
-    transition: transitions.reduced ? 'none' : css('clip-path', transitions.frame),
+    transition: transitions.reduced ? 'none' : cssTransition('clip-path', transitions.frame),
   }
   const image: CSSProperties & Record<`--${string}`, string> = {
     '--layer-shift': `${way * shift}px`,
@@ -280,10 +274,10 @@ function layerMotion(
     transition: transitions.reduced
       ? 'opacity 0.2s ease-out'
       : [
-          css('translate', transitions.motion),
-          css('scale', transitions.motion),
-          css('filter', transitions.frame),
-          css('opacity', fade),
+          cssTransition('translate', transitions.motion),
+          cssTransition('scale', transitions.motion),
+          cssTransition('filter', transitions.frame),
+          cssTransition('opacity', fade),
         ].join(', '),
   }
   const className = layer.leaving
@@ -313,21 +307,19 @@ const readoutDelay = (phase: Phase, tuning: Pick<GalleryTuning, 'expand' | 'read
   phase === 'opening' ? springResponse(tuning.expand.open) * tuning.readout.start : 0
 
 /**
- * The photo a step from the open one goes to, its tile, and its place in the set; null before the
- * open lands, past either end of the set, or if its tile has gone.
+ * The photo a step from the open one goes to, and its place in the set; null before the open
+ * lands, or past either end of the set.
  */
 function stepFrom(shown: Shown | null, step: Step) {
   if (shown?.phase !== 'open') return null
   const index = shown.set.indexOf(shown.photo) + step
-  const photo = shown.set[index]
-  const tile = photo && tileOf(shown.tile, photo)
-  return tile ? { photo, tile, index } : null
+  const photo = shown.set.at(index)
+  return photo && index >= 0 ? { photo, index } : null
 }
 
 /**
  * The layers once a step brings `photo` in as layer `key`: the ones there leave the way the step
- * goes, sent out by `key`, whose timer clears them (settledLayers), and the new one grows out of
- * the outline the last one showed.
+ * goes, sent out by `key`, whose timer clears them (settledLayers).
  */
 function steppedLayers(
   layers: readonly Layer[],
@@ -338,12 +330,17 @@ function steppedLayers(
   const leaving = layers.map((layer) =>
     layer.leaving ? layer : { ...layer, leaving: { step, by: key } },
   )
-  return [...leaving, { key, photo, step, over: layers.at(-1)?.photo }]
+  return [...leaving, { key, photo, step }]
 }
 
-/** The layers left once the step `key` brought in has finished: the ones it sent out are gone. */
-const settledLayers = (layers: readonly Layer[], key: number) =>
-  layers.filter((layer) => !layer.leaving || layer.leaving.by > key)
+/**
+ * The layers left once the step `key` brought in has finished: the ones it sent out are gone. The
+ * same layers if it sent none out, so nothing renders again.
+ */
+function settledLayers(layers: readonly Layer[], key: number) {
+  const left = layers.filter((layer) => !layer.leaving || layer.leaving.by > key)
+  return left.length === layers.length ? layers : left
+}
 
 /**
  * Fades the photo's place from tile `from` to tile `to` in the grid behind as a step hands it on:
@@ -378,8 +375,9 @@ function useStepGestures(
   const swiped = useRef(false)
   return {
     onKeyDown: (event: KeyboardEvent) => {
-      // Not with a modifier: Alt+Left is the browser's Back.
-      if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return
+      // Not with a modifier (Alt+Left is the browser's Back), nor a held key's repeats, each of
+      // which would stack another blurred full-screen photo before the last could show.
+      if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.repeat) return
       const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
       if (step === 0) return
       event.preventDefault()
@@ -445,7 +443,12 @@ function PhotoLayers({
     const rect = rectOf(layer.photo)
     const motion = layerMotion(
       layer,
-      { rect, outline: outline ?? rect, from: layer.over ? rectOf(layer.over) : null },
+      {
+        rect,
+        outline: outline ?? rect,
+        // It grows out of the outline it came in over: the photo before it.
+        from: index > 0 ? rectOf(layers[index - 1].photo) : null,
+      },
       amounts,
       transitions,
     )
@@ -493,39 +496,36 @@ function LightboxArrows({
   canStep: (step: Step) => boolean
   onStep: (step: Step) => void
 }) {
-  const arrows = ([-1, 1] as const).map((step) => (
-    <div
-      key={step}
-      className={cn(
-        // Not on a touch screen, which swipes between photos instead.
-        'fixed -translate-y-1/2 transition-[opacity,scale] duration-300 ease-out pointer-coarse:hidden',
-        !canStep(step) &&
-          'pointer-events-none scale-90 opacity-0 duration-150 motion-reduce:scale-100',
-      )}
-      style={{ top: middle, [step < 0 ? 'left' : 'right']: side }}
-    >
-      <IconButton
-        aria-label={step < 0 ? 'Previous photo' : 'Next photo'}
-        size="4xl"
-        glass="static"
-        data-step={step}
-        disabled={!canStep(step)}
-        onClick={() => onStep(step)}
-      >
-        {step < 0 ? (
-          <IconChevronLeft aria-hidden="true" />
-        ) : (
-          <IconChevronRight aria-hidden="true" />
+  return ([-1, 1] as const).map((step) => {
+    const enabled = canStep(step)
+    return (
+      <div
+        key={step}
+        className={cn(
+          // Not on a touch screen, which swipes between photos instead.
+          'fixed -translate-y-1/2 pointer-coarse:hidden',
+          floatingControlClass(!enabled),
         )}
-      </IconButton>
-    </div>
-  ))
-  return arrows
+        style={{ top: middle, [step < 0 ? 'left' : 'right']: side }}
+      >
+        <IconButton
+          aria-label={step < 0 ? 'Previous photo' : 'Next photo'}
+          size="4xl"
+          glass="static"
+          data-step={step}
+          disabled={!enabled}
+          onClick={() => onStep(step)}
+        >
+          {step < 0 ? (
+            <IconChevronLeft aria-hidden="true" />
+          ) : (
+            <IconChevronRight aria-hidden="true" />
+          )}
+        </IconButton>
+      </div>
+    )
+  })
 }
-
-/** Each photo of the set's readout's cells' widths, from the unseen ReadoutMeasures in `container`. */
-const measureReadouts = (container: Element | null) =>
-  container ? Array.from(container.children, (readout) => measureReadout(readout)) : []
 
 /** The open photo, crossfading with the last one after a step, the readout under it, and the arrows. */
 function OpenPhotoView({
@@ -535,7 +535,6 @@ function OpenPhotoView({
   fades,
   transitions,
   imageRef,
-  measuresRef,
   canStep,
   onStep,
 }: {
@@ -546,7 +545,6 @@ function OpenPhotoView({
   fades: boolean
   transitions: StepTransitions
   imageRef: RefObject<HTMLImageElement | null>
-  measuresRef: RefObject<HTMLDivElement | null>
   canStep: (step: Step) => boolean
   onStep: (step: Step) => void
 }) {
@@ -576,6 +574,7 @@ function OpenPhotoView({
       </div>
       <ExposureReadout
         photo={photo}
+        set={shown.set}
         row={layout.readout}
         // Up once the photo takes off or opens without a flight; gone as it closes.
         shown={(shown.airborne || phase === 'open') && phase !== 'closing'}
@@ -583,10 +582,8 @@ function OpenPhotoView({
         tuning={tuning.readout}
         trend={shown.trend}
         roll={roll}
-        slots={shown.slots}
         follow={transitions.frame}
       />
-      {shown.slots.length === 0 && <ReadoutMeasures ref={measuresRef} photos={shown.set} />}
       {shown.set.length > 1 && (
         <LightboxArrows
           middle={layout.middle}
@@ -608,12 +605,12 @@ function OpenPhotoView({
  * first and the far side trails in. A close while the open is under way turns the corners around
  * with their speed. Without WebGPU the photo fades in and out.
  *
- * Once open, static glass arrows at either side, the arrow keys and a swipe step to the next or previous
- * photo of the set it opened from (on a touch screen, a swipe only, and a swipe down closes it). The photos crossfade through a blur, each sliding a little the
- * way the step goes inside its rounded frame: one frame between photos of the same shape, each
- * its own between a portrait and a landscape one, which don't resize. The readout
- * under it keeps its width and rolls its values over. The step hands the photo's place to the new
- * one's tile, which the close flies back into.
+ * Once open, static glass arrows at either side, the arrow keys and a swipe step to the next or
+ * previous photo of the set it opened from (on a touch screen, a swipe only, and a swipe down
+ * closes it). The new photo fades up through a blur over the last, both sliding a little the way
+ * the step goes, while the rounded outline they show through moves from one's shape to the
+ * other's (layerMotion). The readout under it keeps its cells in place and rolls their values
+ * over. The step hands the photo's place to the new one's tile, which the close flies back into.
  *
  * Flies on the Gallery's shared `stage` (src/components/gallery-flight-stage.tsx). Returns
  * `openPhoto` for the featured tiles and the See more grid, and the dialog to render. Render it
@@ -625,7 +622,6 @@ export function useGalleryLightbox(
   tuning: Pick<GalleryTuning, 'expand' | 'readout' | 'navigate'>,
 ) {
   const imageRef = useRef<HTMLImageElement>(null)
-  const measuresRef = useRef<HTMLDivElement>(null)
   const popupRef = useRef<HTMLDivElement>(null)
   const [shown, setShown] = useState<Shown | null>(null)
   // Bumped by every open and close, so a step still waiting on an earlier one can tell it's stale.
@@ -681,13 +677,10 @@ export function useGalleryLightbox(
       phase: flight ? 'opening' : 'open',
       airborne: false,
       set,
-      slots: [],
       layers: [{ key: ++layerKey.current, photo, step: 0 }],
       trend: 1,
     }
-    // Render every photo's readout first, unseen, to measure each cell's slot across the set.
-    flushSync(() => setShown(opened))
-    setShown({ ...opened, slots: readoutSlots(measureReadouts(measuresRef.current)) })
+    setShown(opened)
     warmNeighbours(set, set.indexOf(photo))
     if (!flight) return
     const from = tilePose(photo, tile, tile.getBoundingClientRect())
@@ -712,7 +705,7 @@ export function useGalleryLightbox(
         const landing = flight.fly({
           photo: photoImage,
           from,
-          to: fullScreenPose(screen, photo, set),
+          to: fullScreenPose(screen, photo),
           // The corner with the longest way to its side of the screen leads.
           lags: cornerLags(from.corners, quadOf(screen), diagonal(screen)),
           direction: 'open',
@@ -744,8 +737,9 @@ export function useGalleryLightbox(
   /** Steps to the next or previous photo of the set, once the open has landed. */
   const navigate = (step: Step) => {
     const next = stepFrom(shown, step)
-    if (!shown || !next) return
-    const { photo, tile, index } = next
+    const tile = shown && next && tileOf(shown.tile, next.photo)
+    if (!shown || !next || !tile) return
+    const { photo, index } = next
     play('select', { emphasis: 'subtle', direction: step > 0 ? 'forward' : 'back' })
     // Behind the backdrop, so the close flies home to a tile on screen.
     revealReceded(tile)
@@ -786,7 +780,7 @@ export function useGalleryLightbox(
     }
     const screen = viewportRect()
     // A photo still flying out turns around where it is instead (Flight.fly).
-    const from = fullScreenPose(screen, photo, shown.set)
+    const from = fullScreenPose(screen, photo)
     // A step's scroll to the tile may still be under way: finish it, so the photo lands where the
     // tile ends up.
     revealReceded(tile, 'instant')
@@ -812,7 +806,7 @@ export function useGalleryLightbox(
     landing.then(close, () => close(false))
   }
 
-  const layout = shown && fullScreenLayout(viewport, shown.photo, shown.set, shown.slots)
+  const layout = shown && fullScreenLayout(viewport, shown.photo, shown.set)
   // Without the flight renderer the photo fades in by itself.
   const fades = !stage.ready
   const gestures = useStepGestures(navigate, requestClose, (event) => {
@@ -860,7 +854,6 @@ export function useGalleryLightbox(
               fades={fades}
               imageRef={imageRef}
               transitions={transitions}
-              measuresRef={measuresRef}
               canStep={canStep}
               onStep={navigate}
             />
