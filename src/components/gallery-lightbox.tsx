@@ -51,11 +51,20 @@ export function returnFocus(to: { tile: HTMLElement; keyboard: boolean } | null)
   return false
 }
 
-/** The backdrop both Gallery dialogs dim the page with, thin enough for the page's shrink to show. */
+/**
+ * The backdrop both Gallery dialogs dim the page with, thin enough for the page's shrink to show:
+ * this on the Dialog.Backdrop, with a `GalleryBackdropFill` in it. The fill is a child, so Safari
+ * doesn't take the backdrop for a dimming layer (src/lib/dialog-layer.ts).
+ */
 export const galleryBackdropClass = cn(
   dialogCoverClass,
-  'z-50 bg-surface-1/60 backdrop-blur-md transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
+  'z-50 transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
 )
+
+/** The Gallery backdrop's colour and blur, in its Dialog.Backdrop (galleryBackdropClass). */
+export function GalleryBackdropFill() {
+  return <span className="absolute inset-0 bg-surface-1/60 backdrop-blur-md" />
+}
 
 // The full-screen photo follows the viewport the flight measures (viewportRect), so it lands
 // where the image shows.
@@ -285,7 +294,9 @@ export function useGalleryLightbox(
         <Dialog.Backdrop
           forceRender
           className={cn(galleryBackdropClass, shown?.phase === 'closing' && 'opacity-0')}
-        />
+        >
+          <GalleryBackdropFill />
+        </Dialog.Backdrop>
         <Dialog.Popup
           ref={popupRef}
           // The popup, not its first tabbable element: that's the recipe's link, hidden until

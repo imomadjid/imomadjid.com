@@ -22,7 +22,8 @@ const thumbLongSide = 240
 
 /**
  * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
- * out to the whole grid and shows the label. Where WebGPU runs, a canvas draws the grid instead
+ * out to the whole grid and shows the label. Where the overlay has two columns, the tile is a
+ * plain 2x2 grid of their first two rows instead, which doesn't zoom. Where WebGPU runs, a canvas draws the grid instead
  * (src/lib/gallery-warp.ts) and the middle zooms ahead of the edges; it starts as the tile nears
  * the viewport and takes over after its first frame, so the CSS grid below is the fallback.
  *
@@ -39,6 +40,7 @@ const thumbLongSide = 240
  */
 export function SeeMoreTile({
   photos,
+  columns,
   total,
   tuning,
   tileRef,
@@ -46,6 +48,8 @@ export function SeeMoreTile({
   onIntent,
 }: {
   photos: readonly GalleryPhoto[]
+  /** The grid's width and height in cells: 4, or 2 (useOverlayColumns). */
+  columns: number
   total: number
   tuning: WarpTuning
   /** The grid's box, which the See more overlay's photos fly out of and back into. */
@@ -66,6 +70,8 @@ export function SeeMoreTile({
     ),
   )
 
+  // The warp draws the 4x4 grid only.
+  const warps = columns === 4
   const { rendererRef, ready } = useGalleryRenderer<GalleryWarp, WarpTuning>(
     canvasRef,
     `${thumbUrls} ${smallUrls}`,
@@ -79,6 +85,8 @@ export function SeeMoreTile({
       warp.setZoomedOut(zoomedOutRef.current)
       return warp
     },
+    canvasRef,
+    warps,
   )
 
   const zoomOut = (zoomedOut: boolean) => {
@@ -117,8 +125,10 @@ export function SeeMoreTile({
       >
         <span
           className={cn(
-            'absolute -inset-px grid scale-200 grid-cols-4 content-start gap-0.5',
-            ready ? 'invisible' : seeMoreZoomClass,
+            'absolute grid content-start gap-0.5',
+            warps
+              ? cn('-inset-px scale-200 grid-cols-4', ready ? 'invisible' : seeMoreZoomClass)
+              : 'inset-0 grid-cols-2',
           )}
         >
           {photos.map((photo) => (

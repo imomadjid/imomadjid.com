@@ -22,3 +22,12 @@ void test('seeMoreCellRect fills the resting tile with the middle four cells', (
   close(last.x + last.width, tile.x + tile.width)
   close(last.y + last.height, tile.y + tile.height)
 })
+
+void test('seeMoreCellRect fills the tile with a 2x2 grid at 1x', () => {
+  const first = seeMoreCellRect(tile, 0, 1, 2)
+  const last = seeMoreCellRect(tile, 3, 1, 2)
+  assert.deepEqual(first, { x: 100, y: 50, width: 88, height: 88 })
+  close(last.x, 190)
+  close(last.x + last.width, tile.x + tile.width)
+  close(last.y + last.height, tile.y + tile.height)
+})

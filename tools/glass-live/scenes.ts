@@ -49,7 +49,6 @@ function galleryImages(scroll = 0, copies = 1, clip = true): Image[] {
     photos.map((photo) => photo.height / photo.width),
     4,
     16,
-    4,
   )
   const images: Image[] = []
   for (const [column, indices] of columns.entries()) {

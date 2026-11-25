@@ -1,6 +1,12 @@
-// iOS Safari 26+ doesn't draw fixed layers under its status bar and floating toolbar, so a fixed
-// full-screen dialog ends at the toolbar's top edge and the page shows below it, unblurred. On touch
-// screens the Gallery's dialogs stick instead, as the Sunlit layers do (ambient-light.tsx): they
+// iOS Safari 26+ doesn't draw fixed layers under its status bar and floating toolbar. Worse, it
+// hit-tests the middle of each edge, and where it finds a fixed or sticky layer about the
+// viewport's size, or a dimming layer (a translucent background with no children, at any size),
+// it covers the area under that bar with an opaque band: the layer's colour over the page's, or
+// the page's own where the layer has a backdrop-filter (WebKit's LocalFrameView::
+// fixedContainerEdges). A full-screen dialog's photos then stop at the band. A layer at least 5%
+// taller than the viewport that isn't a dimming layer doesn't count, and a scrolling layer without
+// a background isn't hit at all, so Safari leaves the bars clear. On touch screens the Gallery's
+// dialogs stick, as the Sunlit layers do (ambient-light.tsx), and so reach that size: they
 // portal into a `contents` layer at the top of the body, so they stick in the body's flow, reaching
 // 5rem past each end of the viewport. A negative top margin as tall as each one keeps it out of
 // that flow: only a top margin, since two in a row would collapse a bottom one into the next's top,
