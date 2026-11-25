@@ -40,7 +40,8 @@
     "tools/glass-live/scenes.ts",
     "tools/glass-live/shoot.ts",
     "tools/glass-live/motion.ts",
-    "tools/glass-live/lag.ts"
+    "tools/glass-live/lag.ts",
+    "tools/og/shoot.ts"
   ],
   "ignoreBinaries": ["exiftool"]
 }
