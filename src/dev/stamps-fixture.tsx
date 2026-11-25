@@ -255,7 +255,7 @@ export function StampsFixture() {
         </section>
       ))}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-1 px-4 py-3">
+      <div className="fixed inset-x-0 bottom-0 z-40 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-1 py-3 pr-20 pl-4">
         <span className="mr-auto text-body text-muted-foreground tabular-nums">
           {kept.size} kept{changed ? ' · differs from the repo list' : ''}
         </span>
