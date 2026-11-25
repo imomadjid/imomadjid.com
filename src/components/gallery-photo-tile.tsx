@@ -9,8 +9,18 @@ import type { PhotoZoom, PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
 import { cn } from '#/lib/utils'
 
-/** Opens `photo` full screen out of `tile`; `keyboard` if a key pressed it, not a pointer. */
+/**
+ * Opens `photo` full screen out of `tile`; `keyboard` if a key pressed it, not a pointer. The tile
+ * carries `data-photo-id`, inside a `data-gallery-set` holding its set's other tiles, which the
+ * lightbox steps between. A tile hides at once while its photo is lifted out (`data-lifted`), and
+ * fades out and back in while the lightbox steps away from it or to it (`data-step-fade`).
+ */
 export type OpenPhoto = (photo: GalleryPhoto, tile: HTMLElement, keyboard: boolean) => void
+
+// Hides a tile at once while its photo is lifted out (data-lifted), for a takeoff or a landing,
+// and fades it while the lightbox steps away from it or to it (data-step-fade, fadeHandOff).
+const liftedTileClass =
+  'data-lifted:invisible data-lifted:opacity-0 data-step-fade:transition-[opacity,visibility] data-step-fade:duration-300 data-step-fade:ease-out'
 
 // The CSS fallback's hover zoom, left off while the canvas draws the photo.
 const photoZoomClass =
@@ -113,8 +123,12 @@ export function FeaturedPhoto({
     <button
       type="button"
       aria-haspopup="dialog"
+      data-photo-id={photo.id}
       data-cuelume-open
-      className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-neutral-200 outline-none data-lifted:invisible dark:bg-neutral-800"
+      className={cn(
+        'group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-neutral-200 outline-none dark:bg-neutral-800',
+        liftedTileClass,
+      )}
       {...zoom.handlers}
       onClick={(event) => {
         zoom.zoomIn(false)
@@ -171,9 +185,11 @@ export function OverlayPhoto({
       type="button"
       aria-haspopup="dialog"
       data-hero-cell={heroCell}
+      data-photo-id={photo.id}
       data-cuelume-open
       className={cn(
-        'group relative block w-full cursor-zoom-in overflow-hidden rounded-lg bg-neutral-200 data-lifted:invisible dark:bg-neutral-800',
+        'group relative block w-full cursor-zoom-in overflow-hidden rounded-lg bg-neutral-200 dark:bg-neutral-800',
+        liftedTileClass,
         className,
       )}
       {...zoom.handlers}

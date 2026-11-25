@@ -7,6 +7,7 @@ import type { CSSProperties, RefObject } from 'react'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import {
   GalleryBackdropFill,
+  floatingControlClass,
   galleryBackdropClass,
   returnFocus,
 } from '#/components/gallery-lightbox'
@@ -423,10 +424,8 @@ export function GalleryOverlay({
     // so it covers the Sunlit light and the blind wand. A photo opened from it portals before it, a
     // layer up (z-50).
     <Dialog.Portal container={overlayLayer} className="contents">
-      <Dialog.Backdrop
-        className={cn(galleryBackdropClass, 'z-40', closing && 'opacity-0 duration-200')}
-      >
-        <GalleryBackdropFill />
+      <Dialog.Backdrop className={cn(galleryBackdropClass, 'z-40')}>
+        <GalleryBackdropFill closing={closing} />
       </Dialog.Backdrop>
       {/* A click beside the photos closes it, as a click on an open photo closes that: from a
           photo opened in the grid, two clicks lead back to the page. */}
@@ -459,6 +458,7 @@ export function GalleryOverlay({
           <div
             ref={listRef}
             data-recede
+            data-gallery-set
             className={cn(
               'grid items-start',
               columns === 2 ? 'grid-cols-2' : 'grid-cols-4',
@@ -505,9 +505,8 @@ export function GalleryOverlay({
             it waits out every flight and enters once they have handed over. */}
         <div
           className={cn(
-            'fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 transition-[opacity,scale] duration-300 ease-out',
-            (cellsLifted || flightAirborne) &&
-              'pointer-events-none scale-90 opacity-0 duration-150 motion-reduce:scale-100',
+            'fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2',
+            floatingControlClass(cellsLifted || flightAirborne),
           )}
         >
           {/* Live glass refracts the photos scrolling under it. */}
@@ -528,7 +527,7 @@ export function GalleryOverlay({
 
 /**
  * What the close button's live glass sees: the overlay's photos near it, on the dialog's
- * backdrop, read as --surface-1 (the backdrop is that colour at 60% over the blurred page).
+ * backdrop, read as --surface-1 (the backdrop is that colour at 80% over the blurred page).
  * A photo lifted out for a flight is left out, as it is hidden.
  */
 function useOverlayGlassBackdrop(

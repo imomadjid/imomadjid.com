@@ -6,6 +6,7 @@
       "name": "imomadjidcom",
       "dependencies": {
         "@base-ui/react": "^1.9.0",
+        "@scritto/react": "0.1.0",
         "@tabler/icons-react": "^3.52.0",
         "@tailwindcss/vite": "^4.3.5",
         "@tanstack/react-devtools": "^0.10.15",
@@ -499,6 +500,10 @@
     "@quansync/fs": ["@quansync/fs@1.0.0", "", { "dependencies": { "quansync": "^1.0.0" } }, "sha512-4TJ3DFtlf1L5LDMaM6CanJ/0lckGNtJcMjQ1NAV6zDmA0tEHKZtxNKin8EgPaVX1YzljbxckyT2tJrpQKAtngQ=="],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.1", "", {}, "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="],
+
+    "@scritto/core": ["@scritto/core@0.1.0", "", {}, "sha512-8itfD3jc+DvoDcMYAcWJHyLXZvBNaorlL091Fp/4Toe4trGErbQOtyptO9Qexyb/qvGO0S1WRWDrGO/2KURnxg=="],
+
+    "@scritto/react": ["@scritto/react@0.1.0", "", { "dependencies": { "@scritto/core": "0.1.0" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-fNeX/ZjXUBtNMo/aQ03t1AG9+5vbitfEDfrLbO5qVCAcus7xq8kWhuv1LNuGGcBLA6pngo5otymCCkZDNRY84Q=="],
 
     "@sentry/conventions": ["@sentry/conventions@0.16.0", "", {}, "sha512-fO9PLmHdVURcSPUpWCItWAtgKiMwGdJHbovoSEyLplX5sxs2ugvI4CBPTrkkgqhObnZOD0CnWBKDzSVQYBKEyQ=="],
 

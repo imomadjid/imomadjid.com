@@ -3,62 +3,51 @@
 import type { Rect } from '#/lib/gallery-flight-geometry'
 
 /** The gap between the photo and the readout under it. */
-const READOUT_GAP = 12
-/** The readout's line height (leading-5) and the gap between its lines (gap-y-1). */
-const LINE_HEIGHT = 20
-const LINE_GAP = 4
+const READOUT_GAP = 16
+/** A row of cells: a label's line (leading-3.5), the gap under it (gap-0.5), a value's (leading-5). */
+const ROW_HEIGHT = 14 + 2 + 20
+/** The gap between the rows of a phone's grid (gap-y-3). */
+const ROW_GAP = 12
 
-/** The gap between readouts along a line: wider from sm up. */
-const readoutGap = (viewportWidth: number) => (viewportWidth < 640 ? 16 : 24)
+/** Whether a viewport `viewportWidth` wide is a phone's: its readout is a grid pinned to the bottom. */
+export const readoutGrid = (viewportWidth: number) => viewportWidth < 640
 
-/** What the photo leaves free under it for a readout of `lines` lines. */
-export const readoutSpace = (lines: number) =>
-  READOUT_GAP + lines * LINE_HEIGHT + (lines - 1) * LINE_GAP
-
-/**
- * How many lines a row of items `widths` wide breaks into in `width`, `gap` apart, as
- * `flex-wrap` breaks them: each line takes items until the next would overflow it. An item wider
- * than the row still takes a line of its own.
- */
-export function wrapLines(widths: readonly number[], width: number, gap: number) {
-  let lines = 0
-  let used = 0
-  for (const itemWidth of widths) {
-    if (lines === 0 || used + gap + itemWidth > width) {
-      lines += 1
-      used = itemWidth
-    } else {
-      used += gap + itemWidth
-    }
-  }
-  return Math.max(1, lines)
+/** What the photo leaves free under it for the readout: a row, or a phone's two. */
+export function readoutSpace(viewportWidth: number) {
+  const rows = readoutGrid(viewportWidth) ? 2 : 1
+  return READOUT_GAP + rows * ROW_HEIGHT + (rows - 1) * ROW_GAP
 }
 
-/** Where the readout sits, how many lines it takes, and its items' gap along a line. */
-export type ReadoutRow = { x: number; y: number; width: number; lines: number; gap: number }
+/**
+ * Where the readout's bar sits: centred on `center`, `y` from the top, and as wide as its cells
+ * take, but no narrower than `minWidth` nor wider than `maxWidth`; `grid` on a phone.
+ */
+export type ReadoutRow = {
+  center: number
+  y: number
+  minWidth: number
+  maxWidth: number
+  grid: boolean
+}
 
 /**
- * The readout's row: as wide as the photo, or wider, centred under it, where its items (`widths`)
- * need more room for one line, up to the viewport less its `margin` either side. They wrap only
- * past that, as on a phone, so the line count doesn't depend on the photo: `photo` may be left
- * out to get it before the photo is placed. Unmeasured (`widths` empty), it takes a line.
+ * The readout's bar under a full-screen photo you can step from to the others in its set: the
+ * same for every photo, so stepping moves it only as far as the photo's bottom does, or, pinned to
+ * the viewport's bottom margin on a phone, not at all. It is at least as wide as the widest photo
+ * of the set shows (`span`, a landscape one's), so a portrait photo narrows the photo but not the
+ * bar, and wider where its cells need it, up to the viewport less its `margin` either side,
+ * centred on the viewport.
  */
-export function readoutRow(
-  viewport: Rect,
-  margin: number,
-  widths: readonly number[],
-  photo: Rect = { x: margin, y: 0, width: 0, height: 0 },
-): ReadoutRow {
-  const gap = readoutGap(viewport.width)
-  const room = viewport.width - 2 * margin
-  const oneLine = widths.reduce((sum, width) => sum + width + gap, -gap)
-  const width = Math.min(room, Math.max(photo.width, oneLine))
-  const centred = photo.x + (photo.width - width) / 2
+export function readoutBar(viewport: Rect, margin: number, span: number, photo: Rect): ReadoutRow {
+  const grid = readoutGrid(viewport.width)
+  const maxWidth = viewport.width - 2 * margin
   return {
-    x: Math.min(Math.max(centred, margin), viewport.width - margin - width),
-    y: photo.y + photo.height + READOUT_GAP,
-    width,
-    lines: oneLine <= room ? 1 : wrapLines(widths, room, gap),
-    gap,
+    center: viewport.x + viewport.width / 2,
+    y: grid
+      ? viewport.y + viewport.height - margin - (readoutSpace(viewport.width) - READOUT_GAP)
+      : photo.y + photo.height + READOUT_GAP,
+    minWidth: Math.min(span, maxWidth),
+    maxWidth,
+    grid,
   }
 }

@@ -1,59 +1,37 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 
-import { readoutRow, readoutSpace, wrapLines } from '#/lib/readout-layout'
+import { readoutBar, readoutSpace } from '#/lib/readout-layout'
 
 const desktop = { x: 0, y: 0, width: 1440, height: 900 }
 const phone = { x: 0, y: 0, width: 390, height: 844 }
 
-void test('items that fit with their gaps stay on one line', () => {
-  assert.equal(wrapLines([100, 100, 100], 320, 10), 1)
-  assert.equal(wrapLines([], 320, 10), 1)
-})
-
-void test('the item that would overflow starts the next line', () => {
-  assert.equal(wrapLines([100, 100, 100], 319, 10), 2)
-  assert.equal(wrapLines([100, 100, 100, 100], 210, 10), 2)
-  assert.equal(wrapLines([100, 100, 100], 150, 10), 3)
-})
-
-void test('an item wider than the row takes a line of its own', () => {
-  assert.equal(wrapLines([50, 400, 50], 300, 10), 3)
-})
-
-void test('the row spans a photo wide enough for its line, from its left edge', () => {
-  const photo = { x: 105, y: 24, width: 1230, height: 820 }
-  const row = readoutRow(desktop, 24, [120, 90, 90, 60, 40], photo)
-  assert.deepEqual(row, { x: 105, y: 856, width: 1230, lines: 1, gap: 24 })
-})
-
-void test('under a narrow photo the row grows past it, centred, rather than wrap', () => {
-  const photo = { x: 447, y: 24, width: 546, height: 820 }
-  const row = readoutRow(desktop, 24, [120, 90, 90, 60, 40, 140], photo)
-  const oneLine = 540 + 5 * 24
-  assert.equal(row.width, oneLine)
-  assert.equal(row.x, 447 + (546 - oneLine) / 2)
-  assert.equal(row.lines, 1)
-})
-
-void test('past the viewport the row stops at its margins and wraps', () => {
-  const photo = { x: 12, y: 120, width: 366, height: 549 }
-  const row = readoutRow(phone, 12, [120, 90, 95, 64, 40, 130], photo)
-  assert.equal(row.x, 12)
-  assert.equal(row.width, 366)
-  assert.equal(row.lines, 2)
-  // The line count doesn't need the photo.
-  assert.equal(readoutRow(phone, 12, [120, 90, 95, 64, 40, 130]).lines, 2)
-})
-
-void test('unmeasured, the row takes the photo and a line', () => {
-  const photo = { x: 12, y: 120, width: 366, height: 549 }
-  assert.deepEqual(readoutRow(phone, 12, [], photo), {
-    x: 12,
-    y: 681,
-    width: 366,
-    lines: 1,
-    gap: 16,
+void test('the bar keeps a landscape photo’s width under a portrait one, centred', () => {
+  const portrait = { x: 447, y: 24, width: 546, height: 820 }
+  assert.deepEqual(readoutBar(desktop, 24, 1230, portrait), {
+    center: 720,
+    y: 860,
+    minWidth: 1230,
+    maxWidth: 1392,
+    grid: false,
   })
-  assert.equal(readoutSpace(2), 12 + 20 + 4 + 20)
+})
+
+void test('a phone’s bar is a grid on the bottom margin, whatever the photo', () => {
+  const photo = { x: 12, y: 160, width: 366, height: 244 }
+  const bar = readoutBar(phone, 12, 366, photo)
+  assert.equal(bar.grid, true)
+  // Two rows of 36 px, 12 px apart, above the 12 px margin.
+  assert.equal(bar.y, 844 - 12 - 84)
+  assert.equal(bar.minWidth, 366)
+})
+
+void test('the photo leaves a row under it, or a phone’s two', () => {
+  assert.equal(readoutSpace(desktop.width), 16 + 36)
+  assert.equal(readoutSpace(phone.width), 16 + 84)
+})
+
+void test('the bar never takes more than the viewport less its margins', () => {
+  const photo = { x: 0, y: 0, width: 0, height: 0 }
+  assert.equal(readoutBar(desktop, 24, 2000, photo).minWidth, 1392)
 })

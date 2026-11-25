@@ -7,6 +7,7 @@ import { useFlightStage } from '#/components/gallery-flight-stage'
 import { useGalleryLightbox } from '#/components/gallery-lightbox'
 import { GalleryOverlay, useSeeMoreOverlay } from '#/components/gallery-overlay'
 import { FeaturedPhoto } from '#/components/gallery-photo-tile'
+import type { OpenPhoto } from '#/components/gallery-photo-tile'
 import { SeeMoreTile } from '#/components/gallery-see-more'
 import { useOverlayColumns } from '#/components/use-overlay-columns'
 import { useOverlayScrollsPage } from '#/lib/dialog-layer'
@@ -57,6 +58,12 @@ function Gallery({
   const zoomedOutRef = useRef(false)
   const stage = useFlightStage(tuning.expand, sectionRef)
   const lightbox = useGalleryLightbox(stage, tuning)
+  // An open photo steps through the photos around its tile: the featured ones on the page, or
+  // every photo in the overlay, in its order.
+  const openFeatured: OpenPhoto = (photo, tile, keyboard) =>
+    lightbox.openPhoto(photo, tile, keyboard, featured)
+  const openInOverlay: OpenPhoto = (photo, tile, keyboard) =>
+    lightbox.openPhoto(photo, tile, keyboard, overlayPhotos)
   const scrollsPage = useOverlayScrollsPage()
   const overlay = useSeeMoreOverlay({
     stage,
@@ -116,10 +123,10 @@ function Gallery({
             </span>
           </p>
         </div>
-        <ul className="grid w-full grid-cols-3 gap-2">
+        <ul data-gallery-set className="grid w-full grid-cols-3 gap-2">
           {featured.map((photo) => (
             <li key={photo.id}>
-              <FeaturedPhoto photo={photo} tuning={tuning.photo} onOpen={lightbox.openPhoto} />
+              <FeaturedPhoto photo={photo} tuning={tuning.photo} onOpen={openFeatured} />
             </li>
           ))}
           <li>
@@ -147,7 +154,7 @@ function Gallery({
         flightAirborne={stage.airborne}
         closing={overlay.closing}
         onClose={overlay.close}
-        onOpenPhoto={lightbox.openPhoto}
+        onOpenPhoto={openInOverlay}
         finalFocus={overlay.finalFocus}
       />
       {stage.canvas}
