@@ -5,6 +5,7 @@ import { DialRoot } from 'dialkit'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
+import { dialogLayerId } from '#/lib/dialog-layer'
 import { ShapeProvider } from '#/lib/shape-context'
 import { SOUND_SCRIPT, startSounds } from '#/lib/sound'
 import { SurfaceProvider } from '#/lib/surface-context'
@@ -73,7 +74,9 @@ function RootDocument({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: SOUND_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="bg-surface-1 text-neutral-950 dark:text-neutral-50">
+      <body className="flow-root bg-surface-1 text-neutral-950 dark:text-neutral-50">
+        {/* The Gallery's dialogs portal here, so they can stick on touch screens. */}
+        <div id={dialogLayerId} className="contents" />
         {/* Site-wide FF corner style. */}
         <ShapeProvider defaultShape="pill">
           <SurfaceProvider value={1}>{children}</SurfaceProvider>

@@ -10,6 +10,7 @@ import { OverlayPhoto } from '#/components/gallery-photo-tile'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
 import { LiveGlassSourceProvider } from '#/components/live-glass'
 import { IconButton } from '#/components/ui/icon-button'
+import { dialogCoverClass, dialogLayer, dialogOverscanClass } from '#/lib/dialog-layer'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
 import {
@@ -401,9 +402,9 @@ export function GalleryOverlay({
   const glassBackdrop = useOverlayGlassBackdrop(listRef, popupRef)
 
   return (
-    // Portalled to the body, outside main's stacking context, so it covers the Sunlit light and
-    // the blind wand.
-    <Dialog.Portal>
+    // Portalled to the top of the body (src/lib/dialog-layer.ts), outside main's stacking context,
+    // so it covers the Sunlit light and the blind wand.
+    <Dialog.Portal container={dialogLayer} className="contents">
       <Dialog.Backdrop className={cn(galleryBackdropClass, closing && 'opacity-0 duration-200')} />
       {/* A click beside the photos closes it, as a click on an open photo closes that: from a
           photo opened in the grid, two clicks lead back to the page. */}
@@ -414,7 +415,8 @@ export function GalleryOverlay({
         initialFocus={popupRef}
         finalFocus={finalFocus}
         className={cn(
-          'fixed inset-0 z-50 cursor-zoom-out overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
+          dialogCoverClass,
+          'z-50 cursor-zoom-out overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
           // Closing, it lets clicks through: a photo opened from it now would fly in a closing dialog.
           closing && 'pointer-events-none opacity-0 duration-200',
         )}
@@ -426,48 +428,50 @@ export function GalleryOverlay({
         }}
       >
         <Dialog.Title className="sr-only">Gallery</Dialog.Title>
-        {/* pb-28 lets the last row scroll clear of the close button. */}
-        <div className="px-2 pt-2 pb-28 sm:px-4 sm:pt-4">
-          {/* Shrinks behind a photo opened from it (src/lib/page-recede.ts). */}
-          <div
-            ref={listRef}
-            data-recede
-            className={cn(
-              'grid items-start',
-              columnCount === 2 ? 'grid-cols-2' : 'grid-cols-4',
-              gap,
-              recedeClass,
-              // Its photos open only once the tile's have landed, so a click can't cut the flight.
-              cellsLifted && 'pointer-events-none',
-            )}
-          >
-            {columns.map((column) => (
-              <ul key={column[0]} className={cn('grid', gap)}>
-                {column.map((index) => {
-                  const photo = photos[index]
-                  const hero = index < HERO_CELLS
-                  const flown = flies && hero
-                  return (
-                    <li
-                      key={photo.id}
-                      className={cn(!flown && 'animate-enter [--enter-step:30ms]')}
-                      style={flown ? undefined : enterIndex(flies ? index - HERO_CELLS : index)}
-                    >
-                      <OverlayPhoto
-                        photo={photo}
-                        tuning={photoTuning}
-                        // The tile's photos land here straight away.
-                        eager={hero}
-                        sizes={columnCount === 2 ? '50vw' : '25vw'}
-                        heroCell={hero ? index : undefined}
-                        className={cn(flown && cellsLifted && 'invisible')}
-                        onOpen={onOpenPhoto}
-                      />
-                    </li>
-                  )
-                })}
-              </ul>
-            ))}
+        <div className={dialogOverscanClass}>
+          {/* pb-28 lets the last row scroll clear of the close button. */}
+          <div className="px-2 pt-2 pb-28 sm:px-4 sm:pt-4">
+            {/* Shrinks behind a photo opened from it (src/lib/page-recede.ts). */}
+            <div
+              ref={listRef}
+              data-recede
+              className={cn(
+                'grid items-start',
+                columnCount === 2 ? 'grid-cols-2' : 'grid-cols-4',
+                gap,
+                recedeClass,
+                // Its photos open only once the tile's have landed, so a click can't cut the flight.
+                cellsLifted && 'pointer-events-none',
+              )}
+            >
+              {columns.map((column) => (
+                <ul key={column[0]} className={cn('grid', gap)}>
+                  {column.map((index) => {
+                    const photo = photos[index]
+                    const hero = index < HERO_CELLS
+                    const flown = flies && hero
+                    return (
+                      <li
+                        key={photo.id}
+                        className={cn(!flown && 'animate-enter [--enter-step:30ms]')}
+                        style={flown ? undefined : enterIndex(flies ? index - HERO_CELLS : index)}
+                      >
+                        <OverlayPhoto
+                          photo={photo}
+                          tuning={photoTuning}
+                          // The tile's photos land here straight away.
+                          eager={hero}
+                          sizes={columnCount === 2 ? '50vw' : '25vw'}
+                          heroCell={hero ? index : undefined}
+                          className={cn(flown && cellsLifted && 'invisible')}
+                          onOpen={onOpenPhoto}
+                        />
+                      </li>
+                    )
+                  })}
+                </ul>
+              ))}
+            </div>
           </div>
         </div>
         {/* Floats over the photos, which scroll under it. A flight draws above the whole dialog

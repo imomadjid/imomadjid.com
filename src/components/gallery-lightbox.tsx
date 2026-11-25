@@ -6,6 +6,7 @@ import { flushSync } from 'react-dom'
 import { ExposureReadout, measureReadout } from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
+import { dialogCoverClass, dialogLayer } from '#/lib/dialog-layer'
 import { springResponse } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
@@ -51,8 +52,10 @@ export function returnFocus(to: { tile: HTMLElement; keyboard: boolean } | null)
 }
 
 /** The backdrop both Gallery dialogs dim the page with, thin enough for the page's shrink to show. */
-export const galleryBackdropClass =
-  'fixed inset-0 z-50 bg-surface-1/60 backdrop-blur-md transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none'
+export const galleryBackdropClass = cn(
+  dialogCoverClass,
+  'z-50 bg-surface-1/60 backdrop-blur-md transition-opacity duration-300 ease-out data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
+)
 
 // The full-screen photo follows the viewport the flight measures (viewportRect), so it lands
 // where the image shows.
@@ -275,8 +278,9 @@ export function useGalleryLightbox(
         if (!open) requestClose()
       }}
     >
-      {/* Portalled to the body at z-50, so it covers the Sunlit light and the blind wand. */}
-      <Dialog.Portal>
+      {/* Portalled to the top of the body (src/lib/dialog-layer.ts) at z-50, so it covers the
+          Sunlit light and the blind wand. */}
+      <Dialog.Portal container={dialogLayer} className="contents">
         {/* Nested in the See more dialog, which Base UI would leave without a backdrop. */}
         <Dialog.Backdrop
           forceRender
