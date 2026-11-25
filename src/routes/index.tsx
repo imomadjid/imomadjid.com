@@ -26,8 +26,8 @@ const title = 'Imo’s Portfolio'
 const description =
   'I’m Imo, a design engineer and product designer based in Jakarta. I design and build interfaces, from early prototypes to shipped products.'
 const ogImage = {
-  url: `${siteUrl}og.png`,
-  alt: 'Imo Madjid, design engineer and product designer in Jakarta',
+  url: `${siteUrl}og.jpg`,
+  alt: 'The imo logo on a wall in dappled sunlight, through blinds and leaves',
 }
 
 const structuredData = {
@@ -69,7 +69,7 @@ export const Route = createFileRoute('/')({
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
       { property: 'og:image', content: ogImage.url },
-      { property: 'og:image:type', content: 'image/png' },
+      { property: 'og:image:type', content: 'image/jpeg' },
       { property: 'og:image:width', content: '1200' },
       { property: 'og:image:height', content: '630' },
       { property: 'og:image:alt', content: ogImage.alt },

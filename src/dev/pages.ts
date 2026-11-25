@@ -1,4 +1,4 @@
-import { Aperture, Component, GlassWater, Grid2x2, Layers, LayoutGrid } from 'lucide-react'
+import { Aperture, Component, GlassWater, Grid2x2, Image, Layers, LayoutGrid } from 'lucide-react'
 
 // Single source for the /dev sidebar and the overview page.
 export const devPages = [
@@ -31,6 +31,12 @@ export const devPages = [
     label: 'Live glass',
     icon: Aperture,
     description: 'WebGPU liquid glass that refracts its backdrop, fitted to iOS 27 captures.',
+  },
+  {
+    to: '/dev/og',
+    label: 'Social card',
+    icon: Image,
+    description: 'The Open Graph image: the Sunlit wall with the logo, captured by tools/og.',
   },
   {
     to: '/dev/surfaces',

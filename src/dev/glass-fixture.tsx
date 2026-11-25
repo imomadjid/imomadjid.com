@@ -139,7 +139,7 @@ export function GlassFixture() {
             backdrop="bg-[linear-gradient(120deg,#f97316,#ec4899_45%,#6366f1)]"
             label="On color"
           />
-          <GlassRow backdrop="bg-[url(/og.png)] bg-cover bg-center" label="On an image" />
+          <GlassRow backdrop="bg-[url(/og.jpg)] bg-cover bg-center" label="On an image" />
         </div>
       </section>
     </div>
