@@ -1,11 +1,12 @@
 // Lists every stamp Wikimedia Commons holds for a country, one year category at a time, into
 // tools/stamps/candidates/<country>.json for the /dev/stamps review page.
 //
-// Usage: bun tools/stamps/fetch.ts id
+// Usage: bun tools/stamps/fetch.ts id [--refresh]
 //
 // Nothing is downloaded here except metadata and 320 px thumbnail URLs; import.ts fetches the
 // originals of the stamps you keep.
-import { mkdir, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
@@ -40,10 +41,11 @@ type ApiResponse = {
   }
 }
 
-// Commons rate-limits anonymous clients, so requests go one at a time with a pause between them,
-// and a 429 waits as long as Retry-After asks.
-const pause = 400
-const attempts = 8
+// Commons rate-limits anonymous clients. Its 429s ask for a minute's wait, but they come from
+// one server of several and a retry a few seconds later usually lands, so retries back off
+// gently instead of honouring Retry-After in full.
+const pause = 300
+const attempts = 30
 
 async function query(params: Record<string, string>) {
   const url = `${api}?${new URLSearchParams({ ...params, format: 'json', formatversion: '2', maxlag: '5' })}`
@@ -59,8 +61,7 @@ async function query(params: Record<string, string>) {
     } else if (attempt === attempts) {
       throw new Error(`Commons answered ${response.status} for ${url}`)
     }
-    const retryAfter = Number(response.headers.get('Retry-After'))
-    await sleep(retryAfter > 0 ? retryAfter * 1000 : 5000 * attempt)
+    await sleep(Math.min(2000 * attempt, 15_000))
   }
 }
 
@@ -163,8 +164,26 @@ const years = (await categoryMembers(country.byYear, 'subcat'))
   .map((category) => ({ category, year: Number(/^Category:(\d{4}) /.exec(category)?.[1]) }))
   .filter(({ year }) => year > 0 && year <= lastYear)
 
-const candidates: Candidate[] = []
+const out = join(dirname(fileURLToPath(import.meta.url)), 'candidates')
+const outFile = join(out, `${key}.json`)
+await mkdir(out, { recursive: true })
+
+// Years already in the file are kept, so an interrupted fetch resumes. --refresh starts over.
+const refresh = process.argv.includes('--refresh')
+const saved: Candidate[] =
+  !refresh && existsSync(outFile) ? JSON.parse(await readFile(outFile, 'utf8')) : []
+const done = new Set(saved.map((candidate) => candidate.year))
+const candidates = [...saved]
+
+async function save() {
+  candidates.sort((a, b) => a.year - b.year || a.file.localeCompare(b.file))
+  // One stamp per line keeps refetches readable in a diff.
+  const lines = candidates.map((candidate) => JSON.stringify(candidate))
+  await writeFile(outFile, `[\n${lines.join(',\n')}\n]\n`)
+}
+
 for (const { category, year } of years) {
+  if (done.has(year)) continue
   const files = await categoryMembers(category, 'file')
   for (let index = 0; index < files.length; index += 50) {
     const pages = await describe(files.slice(index, index + 50))
@@ -173,15 +192,11 @@ for (const { category, year } of years) {
       if (candidate) candidates.push(candidate)
     }
   }
+  await save()
   console.log(`${year}: ${files.length} files`)
 }
 
-candidates.sort((a, b) => a.year - b.year || a.file.localeCompare(b.file))
-const out = join(dirname(fileURLToPath(import.meta.url)), 'candidates')
-await mkdir(out, { recursive: true })
-// One stamp per line keeps refetches readable in a diff.
-const lines = candidates.map((candidate) => JSON.stringify(candidate))
-await writeFile(join(out, `${key}.json`), `[\n${lines.join(',\n')}\n]\n`)
+await save()
 console.log(
   `${candidates.length} candidates for ${country.name} → tools/stamps/candidates/${key}.json`,
 )
