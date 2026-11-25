@@ -501,10 +501,10 @@ function useOverlayGlassBackdrop(
       },
       subscribe(wake) {
         const popup = popupRef.current
-        popup?.addEventListener('scroll', wake, { passive: true })
-        return () => popup?.removeEventListener('scroll', wake)
+        const scrolled = () => wake({ scrolled: true })
+        popup?.addEventListener('scroll', scrolled, { passive: true })
+        return () => popup?.removeEventListener('scroll', scrolled)
       },
-      scrolls: true,
     }),
     [listRef, popupRef],
   )

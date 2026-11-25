@@ -1,5 +1,5 @@
-// Live glass: one direction of a separable Gaussian over the composed backdrop. Run across, then
-// down, at each of the frost's two scales.
+// Live glass: one direction of a separable Gaussian over the composed backdrop, run across, then
+// down, for the frost's wide share.
 
 struct BlurParams {
   // One texel's step along the blur, in texture coordinates.
@@ -14,9 +14,6 @@ struct BlurParams {
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  if (params.sigma < 0.1) {
-    return textureSampleLevel(source, sourceSampler, uv, 0.0);
-  }
   let reach = min(i32(ceil(3.0 * params.sigma)), 96);
   var sum = vec4f(0.0);
   var weights = 0.0;

@@ -5,8 +5,7 @@
 // Env: URL (default http://localhost:3000), CHROME (default Google Chrome).
 import { mkdirSync } from 'node:fs'
 
-import { chromium } from 'playwright-core'
-
+import { openBrowser, openScene } from './browser'
 import file from './Scenes/scenes.json'
 
 const [out, ...only] = process.argv.slice(2)
@@ -14,32 +13,13 @@ if (!out) throw new Error('Usage: shoot.ts <out-dir> [scene ...]')
 const names = only.length
   ? only
   : file.scenes.filter((scene) => !('motion' in scene)).map((scene) => scene.name)
-const base = process.env.URL ?? 'http://localhost:3000'
 
 mkdirSync(`${out}/web`, { recursive: true })
-const browser = await chromium.launch({
-  executablePath:
-    process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  args: ['--enable-unsafe-webgpu', '--hide-scrollbars'],
-})
-const page = await browser.newPage({
-  viewport: { width: file.width, height: file.height },
-  deviceScaleFactor: 3,
-})
-page.on('console', (message) => {
-  if (message.type() === 'warning' || message.type() === 'error')
-    console.log('  page:', message.text())
-})
+const { browser, page } = await openBrowser()
 for (const name of names) {
   const [scene, scroll = '0'] = name.split('@')
-  await page.goto(`${base}/dev/live-glass?scene=${scene}&icon=0&scroll=${scroll}`, {
-    waitUntil: 'load',
-  })
   // The live canvas fades in once its first frame is drawn; give the frame time to land.
-  const live = await page
-    .waitForSelector('canvas.opacity-100', { timeout: 10_000 })
-    .then(() => true)
-    .catch(() => false)
+  const live = await openScene(page, scene, `&scroll=${scroll}`)
   await page.waitForTimeout(400)
   const path = `${out}/web/${name}-bare.png`
   await page.screenshot({ path, clip: { x: 0, y: 0, width: file.width, height: file.height } })

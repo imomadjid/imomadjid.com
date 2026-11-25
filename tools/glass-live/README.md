@@ -17,8 +17,8 @@ from the edge:
    content from near the centre. That is why the gap between two photo columns sweeps out into a
    cap at the top and bottom of the glass.
 2. **Frost.** The backdrop is raised to a power (`gamma`: about 1.56 in light mode, 0.70 in dark)
-   and split into two shares. About 30% is the backdrop at half the screen's resolution. The rest
-   is blurred about 15 pt wide. The two are mixed and the power is undone.
+   and split into two shares. About 30% is the backdrop at half the 3x screen's resolution (the
+   web composes at 3x on any screen to match). The rest is blurred about 15 pt wide. The two are mixed and the power is undone.
 3. **Saturation.** Colour is boosted about its luma (about 2.0 in light, 1.5 in dark).
 4. **Tone.** `offset + gain * base + curve * base²`, read from tables over d and the edge's
    angle. The tables also carry the rim light, the hairline and the drop shadow outside the

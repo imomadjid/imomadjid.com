@@ -35,17 +35,17 @@ function fileUrl(file: string) {
 export function LiveGlassFixture() {
   const params = new URLSearchParams(useLocation({ select: (location) => location.searchStr }))
   const capture = sceneFile.scenes.find((scene) => scene.name === params.get('scene'))
-  if (capture?.motion)
+  const icon = params.get('icon') !== '0'
+  if (capture && hasMotion(capture))
     return (
       <MotionScene
         scene={capture}
-        motion={capture.motion}
-        icon={params.get('icon') !== '0'}
+        icon={icon}
         scroll={Number(params.get('scroll') ?? 0)}
         run={params.get('run') === '1'}
       />
     )
-  if (capture) return <CaptureScene scene={capture} icon={params.get('icon') !== '0'} />
+  if (capture) return <CaptureScene scene={capture} icon={icon} />
 
   return (
     <div className="max-w-5xl space-y-10">
@@ -83,7 +83,11 @@ function CaptureScene({ scene, icon }: { scene: Scene; icon: boolean }) {
   )
 }
 
-type Motion = NonNullable<Scene['motion']>
+type MovingScene = Scene & { motion: NonNullable<Scene['motion']> }
+
+function hasMotion(scene: Scene): scene is MovingScene {
+  return scene.motion !== undefined
+}
 
 /**
  * A motion scene: its images in a real scroll container under the glass, so scrolling takes the
@@ -92,21 +96,19 @@ type Motion = NonNullable<Scene['motion']>
  */
 function MotionScene({
   scene,
-  motion,
   icon,
   scroll,
   run,
 }: {
-  scene: Scene
-  motion: Motion
+  scene: MovingScene
   icon: boolean
   scroll: number
   run: boolean
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   // Scrolled by hand it leads as the overlay does; `run` scrolls on the main thread, in step.
-  const source = useSceneSource(scrollerRef, true, !run)
-  const { button } = scene
+  const source = useSceneSource(scrollerRef, !run)
+  const { motion } = scene
 
   useEffect(() => {
     const scroller = scrollerRef.current
@@ -118,7 +120,7 @@ function MotionScene({
     let frame = requestAnimationFrame(function step(now) {
       const t = (now - start) / 1000 - motion.hold
       scroller.scrollTop = Math.min(end, Math.max(0, t * motion.speed))
-      frame = requestAnimationFrame(step)
+      if (t * motion.speed < end) frame = requestAnimationFrame(step)
     })
     return () => cancelAnimationFrame(frame)
   }, [motion, run, scroll])
@@ -137,35 +139,10 @@ function MotionScene({
         className="absolute inset-0 [scrollbar-width:none] overflow-y-auto"
       >
         <div className="relative" style={{ height: motion.height }}>
-          {scene.images.map((image) => (
-            <img
-              key={`${image.file}@${image.x},${image.y}`}
-              src={fileUrl(image.file)}
-              alt=""
-              decoding="async"
-              className="absolute object-cover"
-              style={{
-                left: image.x,
-                top: image.y,
-                width: image.width,
-                height: image.height,
-                borderRadius: image.radius,
-              }}
-            />
-          ))}
+          <SceneImages images={scene.images} />
         </div>
       </div>
-      <LiveGlassSourceProvider source={source}>
-        <IconButton
-          aria-label="Close"
-          size="4xl"
-          glass="live"
-          className="absolute"
-          style={{ left: button.x, top: button.y }}
-        >
-          {icon && <IconX aria-hidden="true" />}
-        </IconButton>
-      </LiveGlassSourceProvider>
+      <SceneGlass source={source} button={scene.button} icon={icon} />
     </div>
   )
 }
@@ -209,43 +186,58 @@ function SceneFrame({
           top: -view.y,
         }}
       >
-        {scene.images.map((image) => (
-          <img
-            key={`${image.file}@${image.x},${image.y}`}
-            src={fileUrl(image.file)}
-            alt=""
-            decoding="async"
-            className="absolute object-cover"
-            style={{
-              left: image.x,
-              top: image.y,
-              width: image.width,
-              height: image.height,
-              borderRadius: image.radius,
-            }}
-          />
-        ))}
-        <LiveGlassSourceProvider source={source}>
-          <IconButton
-            aria-label="Close"
-            size="4xl"
-            glass="live"
-            className="absolute"
-            style={{ left: button.x, top: button.y }}
-          >
-            {icon && <IconX aria-hidden="true" />}
-          </IconButton>
-        </LiveGlassSourceProvider>
+        <SceneImages images={scene.images} />
+        <SceneGlass source={source} button={button} icon={icon} />
       </div>
     </div>
   )
 }
 
-function useSceneSource(
-  frameRef: RefObject<HTMLDivElement | null>,
-  scrolls = false,
-  lead = false,
-): LiveGlassSource {
+function SceneImages({ images }: { images: Scene['images'] }) {
+  return images.map((image) => (
+    <img
+      key={`${image.file}@${image.x},${image.y}`}
+      src={fileUrl(image.file)}
+      alt=""
+      decoding="async"
+      className="absolute object-cover"
+      style={{
+        left: image.x,
+        top: image.y,
+        width: image.width,
+        height: image.height,
+        borderRadius: image.radius,
+      }}
+    />
+  ))
+}
+
+function SceneGlass({
+  source,
+  button,
+  icon,
+}: {
+  source: LiveGlassSource
+  button: Scene['button']
+  icon: boolean
+}) {
+  return (
+    <LiveGlassSourceProvider source={source}>
+      <IconButton
+        aria-label="Close"
+        size="4xl"
+        glass="live"
+        className="absolute"
+        style={{ left: button.x, top: button.y }}
+      >
+        {icon && <IconX aria-hidden="true" />}
+      </IconButton>
+    </LiveGlassSourceProvider>
+  )
+}
+
+/** The scene's photos under `frameRef`; with `lead`, its scrolls lead the glass as the overlay's. */
+function useSceneSource(frameRef: RefObject<HTMLDivElement | null>, lead = false): LiveGlassSource {
   return useMemo(
     () => ({
       scene() {
@@ -262,12 +254,11 @@ function useSceneSource(
       },
       subscribe(wake) {
         const frame = frameRef.current
-        if (!scrolls || !frame) return () => {}
-        frame.addEventListener('scroll', wake, { passive: true })
-        return () => frame.removeEventListener('scroll', wake)
+        const scrolled = () => wake({ scrolled: lead })
+        frame?.addEventListener('scroll', scrolled, { passive: true })
+        return () => frame?.removeEventListener('scroll', scrolled)
       },
-      scrolls: lead,
     }),
-    [frameRef, scrolls, lead],
+    [frameRef, lead],
   )
 }

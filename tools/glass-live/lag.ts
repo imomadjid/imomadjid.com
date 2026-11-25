@@ -5,36 +5,27 @@
 //   finger's or a trackpad's)
 //   writes <out-dir>/lag/<scene>-<how>/NNNN.png
 // Env: URL (default http://localhost:3000), CHROME (default Google Chrome).
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, rmSync } from 'node:fs'
+import { writeFile } from 'node:fs/promises'
 
-import { chromium } from 'playwright-core'
-
+import { decodeImages, openBrowser, openScene } from './browser'
 import file from './Scenes/scenes.json'
 
 const [out, name, how = 'raf'] = process.argv.slice(2)
-if (!out || !name) throw new Error('Usage: lag.ts <out-dir> <scene> <raf|wheel>')
-const base = process.env.URL ?? 'http://localhost:3000'
+if (!out || !name || !['raf', 'wheel', 'touch'].includes(how))
+  throw new Error('Usage: lag.ts <out-dir> <scene> <raf|wheel|touch>')
 const dir = `${out}/lag/${name}-${how}`
 rmSync(dir, { recursive: true, force: true })
 mkdirSync(dir, { recursive: true })
 
-const browser = await chromium.launch({
-  executablePath:
-    process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  args: ['--enable-unsafe-webgpu', '--hide-scrollbars'],
-})
 // The screencast frames the window at 1x, at least 500 px wide and short of the viewport's
 // height, so the scene (fixed at the top left) moves up LIFT pt to keep the glass in frame;
 // motion.py crops and shifts it back.
 const LIFT = 60
-const page = await browser.newPage({
-  viewport: { width: 520, height: file.height + 40 },
-  deviceScaleFactor: 3,
-})
+const { browser, page } = await openBrowser({ width: 520, height: file.height + 40 })
 const run = how === 'raf' ? '&run=1' : ''
-await page.goto(`${base}/dev/live-glass?scene=${name}&icon=0${run}`, { waitUntil: 'load' })
-await page.waitForSelector('canvas.opacity-100', { timeout: 10_000 })
-await page.evaluate(() => Promise.all([...document.images].map((image) => image.decode())))
+if (!(await openScene(page, name, run))) throw new Error('Live glass never drew')
+await decodeImages(page)
 await page.evaluate((lift) => {
   const scene = document.querySelector<HTMLElement>('[data-background]')?.parentElement
   if (scene) scene.style.top = `${-lift}px`
@@ -45,8 +36,11 @@ let count = 0
 const writes: Promise<void>[] = []
 cdp.on('Page.screencastFrame', ({ data, sessionId }) => {
   count += 1
-  writeFileSync(`${dir}/${String(count).padStart(4, '0')}.png`, Buffer.from(data, 'base64'))
+  // Acknowledged first: Chrome sends no next frame until it is.
   writes.push(cdp.send('Page.screencastFrameAck', { sessionId }).then(() => {}))
+  writes.push(
+    writeFile(`${dir}/${String(count).padStart(4, '0')}.png`, Buffer.from(data, 'base64')),
+  )
 })
 await cdp.send('Page.startScreencast', {
   format: 'png',

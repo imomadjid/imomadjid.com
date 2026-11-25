@@ -5,8 +5,7 @@
 // Env: URL (default http://localhost:3000), CHROME (default Google Chrome).
 import { mkdirSync, readFileSync } from 'node:fs'
 
-import { chromium } from 'playwright-core'
-
+import { decodeImages, openBrowser, openScene } from './browser'
 import file from './Scenes/scenes.json'
 
 const [out, name] = process.argv.slice(2)
@@ -14,26 +13,11 @@ if (!out || !name) throw new Error('Usage: motion.ts <out-dir> <scene>')
 const frames: { frame: string; scroll: number }[] = JSON.parse(
   readFileSync(`${out}/ios/${name}.json`, 'utf8'),
 )
-const base = process.env.URL ?? 'http://localhost:3000'
 
 mkdirSync(`${out}/web/${name}`, { recursive: true })
-const browser = await chromium.launch({
-  executablePath:
-    process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  args: ['--enable-unsafe-webgpu', '--hide-scrollbars'],
-})
-const page = await browser.newPage({
-  viewport: { width: file.width, height: file.height },
-  deviceScaleFactor: 3,
-})
-page.on('console', (message) => {
-  if (message.type() === 'warning' || message.type() === 'error')
-    console.log('  page:', message.text())
-})
-await page.goto(`${base}/dev/live-glass?scene=${name}&icon=0`, { waitUntil: 'load' })
-await page.waitForSelector('canvas.opacity-100', { timeout: 10_000 })
-// Every photo decoded, so none pops in mid-run.
-await page.evaluate(() => Promise.all([...document.images].map((image) => image.decode())))
+const { browser, page } = await openBrowser()
+if (!(await openScene(page, name))) throw new Error('Live glass never drew')
+await decodeImages(page)
 for (const { frame, scroll } of frames) {
   await page.evaluate(async (top) => {
     const scroller = document.querySelector<HTMLElement>('[data-background]')

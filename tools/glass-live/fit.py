@@ -18,7 +18,7 @@
 # reported apart; the tables written use every scene.
 # --resume starts from the material already written; --write saves to
 # src/lib/live-glass-material.json.
-import json, sys
+import json, os, sys
 import numpy as np
 from PIL import Image
 from scipy import interpolate, ndimage, optimize
@@ -149,18 +149,27 @@ def half(back):
 
 LUMA = np.array([0.2126, 0.7152, 0.0722])
 FROST = ('saturation', 'wide', 'wideBlur', 'gamma')
-layer_cache = {}
+MATERIAL = f'{HERE}/../../src/lib/live-glass-material.json'
+# The sharp layer depends on gamma alone, the wide one on the blur too. Each holds a few searches'
+# worth of a scheme's scenes (about 7 MB an entry) before it starts over.
+sharp_cache, wide_cache = {}, {}
+
+
+def cached(cache, key, make):
+    if key not in cache:
+        if len(cache) > 120:
+            cache.clear()
+        cache[key] = make().astype(np.float32)
+    return cache[key]
 
 
 def layers(scene, back, gamma, wide_blur):
     """The sharp and wide layers of a scene's backdrop in the frost's power space, cached."""
-    key = (scene['name'], round(gamma, 4), round(wide_blur, 3))
-    if key not in layer_cache:
-        if len(layer_cache) > 400:
-            layer_cache.clear()
-        b = (back / 255) ** gamma
-        layer_cache[key] = (half(b).astype(np.float32), gaussian(b, wide_blur).astype(np.float32))
-    return layer_cache[key]
+    key = (scene['name'], round(gamma, 4))
+    raised = lambda: (back / 255) ** gamma
+    sharp = cached(sharp_cache, key, lambda: half(raised()))
+    wide = cached(wide_cache, (*key, round(wide_blur, 3)), lambda: gaussian(raised(), wide_blur))
+    return sharp, wide
 
 
 def model_inputs(data, frost, profile):
@@ -234,8 +243,6 @@ def lookup(tab):
 
 def motion_stills():
     """Motion scenes held at an offset (capture.sh <scene>@<pt>), as plain scenes."""
-    import os
-
     stills = []
     for file in sorted(os.listdir(f'{DIR}/ref')):
         if '@' not in file or not file.endswith('-bare.png'):
@@ -269,7 +276,7 @@ def scheme_data(scheme):
 
 def held_out(scene):
     name = scene['name']
-    return '@' in name and int(name.split('@')[1]) % 300 == 150
+    return '@' in name and float(name.split('@')[1]) % 300 == 150
 
 
 def evaluate(data, frost, profile, detail=False, train=True):
@@ -285,22 +292,22 @@ def evaluate(data, frost, profile, detail=False, train=True):
     near = D > -12
     errs = np.array([np.abs(m - r)[near].mean() for m, r in zip(renders, refs)])
     if detail:
-        return errs, tables, renders
-    return float(np.mean([e for e, i in zip(errs, range(len(errs))) if i in use]))
+        return errs, tables
+    return float(errs[use].mean())
 
 
 def report(scheme, data, frost, profile):
-    errs, _, _ = evaluate(data, frost, profile, detail=True)
+    errs, _ = evaluate(data, frost, profile, detail=True)
     test = np.array([held_out(scene) for scene, *_ in data])
+    held = f' held out {errs[test].mean():.2f}' if test.any() else ''
     print(f'{scheme}: ' + ' '.join(f'{k} {frost[k]:.3f}' for k in FROST)
-          + f' -> train {errs[~test].mean():.2f} held out {errs[test].mean():.2f}')
+          + f' -> train {errs[~test].mean():.2f}{held}')
     for (scene, *_), e in zip(data, errs):
         print(f"  {scene['name']:18s} {e:5.2f}")
 
 
-def fit(scheme, frost, profile):
+def fit(scheme, data, frost, profile):
     """Searches the frost of one scheme, the bevel fixed."""
-    data = scheme_data(scheme)
     for scene, _, _, err in data:
         print(f"  align {scene['name']:18s} {err:5.2f}")
     bounds = np.array([(0.5, 3), (0, 0.95), (3, 30), (0.4, 2.5)])
@@ -319,10 +326,9 @@ def fit(scheme, frost, profile):
     return best
 
 
-def fit_bevel(frost, profile):
+def fit_bevel(sets, frost, profile):
     """Fits the knots to the image error over both schemes' training scenes, the frost fixed,
     keeping the pull non-increasing from the rim in."""
-    sets = {scheme: scheme_data(scheme) for scheme in frost}
 
     def monotone(q):
         return np.minimum.accumulate(np.maximum(q, 0))
@@ -344,14 +350,15 @@ if __name__ == '__main__':
         'dark': dict(saturation=1.50, wide=0.693, wideBlur=16.6, gamma=0.70),
     }
     if '--resume' in sys.argv:
-        last = json.load(open(f'{HERE}/../../src/lib/live-glass-material.json'))
+        last = json.load(open(MATERIAL))
         if last['knots'] == KNOTS.tolist():
             PROFILE = np.array(last['pulls'][:-1])
-        frost = {k: {**frost[k], **{p: last[k][p] for p in FROST if p in last[k]}} for k in frost}
+        frost = {k: {**frost[k], **{p: last[k][p] for p in FROST}} for k in frost}
+    sets = {scheme: scheme_data(scheme) for scheme in frost}
     if '--bevel' in sys.argv:
-        PROFILE = fit_bevel(frost, PROFILE)
+        PROFILE = fit_bevel(sets, frost, PROFILE)
     for scheme in frost:
-        frost[scheme] = fit(scheme, frost[scheme], PROFILE)
+        frost[scheme] = fit(scheme, sets[scheme], frost[scheme], PROFILE)
     out = {
         'dMin': D_MIN,
         'dStep': D_STEP,
@@ -363,7 +370,7 @@ if __name__ == '__main__':
     }
     for scheme in frost:
         # The tables written are solved over every scene.
-        _, (o, g, q), _ = evaluate(scheme_data(scheme), frost[scheme], PROFILE, detail=True, train=False)
+        _, (o, g, q) = evaluate(sets[scheme], frost[scheme], PROFILE, detail=True, train=False)
         out[scheme] = {
             **{k: round(frost[scheme][k], 4) for k in FROST},
             'offset': np.round(o, 4).tolist(),
@@ -371,6 +378,5 @@ if __name__ == '__main__':
             'curve': np.round(q, 4).tolist(),
         }
     if WRITE:
-        path = f'{HERE}/../../src/lib/live-glass-material.json'
-        json.dump(out, open(path, 'w'))
-        print('wrote', path)
+        json.dump(out, open(MATERIAL, 'w'))
+        print('wrote', MATERIAL)

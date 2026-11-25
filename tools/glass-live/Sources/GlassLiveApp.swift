@@ -89,9 +89,7 @@ struct MotionView: View {
     @State private var start = Date()
 
     var body: some View {
-        if let fixed = UserDefaults.standard.object(forKey: "scroll") as? Double
-            ?? Double(UserDefaults.standard.string(forKey: "scroll") ?? "")
-        {
+        if let fixed = UserDefaults.standard.string(forKey: "scroll").flatMap(Double.init) {
             SceneView(scene: scene, icon: icon, scroll: fixed)
         } else {
             TimelineView(.animation) { context in

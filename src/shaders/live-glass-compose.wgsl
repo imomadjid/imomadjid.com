@@ -1,14 +1,16 @@
 // Live glass, first pass: the backdrop behind the glass (photos over a flat colour) drawn into an
-// offscreen texture that covers the glass and as far around it as the frost reaches, raised to
-// the frost's power (gamma). The blur passes (live-glass-blur.wgsl) soften the wide copy, and
-// live-glass.wgsl bends, mixes and tones both.
+// offscreen texture that covers the glass and as far around it as the frost reaches. Each texel is
+// the mean of a 2x2 block of samples, each raised to the frost's power (gamma): the sharp share,
+// the backdrop at half the resolution it is sampled at. The blur passes (live-glass-blur.wgsl)
+// soften a copy into the wide share, and live-glass.wgsl bends, mixes and tones both.
 import { roundedBox } from "./rings.wgsl";
 
 struct ComposeParams {
   // The texture's top left in the viewport, and the size it covers, in CSS pixels.
   origin: vec2f,
   span: vec2f,
-  // CSS pixels per texel, for the photos' antialiased edges, and how many photos are listed.
+  // CSS pixels between samples, half a texel, for the photos' antialiased edges, and how many
+  // photos are listed.
   texel: f32,
   count: f32,
   // Edge length of each photo layer in texels, and the power the frost works in.
@@ -30,9 +32,9 @@ struct ComposeParams {
 @group(0) @binding(1) var photos: texture_2d_array<f32>;
 @group(0) @binding(2) var photoSampler: sampler;
 
-@fragment
-fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  let q = clamp(params.origin + uv * params.span, vec2f(0.5), params.viewport - 0.5);
+// The backdrop at q, viewport CSS pixels.
+fn backdrop(at: vec2f) -> vec3f {
+  let q = clamp(at, vec2f(0.5), params.viewport - 0.5);
   var color = params.background.rgb;
   let count = u32(params.count);
   for (var i = 0u; i < 8u; i++) {
@@ -52,5 +54,14 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
     let sampled = textureSampleLevel(photos, photoSampler, texel, i32(params.styles[i].y), lod);
     color = mix(color, sampled.rgb, coverage);
   }
-  return vec4f(pow(max(color, vec3f(0.0)), vec3f(params.gamma)), 1.0);
+  return pow(max(color, vec3f(0.0)), vec3f(params.gamma));
+}
+
+@fragment
+fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+  let q = params.origin + uv * params.span;
+  let o = params.texel * 0.5;
+  let sum = backdrop(q + vec2f(-o, -o)) + backdrop(q + vec2f(o, -o)) + backdrop(q + vec2f(-o, o))
+    + backdrop(q + vec2f(o, o));
+  return vec4f(sum * 0.25, 1.0);
 }

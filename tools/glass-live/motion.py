@@ -55,21 +55,28 @@ def strip():
 # out of its frames.
 ROWS = slice(70 * SCALE, 700 * SCALE)
 LIFT = 60
+LUMA = np.array([0.2126, 0.7152, 0.0722])
+# Frames that match the strip worse than this (the launch animation) are dropped.
+RESIDUAL = 30
 
 
 def profiles(image):
     """Each of the four columns' mean luma per row: enough to place a frame on the strip."""
-    luma = image @ [0.299, 0.587, 0.114]
+    luma = image @ LUMA
     edges = np.linspace(0, W * SCALE, 5).astype(int)
     return np.stack([luma[:, a:b].mean(1) for a, b in zip(edges[:-1], edges[1:])], 1)
 
 
-def place(content, image):
-    """A frame's scroll offset (pt) on the strip, and how well it matched."""
+def windows(content):
+    """Every window of the strip's column profiles a frame's ROWS could show: (n, 4, rows)."""
     end = (scene['motion']['height'] - H) * SCALE
-    span = ROWS.stop - ROWS.start
-    windows = np.lib.stride_tricks.sliding_window_view(content, span, axis=0)
-    windows = windows[: end + ROWS.start + 1]
+    view = np.lib.stride_tricks.sliding_window_view(content, ROWS.stop - ROWS.start, axis=0)
+    return view[: end + ROWS.start + 1]
+
+
+def place(windows, image):
+    """A frame's scroll offset (pt) on the strip, and how well it matched. Frame row ROWS.start at
+    scroll o is strip row ROWS.start + o * SCALE."""
     target = profiles(image)[ROWS].T
     err = ((windows - target) ** 2).mean((1, 2))
     k = int(np.argmin(err))
@@ -85,12 +92,13 @@ def lag():
 
     material = json.load(open(f'{HERE}/../../src/lib/live-glass-material.json'))[scene['scheme']]
     full = strip()
-    content = profiles(full)
-    luma = full @ [0.299, 0.587, 0.114]
+    content = windows(profiles(full))
+    luma = full @ LUMA
     small = ndimage.zoom(luma, 1 / SCALE, order=1)
     wide = ndimage.zoom(ndimage.gaussian_filter(small, material['wideBlur']), SCALE, order=1)
     wide = np.pad(wide, ((0, max(0, luma.shape[0] - wide.shape[0])), (0, 0)), mode='edge')
-    frost = (1 - material['wide']) * ndimage.gaussian_filter(luma, material['blur'] * SCALE)
+    # The sharp share is the backdrop at half the 3x resolution: a 2 px box, near enough to match.
+    frost = (1 - material['wide']) * ndimage.uniform_filter(luma, 2)
     frost = frost + material['wide'] * wide[: luma.shape[0], : luma.shape[1]]
     # The glass's flat middle: 12 pt either side of its centre, where it doesn't bend.
     cx = round((button['x'] + button['size'] / 2) * SCALE)
@@ -107,9 +115,9 @@ def lag():
         frame = frame.resize((W * SCALE, H * SCALE), Image.Resampling.BICUBIC)
         image = np.asarray(frame).astype(np.float64)
         scroll, residual = place(content, image)
-        if residual > 30:
+        if residual > RESIDUAL:
             continue
-        seen = (image @ [0.299, 0.587, 0.114])[cy - half : cy + half, cols].mean(1)
+        seen = (image @ LUMA)[cy - half : cy + half, cols].mean(1)
         seen = (seen - seen.mean()) / (seen.std() + 1e-6)
         best, score = None, -2.0
         for back in np.arange(scroll - 40, scroll + 40.01, 1 / SCALE):
@@ -135,26 +143,12 @@ def lag():
 
 
 def offsets():
-    content = profiles(strip())
-    end = (scene['motion']['height'] - H) * SCALE
-    span = ROWS.stop - ROWS.start
-    windows = np.lib.stride_tricks.sliding_window_view(content, span, axis=0)  # (n, 4, span)
-    windows = windows[: end + ROWS.start + 1]
+    content = windows(profiles(strip()))
     found = []
     for name in frames:
-        target = profiles(load(f'{frames_dir}/{name}'))[ROWS].T  # (4, span)
-        err = ((windows - target) ** 2).mean((1, 2))
-        k = int(np.argmin(err))
-        shift = float(k)
-        if 0 < k < len(err) - 1:
-            a, b, c = err[k - 1], err[k], err[k + 1]
-            shift += 0.5 * (a - c) / max(a - 2 * b + c, 1e-9)
-        # Frame row ROWS.start at scroll o is strip row ROWS.start + o * SCALE. Frames from before
-        # the app came up (the launch animation) match nothing and are dropped.
-        residual = float(np.sqrt(err[k]))
-        if residual < 30:
-            found.append({'frame': name, 'scroll': (shift - ROWS.start) / SCALE,
-                          'residual': residual})
+        scroll, residual = place(content, load(f'{frames_dir}/{name}'))
+        if residual < RESIDUAL:
+            found.append({'frame': name, 'scroll': scroll, 'residual': residual})
     json.dump(found, open(f'{DIR}/ios/{NAME}.json', 'w'), indent=1)
     for f in found[:: max(1, len(found) // 20)]:
         print(f"{f['frame']} scroll {f['scroll']:8.2f} pt  residual {f['residual']:.2f}")
@@ -191,8 +185,7 @@ def diff():
         base = np.abs(crop(web, floor) - crop(ios, floor)).mean(2)[inside].mean()
         parts = {k: err[m].mean() for k, m in masks.items()}
         table.append((name, found[name]['scroll'], err[inside].mean(), base, parts))
-        rows.append(np.concatenate([crop(ios, box), crop(web, box),
-                                    np.clip(128 + (crop(web, box) - crop(ios, box)) * 8, 0, 255)], 1))
+        rows.append((crop(ios, box), crop(web, box)))
     for name, scroll, total, base, parts in table[:: max(1, len(table) // 25)]:
         print(f'{name} scroll {scroll:7.1f}  glass {total:5.2f}  floor {base:5.2f} | '
               + ' | '.join(f'{k} {v:5.2f}' for k, v in parts.items()))
@@ -200,7 +193,8 @@ def diff():
     floors = np.array([t[3] for t in table])
     print(f'{len(table)} frames: glass {totals.mean():.2f} (max {totals.max():.2f}), '
           f'floor {floors.mean():.2f}')
-    pick = rows[:: max(1, len(rows) // 12)]
+    pick = [np.concatenate([i, w, np.clip(128 + (w - i) * 8, 0, 255)], 1)
+            for i, w in rows[:: max(1, len(rows) // 12)]]
     Image.fromarray(np.concatenate(pick, 0).astype(np.uint8)).save(f'{DIR}/{NAME}-diff.png')
 
 

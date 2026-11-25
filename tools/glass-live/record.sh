@@ -12,8 +12,9 @@ app=build/Build/Products/Debug-iphonesimulator/GlassLive.app
 bundle=com.imomadjid.dev.GlassLive
 read scheme run <<<$(python3 -c "
 import json
-s=next(s for s in json.load(open('Scenes/scenes.json'))['scenes'] if s['name']=='$scene')
-m=s['motion']; print(s['scheme'], m['hold'] + (m['height'] - 874) / m['speed'] + 1)")
+f=json.load(open('Scenes/scenes.json'))
+s=next(s for s in f['scenes'] if s['name']=='$scene')
+m=s['motion']; print(s['scheme'], m['hold'] + (m['height'] - f['height']) / m['speed'] + 1)")
 
 if [[ ${BUILD:-1} == 1 ]]; then
   xcodegen generate -q

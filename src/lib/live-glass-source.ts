@@ -22,11 +22,14 @@ export type LiveGlassSource = {
   /** The scene, at least within `near` (viewport CSS pixels); photos past it are skipped. */
   scene: (near: DOMRectReadOnly) => LiveGlassScene
   /** Calls `wake` whenever the scene may have changed; returns the unsubscribe. */
-  subscribe: (wake: () => void) => () => void
+  subscribe: (wake: (change?: LiveGlassChange) => void) => () => void
+}
+
+export type LiveGlassChange = {
   /**
-   * The photos move by scrolling the browser runs off the main thread (a person's touch, wheel
-   * or trackpad), so the screen shows them a frame past the rects the scene reads. While they
-   * keep moving, the glass draws them a frame ahead to match.
+   * The browser scrolled the photos, off the main thread for a person's touch, wheel or trackpad
+   * (in Chrome), so the screen shows them a frame past the rects the scene reads. While they keep
+   * scrolling, the glass draws them a frame ahead to match.
    */
-  scrolls?: boolean
+  scrolled?: boolean
 }

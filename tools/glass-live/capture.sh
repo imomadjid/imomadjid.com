@@ -26,12 +26,13 @@ xcrun simctl install "$sim" "$app"
 mkdir -p "$out/ref"
 for scene in $scenes; do
   name=${scene%@*}
-  scroll=(); [[ $scene == *@* ]] && scroll=(-scroll ${scene#*@})
+  # A motion scene without an offset holds at 0 rather than scrolling while it's captured.
+  scroll=0; [[ $scene == *@* ]] && scroll=${scene#*@}
   scheme=$(python3 -c "import json;print(next(s['scheme'] for s in json.load(open('Scenes/scenes.json'))['scenes'] if s['name']=='$name'))")
   xcrun simctl ui "$sim" appearance $scheme
   for icon in 1 0; do
     xcrun simctl terminate "$sim" $bundle 2>/dev/null || true
-    xcrun simctl launch "$sim" $bundle -scene "$name" -icon $icon $scroll >/dev/null
+    xcrun simctl launch "$sim" $bundle -scene "$name" -icon $icon -scroll $scroll >/dev/null
     # Glass settles after its appear animation.
     sleep 2.5
     suffix=; [[ $icon == 0 ]] && suffix=-bare
