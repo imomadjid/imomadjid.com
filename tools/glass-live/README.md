@@ -161,4 +161,5 @@ their photos a step ahead. The touch run should report a trail of about 0 pt.
   `step-light` black side comes out 6–25 levels too bright; `grid-dark` is the worst scene.
 - **Cost:** about 2 ms of GPU and 1–1.5 ms of main thread per moving frame on Apple Silicon,
   nothing while still, and about 17 MB of GPU memory.
-- **Untested:** Safari. Only the 56 pt circle is fitted; other shapes and sizes reuse it.
+- **Safari:** checked by eye; it draws as Chrome does. Not measured against the captures.
+- **Unfitted:** only the 56 pt circle is fitted; other shapes and sizes reuse it.
