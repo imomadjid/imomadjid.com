@@ -1,7 +1,7 @@
 /**
  * Splits items into masonry columns, as indices. The first `lead` items are a grid as wide as the
- * columns, row by row (the See more tile's), so item `row * columns + column` is row `row` of
- * column `column`. Each item after joins the shortest column, measured by the items' heights at
+ * columns, row by row (the See more tile's and those above it), so item `row * columns + column`
+ * is row `row` of column `column`. Each item after joins the shortest column, measured by the items' heights at
  * unit width.
  */
 export function masonryColumns(
@@ -17,4 +17,13 @@ export function masonryColumns(
     totals[column] += height
   }
   return result
+}
+
+/**
+ * The overlay rows above the See more tile's photos, which lead the rows after them: on a phone
+ * one, so its 2x2 flies out to the middle of the screen rather than its top; with four columns
+ * none, since a 4x4 fills the screen.
+ */
+export function tileStartRow(columns: number) {
+  return columns === 2 ? 1 : 0
 }

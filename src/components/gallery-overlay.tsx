@@ -14,7 +14,7 @@ import { OverlayPhoto } from '#/components/gallery-photo-tile'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
 import { LiveGlassSourceProvider } from '#/components/live-glass'
 import { IconButton } from '#/components/ui/icon-button'
-import { dialogCoverClass, dialogLayer, dialogOverscanClass } from '#/lib/dialog-layer'
+import { holdPage, overlayLayer } from '#/lib/dialog-layer'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
 import {
@@ -29,7 +29,7 @@ import {
 } from '#/lib/gallery-flight-geometry'
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
-import { masonryColumns } from '#/lib/gallery-masonry'
+import { masonryColumns, tileStartRow } from '#/lib/gallery-masonry'
 import type { PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
 import type { LiveGlassSource } from '#/lib/live-glass-source'
 import { fullScaleRect, recedeClass } from '#/lib/page-recede'
@@ -38,8 +38,8 @@ import { playOpenRun } from '#/lib/sound'
 import { cn } from '#/lib/utils'
 
 // The See more tile's photos lead the overlay's columns (useOverlayColumns): the tile is a grid as
-// wide as the overlay and as tall, 4x4 or a phone's 2x2, and its cell in row r and column c leads
-// row r of column c, so its photos fly straight out into their places.
+// wide as the overlay and as tall, 4x4 or a phone's 2x2, and its cell in row r and column c is row
+// tileStartRow + r of column c, so its photos fly straight out into their places.
 
 // Overlay photos past this index enter together, so a long list doesn't trail in.
 const maxStagger = 12
@@ -98,9 +98,9 @@ function tilePoses(aspects: readonly number[], rect: Rect, zoomedOut: boolean, c
 }
 
 /**
- * The overlay cells that fly back into the tile, by tile cell: in each masonry column, the first
- * as many as it leads with (masonryColumns) not scrolled up past `top`, or its last near its end,
- * into the tile's column it leads. At the top of the overlay these are the tile's
+ * The overlay cells that fly back into the tile, by tile cell: in each masonry column, as many as
+ * the tile has rows, from `skip` rows past the first not scrolled up past `top` (tileStartRow), or
+ * its last near its end, into the tile's column. At the top of the overlay these are the tile's
  * own photos; scrolled down, the photos in view fly home and turn into the tile's on the way, so
  * the close starts from what's on screen. A cell whose photo hasn't loaded flies the tile's own
  * photo from its place, and a short column's missing cells fly the tile's own cells.
@@ -108,6 +108,7 @@ function tilePoses(aspects: readonly number[], rect: Rect, zoomedOut: boolean, c
 function closingCells(
   list: HTMLElement,
   top: number,
+  skip: number,
   heroes: readonly HTMLImageElement[],
 ): { cell: HTMLElement; image: HTMLImageElement }[] {
   const picked: (HTMLElement | undefined)[] = []
@@ -116,7 +117,8 @@ function closingCells(
   for (const [column, ul] of [...list.children].entries()) {
     const cells = [...ul.querySelectorAll<HTMLElement>('button')]
     const first = cells.findIndex((cell) => cell.getBoundingClientRect().bottom > top)
-    const start = Math.max(0, Math.min(first < 0 ? cells.length : first, cells.length - columns))
+    const from = first < 0 ? cells.length : first + skip
+    const start = Math.max(0, Math.min(from, cells.length - columns))
     for (let row = 0; row < columns; row += 1) picked[row * columns + column] = cells[start + row]
   }
   return heroes.map((hero, index) => {
@@ -162,7 +164,7 @@ function cellLags(
 
 /**
  * Opens and closes the See more overlay. Where WebGPU runs, the tile's photos fly out of its
- * cells into the first rows of the masonry columns, each corner on its own spring
+ * cells into their rows of the masonry columns (tileStartRow), each corner on its own spring
  * (src/lib/gallery-flight.ts), led as a single photo's are. Closing flies them back into the
  * tile, turning around with their speed if the open is still under way, straight into the cells
  * as it shows them. They are clipped to the tile's rounded edge grown by how far they still are
@@ -172,7 +174,9 @@ function cellLags(
  * grows, the close starts from what's on screen. Without WebGPU it fades.
  *
  * `photos` are the tile's, in its order, a grid `columns` square; `tileRef` is its grid's box and
- * `zoomedOutRef` whether it shows the whole grid. Returns the dialog root's `open` and `onOpenChange`, `prepare` to warm
+ * `zoomedOutRef` whether it shows the whole grid. With `scrollsPage` (useOverlayScrollsPage) the
+ * page holds still behind the overlay, which the page scrolls, from opening until it has gone.
+ * Returns the dialog root's `open`, `onOpenChange` and `onOpenChangeComplete`, `prepare` to warm
  * the photos up on hover, and the overlay's state.
  */
 export function useSeeMoreOverlay({
@@ -181,12 +185,14 @@ export function useSeeMoreOverlay({
   columns,
   tileRef,
   zoomedOutRef,
+  scrollsPage,
 }: {
   stage: FlightStage
   photos: readonly GalleryPhoto[]
   columns: number
   tileRef: RefObject<HTMLElement | null>
   zoomedOutRef: RefObject<boolean>
+  scrollsPage: boolean
 }) {
   const [shown, setShown] = useState<Shown | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -195,6 +201,13 @@ export function useSeeMoreOverlay({
   const returnTo = useRef<{ tile: HTMLElement; keyboard: boolean } | null>(null)
   /** Stops the opening run's notes still to come, so a quick close doesn't sound like an open. */
   const stopOpenRun = useRef<(() => void) | null>(null)
+  /** Lets the page go (holdPage), once the overlay has left the flow. */
+  const releasePage = useRef<(() => void) | null>(null)
+  const letPageGo = () => {
+    releasePage.current?.()
+    releasePage.current = null
+  }
+  useLayoutEffect(() => letPageGo, [])
 
   // The tile stays empty while its photos are out, in flight or in the overlay.
   const tileLifted = shown?.lifted ?? false
@@ -290,7 +303,7 @@ export function useSeeMoreOverlay({
     }
     // Mid-open, the overlay is at its top, so these are the tile's photos, still in the air, and
     // the flight turns them around where they are (Flight.flyCells).
-    const flown = closingCells(list, 0, heroes)
+    const flown = closingCells(list, 0, tileStartRow(columns), heroes)
     const sources = flown.map(({ image }) => image)
     const from = flown.map(({ cell }) => cellPose(cell))
     // Where the tile will be once the page behind the overlay has grown back.
@@ -329,11 +342,17 @@ export function useSeeMoreOverlay({
         const trigger = tileRef.current?.closest('button')
         returnTo.current = trigger ? { tile: trigger, keyboard } : null
         stopOpenRun.current = playOpenRun()
+        // Before the tile is measured: it holds still where it shows, so it measures the same.
+        if (scrollsPage && !releasePage.current) releasePage.current = holdPage()
         openOverlay()
       }
       // The tile sits under the overlay once it opens, so a press on it can only be the second
       // click of a double click landing before the overlay did: that opens it, it doesn't close it.
       else if (reason !== 'trigger-press') closeOverlay(reason !== 'close-press')
+    },
+    /** The page comes back once the overlay has faded out of its flow. */
+    onOpenChangeComplete: (open: boolean) => {
+      if (!open) letPageGo()
     },
     close: closeOverlay,
     /**
@@ -370,9 +389,9 @@ export function GalleryOverlay({
   onOpenPhoto,
   finalFocus,
 }: {
-  /** Every photo, the See more tile's first. */
+  /** Every photo, the See more tile's from row tileStartRow. */
   photos: readonly GalleryPhoto[]
-  /** useOverlayColumns'. The See more tile's photos are the first `columns` squared. */
+  /** useOverlayColumns'. The See more tile's photos are `columns` squared, from tileStartRow. */
   columns: number
   /** Each photo's hover zoom, as the featured photos'. */
   photoTuning: PhotoZoomTuning
@@ -389,10 +408,11 @@ export function GalleryOverlay({
   finalFocus: () => boolean
 }) {
   const heroCount = columns * columns
+  const heroStart = tileStartRow(columns) * columns
   const masonry = masonryColumns(
     photos.map((photo) => photo.height / photo.width),
     columns,
-    heroCount,
+    heroStart + heroCount,
   )
   const gap = 'gap-1.5 sm:gap-2'
   const popupRef = useRef<HTMLDivElement>(null)
@@ -400,9 +420,12 @@ export function GalleryOverlay({
 
   return (
     // Portalled to the top of the body (src/lib/dialog-layer.ts), outside main's stacking context,
-    // so it covers the Sunlit light and the blind wand.
-    <Dialog.Portal container={dialogLayer} className="contents">
-      <Dialog.Backdrop className={cn(galleryBackdropClass, closing && 'opacity-0 duration-200')}>
+    // so it covers the Sunlit light and the blind wand. A photo opened from it portals before it, a
+    // layer up (z-50).
+    <Dialog.Portal container={overlayLayer} className="contents">
+      <Dialog.Backdrop
+        className={cn(galleryBackdropClass, 'z-40', closing && 'opacity-0 duration-200')}
+      >
         <GalleryBackdropFill />
       </Dialog.Backdrop>
       {/* A click beside the photos closes it, as a click on an open photo closes that: from a
@@ -414,8 +437,10 @@ export function GalleryOverlay({
         initialFocus={popupRef}
         finalFocus={finalFocus}
         className={cn(
-          dialogCoverClass,
-          'z-50 cursor-zoom-out overflow-y-auto overscroll-contain transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
+          // On touch screens it lies in the page's flow, and the page scrolls it, so Safari's
+          // bars collapse and the photos run under them (src/lib/dialog-layer.ts).
+          'fixed inset-0 z-40 cursor-zoom-out overflow-y-auto overscroll-contain pointer-coarse:relative pointer-coarse:inset-auto pointer-coarse:min-h-lvh pointer-coarse:overflow-visible',
+          'transition-opacity duration-300 ease-out outline-none data-ending-style:opacity-0 data-ending-style:duration-200 data-starting-style:opacity-0 motion-reduce:transition-none',
           // Closing, it lets clicks through: a photo opened from it now would fly in a closing dialog.
           closing && 'pointer-events-none opacity-0 duration-200',
         )}
@@ -427,50 +452,51 @@ export function GalleryOverlay({
         }}
       >
         <Dialog.Title className="sr-only">Gallery</Dialog.Title>
-        <div className={dialogOverscanClass}>
-          {/* pb-28 lets the last row scroll clear of the close button. */}
-          <div className="px-2 pt-2 pb-28 sm:px-4 sm:pt-4">
-            {/* Shrinks behind a photo opened from it (src/lib/page-recede.ts). */}
-            <div
-              ref={listRef}
-              data-recede
-              className={cn(
-                'grid items-start',
-                columns === 2 ? 'grid-cols-2' : 'grid-cols-4',
-                gap,
-                recedeClass,
-                // Its photos open only once the tile's have landed, so a click can't cut the flight.
-                cellsLifted && 'pointer-events-none',
-              )}
-            >
-              {masonry.map((column) => (
-                <ul key={column[0]} className={cn('grid', gap)}>
-                  {column.map((index) => {
-                    const photo = photos[index]
-                    const hero = index < heroCount
-                    const flown = flies && hero
-                    return (
-                      <li
-                        key={photo.id}
-                        className={cn(!flown && 'animate-enter [--enter-step:30ms]')}
-                        style={flown ? undefined : enterIndex(flies ? index - heroCount : index)}
-                      >
-                        <OverlayPhoto
-                          photo={photo}
-                          tuning={photoTuning}
-                          // The tile's photos land here straight away.
-                          eager={hero}
-                          sizes={columns === 2 ? '50vw' : '25vw'}
-                          heroCell={hero ? index : undefined}
-                          className={cn(flown && cellsLifted && 'invisible')}
-                          onOpen={onOpenPhoto}
-                        />
-                      </li>
-                    )
-                  })}
-                </ul>
-              ))}
-            </div>
+        {/* pb-28 lets the last row scroll clear of the close button. */}
+        <div className="px-2 pt-2 pb-28 sm:px-4 sm:pt-4">
+          {/* Shrinks behind a photo opened from it (src/lib/page-recede.ts). */}
+          <div
+            ref={listRef}
+            data-recede
+            className={cn(
+              'grid items-start',
+              columns === 2 ? 'grid-cols-2' : 'grid-cols-4',
+              gap,
+              recedeClass,
+              // Its photos open only once the tile's have landed, so a click can't cut the flight.
+              cellsLifted && 'pointer-events-none',
+            )}
+          >
+            {masonry.map((column) => (
+              <ul key={column[0]} className={cn('grid', gap)}>
+                {column.map((index) => {
+                  const photo = photos[index]
+                  const hero = index >= heroStart && index < heroStart + heroCount
+                  const flown = flies && hero
+                  // The rest enter in order, the flown photos left out.
+                  const enterAt =
+                    flies && index >= heroStart + heroCount ? index - heroCount : index
+                  return (
+                    <li
+                      key={photo.id}
+                      className={cn(!flown && 'animate-enter [--enter-step:30ms]')}
+                      style={flown ? undefined : enterIndex(enterAt)}
+                    >
+                      <OverlayPhoto
+                        photo={photo}
+                        tuning={photoTuning}
+                        // The tile's photos land here straight away.
+                        eager={hero}
+                        sizes={columns === 2 ? '50vw' : '25vw'}
+                        heroCell={hero ? index - heroStart : undefined}
+                        className={cn(flown && cellsLifted && 'invisible')}
+                        onOpen={onOpenPhoto}
+                      />
+                    </li>
+                  )
+                })}
+              </ul>
+            ))}
           </div>
         </div>
         {/* Floats over the photos, which scroll under it. A flight draws above the whole dialog
@@ -529,11 +555,16 @@ function useOverlayGlassBackdrop(
           .trim()
         return { background: background || 'white', photos }
       },
+      // The popup scrolls, or on touch screens the page.
       subscribe(wake) {
         const popup = popupRef.current
         const scrolled = () => wake({ scrolled: true })
         popup?.addEventListener('scroll', scrolled, { passive: true })
-        return () => popup?.removeEventListener('scroll', scrolled)
+        window.addEventListener('scroll', scrolled, { passive: true })
+        return () => {
+          popup?.removeEventListener('scroll', scrolled)
+          window.removeEventListener('scroll', scrolled)
+        }
       },
     }),
     [listRef, popupRef],

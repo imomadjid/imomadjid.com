@@ -23,9 +23,10 @@ const thumbLongSide = 240
 /**
  * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
  * out to the whole grid and shows the label. Where the overlay has two columns, the tile is a
- * plain 2x2 grid of their first two rows instead, which doesn't zoom. Where WebGPU runs, a canvas draws the grid instead
- * (src/lib/gallery-warp.ts) and the middle zooms ahead of the edges; it starts as the tile nears
- * the viewport and takes over after its first frame, so the CSS grid below is the fallback.
+ * plain 2x2 grid of their rows from tileStartRow instead, which doesn't zoom. Where WebGPU runs,
+ * a canvas draws the grid instead (src/lib/gallery-warp.ts) and the middle zooms ahead of the
+ * edges; it starts as the tile nears the viewport and takes over after its first frame, so the CSS
+ * grid below is the fallback.
  *
  * Both pick the 640px photos over the thumbnails where a resting cell has more device pixels than
  * a thumbnail's square crop, as on most 2x and 3x screens.

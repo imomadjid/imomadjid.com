@@ -9,9 +9,11 @@ import { GalleryOverlay, useSeeMoreOverlay } from '#/components/gallery-overlay'
 import { FeaturedPhoto } from '#/components/gallery-photo-tile'
 import { SeeMoreTile } from '#/components/gallery-see-more'
 import { useOverlayColumns } from '#/components/use-overlay-columns'
+import { useOverlayScrollsPage } from '#/lib/dialog-layer'
 import { figuresClass } from '#/lib/figures'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
+import { tileStartRow } from '#/lib/gallery-masonry'
 import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-settings'
 import { recedePage } from '#/lib/page-recede'
 
@@ -44,22 +46,25 @@ function Gallery({
   const featured = photos.slice(0, featuredCount)
   // The overlay's order: the photos past the featured ones first, so the See more tile can
   // preview what the page doesn't show yet. Its grid, as many cells square as the overlay has
-  // columns, is the overlay's first.
+  // columns, is the overlay's rows from tileStartRow.
   const overlayPhotos = [...photos.slice(featuredCount), ...featured]
   const columns = useOverlayColumns()
-  const preview = overlayPhotos.slice(0, columns * columns)
+  const tileStart = tileStartRow(columns) * columns
+  const preview = overlayPhotos.slice(tileStart, tileStart + columns * columns)
   const tuning = useGalleryTuning()
   const sectionRef = useRef<HTMLDivElement>(null)
   const tileRef = useRef<HTMLSpanElement>(null)
   const zoomedOutRef = useRef(false)
   const stage = useFlightStage(tuning.expand, sectionRef)
   const lightbox = useGalleryLightbox(stage, tuning)
+  const scrollsPage = useOverlayScrollsPage()
   const overlay = useSeeMoreOverlay({
     stage,
     photos: preview,
     columns,
     tileRef,
     zoomedOutRef,
+    scrollsPage,
   })
 
   // The page shrinks behind an open photo or the overlay, and grows back as either starts to
@@ -83,7 +88,13 @@ function Gallery({
   }, [])
 
   return (
-    <Dialog.Root open={overlay.open} onOpenChange={overlay.onOpenChange}>
+    <Dialog.Root
+      open={overlay.open}
+      onOpenChange={overlay.onOpenChange}
+      onOpenChangeComplete={overlay.onOpenChangeComplete}
+      // The page scrolls the overlay on touch screens, so it mustn't lock.
+      modal={scrollsPage ? 'trap-focus' : true}
+    >
       {/* Inside the See more dialog's root, so a photo opened from its grid nests in it: closing
           the photo returns to the grid. */}
       {lightbox.element}
