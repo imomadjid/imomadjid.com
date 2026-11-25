@@ -69,15 +69,23 @@ function placeOrigin(page: HTMLElement) {
 }
 
 /**
- * Scrolls `element` smoothly into view if it isn't all in view, as little as it takes. The open
- * photo's lightbox does this behind its backdrop when it steps to a photo whose tile is out of
- * view, so the close flies home to a tile on screen. The receded page scrolls about the point it
- * shrinks about, which moves with it, so it keeps its place and `fullScaleRect` still holds.
+ * Scrolls `element` into view if its place at full size isn't all in view, as little as it takes,
+ * smoothly unless `behavior` says otherwise. The open photo's lightbox does this behind its
+ * backdrop when it steps to a photo whose tile is out of view, so the close flies home to a tile
+ * on screen, and again, at once, as the close starts, to finish a scroll still under way. The
+ * receded page scrolls about the point it shrinks about, which moves with it, so it keeps its
+ * place and `fullScaleRect` still holds.
  */
-export function revealReceded(element: Element) {
+export function revealReceded(element: HTMLElement, behavior: ScrollBehavior = 'smooth') {
   const rect = element.getBoundingClientRect()
-  if (rect.top >= 0 && rect.bottom <= window.innerHeight) return
-  element.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  const full = fullScaleRect(element)
+  if (full.y >= 0 && full.y + full.height <= window.innerHeight) return
+  // The tile grows back past its receded box: scroll its full-size box into view.
+  element.style.scrollMarginTop = `${Math.max(0, rect.y - full.y)}px`
+  element.style.scrollMarginBottom = `${Math.max(0, full.y + full.height - rect.bottom)}px`
+  element.scrollIntoView({ block: 'nearest', behavior })
+  element.style.removeProperty('scroll-margin-top')
+  element.style.removeProperty('scroll-margin-bottom')
 }
 
 /**

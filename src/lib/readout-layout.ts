@@ -3,112 +3,74 @@
 import type { Rect } from '#/lib/gallery-flight-geometry'
 
 /** The gap between the photo and the readout under it. */
-const READOUT_GAP = 12
-/** The readout's line height (leading-5) and the gap between its lines (gap-y-1). */
-const LINE_HEIGHT = 20
-const LINE_GAP = 4
+const READOUT_GAP = 16
+/** A row of cells: a label's line (leading-3.5), the gap under it (gap-0.5), a value's (leading-5). */
+const ROW_HEIGHT = 14 + 2 + 20
+/** The gap between the rows of a phone's grid (gap-y-3). */
+const ROW_GAP = 12
 
-/** The gap between readouts along a line: wider from sm up. */
-const readoutGap = (viewportWidth: number) => (viewportWidth < 640 ? 16 : 24)
+/** Whether the readout lays its cells out as a phone's grid, three columns over two rows. */
+export const readoutGrid = (viewportWidth: number) => viewportWidth < 640
 
-/** What the photo leaves free under it for a readout of `lines` lines. */
-export const readoutSpace = (lines: number) =>
-  READOUT_GAP + lines * LINE_HEIGHT + (lines - 1) * LINE_GAP
+/** The gap between cells along a row: the grid's least, or the row's (gap-x-5, gap-x-8). */
+const cellGap = (viewportWidth: number) => (readoutGrid(viewportWidth) ? 20 : 32)
 
-/**
- * How many lines a row of items `widths` wide breaks into in `width`, `gap` apart, as
- * `flex-wrap` breaks them: each line takes items until the next would overflow it. An item wider
- * than the row still takes a line of its own.
- */
-export function wrapLines(widths: readonly number[], width: number, gap: number) {
-  let lines = 0
-  let used = 0
-  for (const itemWidth of widths) {
-    if (lines === 0 || used + gap + itemWidth > width) {
-      lines += 1
-      used = itemWidth
-    } else {
-      used += gap + itemWidth
-    }
-  }
-  return Math.max(1, lines)
+/** What the photo leaves free under it for the readout: a row, or a phone's two. */
+export function readoutSpace(viewportWidth: number) {
+  const rows = readoutGrid(viewportWidth) ? 2 : 1
+  return READOUT_GAP + rows * ROW_HEIGHT + (rows - 1) * ROW_GAP
 }
 
-/** Where the readout sits, how many lines it takes, and its items' gap along a line. */
-export type ReadoutRow = { x: number; y: number; width: number; lines: number; gap: number }
+/** Where the readout sits, and how wide it is. */
+export type ReadoutRow = { x: number; y: number; width: number }
 
 /**
- * The readout's row: as wide as the photo, or wider, centred under it, where its items (`widths`)
- * need more room for one line, up to the viewport less its `margin` either side. They wrap only
- * past that, as on a phone, so the line count doesn't depend on the photo: `photo` may be left
- * out to get it before the photo is placed. Unmeasured (`widths` empty), it takes a line.
+ * Each cell's slot: as wide as the widest that cell takes under any photo of the set (`cells`,
+ * each photo's cells' widths: the exposure's, then the recipe's if it has one), so stepping
+ * between photos changes their values in place and never moves the cells after one that grows.
  */
-export function readoutRow(
-  viewport: Rect,
-  margin: number,
-  widths: readonly number[],
-  photo: Rect = { x: margin, y: 0, width: 0, height: 0 },
-): ReadoutRow {
-  const gap = readoutGap(viewport.width)
-  const room = viewport.width - 2 * margin
-  const oneLine = widths.reduce((sum, width) => sum + width + gap, -gap)
-  const width = Math.min(room, Math.max(photo.width, oneLine))
-  const centred = photo.x + (photo.width - width) / 2
-  return {
-    x: Math.min(Math.max(centred, margin), viewport.width - margin - width),
-    y: photo.y + photo.height + READOUT_GAP,
-    width,
-    lines: oneLine <= room ? 1 : wrapLines(widths, room, gap),
-    gap,
-  }
+export function readoutSlots(cells: readonly (readonly number[])[]) {
+  const count = Math.max(0, ...cells.map((widths) => widths.length))
+  return Array.from({ length: count }, (_, index) =>
+    Math.max(0, ...cells.map((widths) => widths[index] ?? 0)),
+  )
+}
+
+/** A phone's three columns' widths: column c holds cells c and c + 3, as wide as the wider. */
+export const gridColumns = (slots: readonly number[]) =>
+  [0, 1, 2].map((column) => Math.max(slots[column] ?? 0, slots[column + 3] ?? 0))
+
+/** The least width the cells (`slots`) take: one row, or a phone's three columns. */
+function cellsWidth(viewportWidth: number, slots: readonly number[]) {
+  const gap = cellGap(viewportWidth)
+  if (!readoutGrid(viewportWidth))
+    return slots.reduce((sum, slot) => sum + slot + gap, slots.length > 0 ? -gap : 0)
+  const [first, second, third] = gridColumns(slots)
+  return first + second + third + 2 * gap
 }
 
 /**
  * The readout's bar under a full-screen photo you can step from to the others in its set: the
  * same for every photo, so stepping moves it only as far as the photo's bottom does, or, `pinned`
- * to the viewport's bottom margin (on a phone), not at all. It is as
- * wide as the widest photo of the set shows (`span`, a landscape one's), or wider where the
- * longest readout (`readouts`, each one's items' widths) needs more room for one line, up to the
- * viewport less its `margin` either side, centred on the viewport; and it takes as many lines as
- * the readout that wraps most. `photo` may be left out to get its lines before photos are placed.
+ * to the viewport's bottom margin (on a phone), not at all. It is as wide as the widest photo of
+ * the set shows (`span`, a landscape one's), or wider where its cells (`slots`) need more room,
+ * up to the viewport less its `margin` either side, centred on the viewport.
  */
 export function readoutBar(
   viewport: Rect,
   margin: number,
-  readouts: readonly (readonly number[])[],
-  span = 0,
-  photo: Rect | 'pinned' = { x: margin, y: 0, width: 0, height: 0 },
+  slots: readonly number[],
+  span: number,
+  photo: Rect | 'pinned',
 ): ReadoutRow {
-  const rows = readouts.map((widths) => readoutRow(viewport, margin, widths))
   const room = viewport.width - 2 * margin
-  const width = Math.min(room, Math.max(span, ...rows.map((row) => row.width)))
-  const lines = Math.max(1, ...rows.map((row) => row.lines))
+  const width = Math.min(room, Math.max(span, cellsWidth(viewport.width, slots)))
   return {
     x: viewport.x + (viewport.width - width) / 2,
     y:
       photo === 'pinned'
-        ? viewport.y + viewport.height - margin - (readoutSpace(lines) - READOUT_GAP)
+        ? viewport.y + viewport.height - margin - (readoutSpace(viewport.width) - READOUT_GAP)
         : photo.y + photo.height + READOUT_GAP,
     width,
-    lines,
-    gap: readoutGap(viewport.width),
-  }
-}
-
-/**
- * The readout's slots: each of the first `count` readouts (the exposure, not the recipe) as wide as
- * the widest any photo's `readouts` take there, so stepping between photos changes their values
- * in place and never moves the ones after a value that grows. Returns the slots, and the readouts'
- * widths with them in place, which the bar is laid out from.
- */
-export function readoutSlots(readouts: readonly (readonly number[])[], count: number) {
-  const slots = Array.from({ length: count }, (_, index) =>
-    Math.max(0, ...readouts.map((widths) => widths[index] ?? 0)),
-  )
-  return {
-    slots,
-    readouts: readouts.map((widths) =>
-      widths.map((width, index) => (index < count ? slots[index] : width)),
-    ),
   }
 }

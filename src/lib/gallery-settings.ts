@@ -46,19 +46,27 @@ export const galleryControls = {
     stagger: [0.04, 0, 0.1, 0.005],
   },
   /**
-   * Stepping to the next or previous photo while one is open: the photos crossfade through a
-   * blur, each sliding a little the way the step goes inside its rounded frame.
+   * Stepping to the next or previous photo while one is open: the new photo fades up over the
+   * last through a blur, each sliding a little the way the step goes, while the rounded outline
+   * they show through moves from one photo's shape to the other's.
    */
   navigate: {
-    /** The photos' crossfade, unblur and slide, without bounce, as an opacity can't overshoot. */
+    /** The photos' slide and zoom, and the new one's fade where the outline narrows to it. */
     motion: { type: 'spring', visualDuration: 0.5, bounce: 0 },
     /**
-     * How far each photo slides, as a fraction of the frame's width. The photos scale up by
-     * twice it while they move, so the slide never shows their edges.
+     * The outline's move between a portrait and a landscape photo, the blur, and the readout
+     * following the photo's bottom. No bounce: an outline that overshoots reads as a zoom.
      */
-    shift: [0.03, 0, 0.1, 0.005],
-    /** How blurred a photo is at the far end of its crossfade, in px. */
-    blur: [12, 0, 40, 1],
+    frame: { type: 'spring', visualDuration: 0.45, bounce: 0 },
+    /** The new photo's fade where the outline widens to it, so its sides arrive nearly opaque. */
+    reveal: { type: 'spring', visualDuration: 0.3, bounce: 0 },
+    /**
+     * How far the photos slide, in px, the same for both, under photos 800 px wide or wider;
+     * narrower sets (a phone) slide and blur in proportion.
+     */
+    shift: [14, 0, 48, 1],
+    /** How blurred a photo is at the far end of its crossfade, in px, scaled as `shift` is. */
+    blur: [10, 0, 40, 1],
   },
   /**
    * The page shrinking behind an open photo or the See more overlay, on Apple's Home Screen
@@ -89,6 +97,8 @@ export const defaultGalleryTuning: GalleryTuning = {
   readout: { start: readout.start[0], motion: readout.motion, stagger: readout.stagger[0] },
   navigate: {
     motion: navigate.motion,
+    frame: navigate.frame,
+    reveal: navigate.reveal,
     shift: navigate.shift[0],
     blur: navigate.blur[0],
   },

@@ -9,7 +9,6 @@ import { ExposureReadout, measureReadout, ReadoutMeasures } from '#/components/g
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import { IconButton } from '#/components/ui/icon-button'
 import { dialogCoverClass } from '#/lib/dialog-layer'
-import { exposureReadouts } from '#/lib/exposure-format'
 import { cssSpring, springResponse } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
@@ -26,6 +25,7 @@ import {
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import type { GalleryTuning } from '#/lib/gallery-settings'
+import { useMediaQuery } from '#/lib/media-query'
 import { fullScaleRect, revealReceded } from '#/lib/page-recede'
 import { readoutBar, readoutSlots, readoutSpace } from '#/lib/readout-layout'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
@@ -37,23 +37,20 @@ type Phase = 'opening' | 'open' | 'closing'
 type Step = 1 | -1
 
 /**
- * A full-screen photo, in a rounded frame of its own at its own size. Stepping adds the new
- * photo's layer over the last one, which leaves, sliding and blurring out the way the step goes
- * inside its frame as the new one slides and unblurs in inside its own.
+ * A full-screen photo, in a frame of its own at its own size, clipped to the rounded outline the
+ * photos show through. Stepping adds the new photo's layer over the last one, which stays opaque
+ * under it, sliding and blurring out the way the step goes, as the new one slides and unblurs in
+ * and fades up over it.
  */
 type Layer = {
   key: number
   photo: GalleryPhoto
   /** The step that brought it in, or 0 for the photo the lightbox opened on, which doesn't slide. */
   step: Step | 0
-  /** The step that took it out, once it is leaving. */
-  leaving?: Step
-  /**
-   * Whether it fades out leaving: when the photo coming in has another shape (portrait and
-   * landscape), as that one doesn't cover it. One of the same shape covers it as it fades up over
-   * it in the same frame, so it stays.
-   */
-  fadesOut?: boolean
+  /** The photo it came in over, whose outline its own grows from. */
+  over?: GalleryPhoto
+  /** Once it is leaving: the step that took it out, and its layer key, which clears it. */
+  leaving?: { step: Step; by: number }
 }
 
 type Shown = {
@@ -65,12 +62,7 @@ type Shown = {
   airborne: boolean
   /** The photos the arrows step through, in order: the featured ones, or the overlay's. */
   set: readonly GalleryPhoto[]
-  /**
-   * Each photo of the set's readout's items' widths, which size the readout's bar and set how many
-   * lines it needs; empty until measured.
-   */
-  readouts: readonly (readonly number[])[]
-  /** Each exposure readout's slot width (readoutSlots), which the readouts take in the bar. */
+  /** Each readout cell's slot width across the set (readoutSlots); empty until measured. */
   slots: readonly number[]
   /** The photos on screen, the current one last. */
   layers: readonly Layer[]
@@ -176,21 +168,23 @@ const aspectOf = (photo: GalleryPhoto) => photo.width / photo.height
 
 /**
  * Where the full-screen photo sits, as large as fits an even margin from the edges and the room
- * its exposure readout's lines take under it, and the readout's bar. The bar is the same under
- * every photo of `set`: as wide as the widest of them shows (a landscape photo's), so a portrait
- * one narrows the frame but not the bar, and as many lines as the readout that wraps most. It
- * wraps only where the viewport is too narrow for its line, so its lines are known before the
- * photo is placed.
+ * its exposure readout takes under it, and the readout's bar. The bar is the same under every
+ * photo of `set`: as wide as the widest of them shows (a landscape photo's), so a portrait one
+ * narrows the photo but not the bar, and as wide as its cells' `slots` need.
  */
 function fullScreenLayout(
   viewport: Rect,
   photo: GalleryPhoto,
   set: readonly GalleryPhoto[],
-  readouts: readonly (readonly number[])[],
+  slots: readonly number[] = [],
 ) {
   const side = screenMargin(viewport)
-  const { lines } = readoutBar(viewport, side, readouts)
-  const insets = { top: side, right: side, bottom: side + readoutSpace(lines), left: side }
+  const insets = {
+    top: side,
+    right: side,
+    bottom: side + readoutSpace(viewport.width),
+    left: side,
+  }
   const rectOf = (aspect: number) => containRect(viewport, aspect, insets)
   const span = Math.max(...[photo, ...set].map((each) => rectOf(aspectOf(each)).width))
   const rect = rectOf(aspectOf(photo))
@@ -198,12 +192,14 @@ function fullScreenLayout(
     photo: rect,
     // On a phone the readout pins to the bottom, so a step to a photo of another shape doesn't
     // move it; the photo sits in the middle of the room above it.
-    readout: readoutBar(viewport, side, readouts, span, isPhone(viewport) ? 'pinned' : rect),
+    readout: readoutBar(viewport, side, slots, span, isPhone(viewport) ? 'pinned' : rect),
     side,
     /** Any photo's full-screen rect. */
     rectOf: (each: GalleryPhoto) => rectOf(aspectOf(each)),
     /** The middle of the room the photos take, which the arrows sit level with. */
     middle: (insets.top + viewport.height - insets.bottom) / 2,
+    /** The step's slide and blur scale: in full from photos 800 px wide, less on a phone. */
+    motionScale: Math.min(1, span / 800),
   }
 }
 
@@ -212,10 +208,9 @@ function fullScreenPose(
   viewport: Rect,
   photo: GalleryPhoto,
   set: readonly GalleryPhoto[],
-  readouts: readonly (readonly number[])[],
 ): FlightPose {
   return {
-    corners: quadOf(fullScreenLayout(viewport, photo, set, readouts).photo),
+    corners: quadOf(fullScreenLayout(viewport, photo, set).photo),
     texels: quadOf(wholeImage),
     radius: TILE_RADIUS,
   }
@@ -230,37 +225,72 @@ function tileOf(tile: HTMLElement, photo: GalleryPhoto) {
   )
 }
 
+/** The step's springs, as CSS transitions, and whether motion is reduced. */
+type StepTransitions = {
+  motion: { duration: number; easing: string }
+  frame: { duration: number; easing: string }
+  reveal: { duration: number; easing: string }
+  reduced: boolean
+}
+
+/** `clip`, a rect on screen, as a rounded `inset()` of `box`, never past its edges. */
+function insetIn(box: Rect, clip: Rect) {
+  const top = Math.max(0, clip.y - box.y)
+  const right = Math.max(0, box.x + box.width - (clip.x + clip.width))
+  const bottom = Math.max(0, box.y + box.height - (clip.y + clip.height))
+  const left = Math.max(0, clip.x - box.x)
+  return `inset(${top}px ${right}px ${bottom}px ${left}px round ${TILE_RADIUS}px)`
+}
+
 /**
- * How a photo layer moves in and out inside its frame: its slide, zoom, blur and opacity. A layer
- * coming in starts from where a leaving one ends, on the far side, through @starting-style, and
- * fades up over the leaving one; the photo the lightbox opened on starts where it rests. Each
- * slides by `shift` of its frame and scales up by twice it, so the slide never uncovers its edges.
- * A leaving photo of the same shape as the new one stays opaque under it, so the frame doesn't dim
- * halfway; one of another shape fades out (`fadesOut`).
+ * How a photo layer moves, in its frame at `rect`. Its frame clips it to the outline the photos
+ * show through, the newest photo's rect (`outline`): a layer leaving for a photo of another shape
+ * is cut in to it, and a new one grows out of the outline it came in over, so the outline moves
+ * from one shape to the other on the frame's spring, and the leaving photo stays opaque under the
+ * new one, which never dims the middle. Inside the frame, the photo slides `shift` px the way the
+ * step goes, zoomed so the slide and the blur's soft edge stay outside the frame. A new photo comes
+ * in from where a leaving one goes, on the far side, through @starting-style; where its outline
+ * widens, it fades up quicker (`reveal`), so its sides arrive nearly opaque. The photo the
+ * lightbox opened on starts where it rests. With reduced motion, the new photo only fades in.
  */
 function layerMotion(
   layer: Layer,
-  tuning: Pick<GalleryTuning['navigate'], 'shift' | 'blur'>,
-  transition: { duration: number; easing: string },
+  { rect, outline, from }: { rect: Rect; outline: Rect; from: Rect | null },
+  { shift, blur }: { shift: number; blur: number },
+  transitions: StepTransitions,
 ) {
-  const way = layer.leaving ? -layer.leaving : layer.step
-  const style: CSSProperties & Record<`--${string}`, string> = {
-    '--layer-shift': `${way * tuning.shift * 100}%`,
-    '--layer-zoom': String(1 + 2 * tuning.shift),
-    '--layer-blur': `${tuning.blur}px`,
-    transition: ['translate', 'scale', 'filter', 'opacity']
-      .map((property) => `${property} ${transition.duration}s ${transition.easing}`)
-      .join(', '),
+  const way = layer.leaving ? -layer.leaving.step : layer.step
+  const widens = from !== null && insetIn(rect, from) !== insetIn(rect, rect)
+  const fade = widens ? transitions.reveal : transitions.motion
+  const css = (property: string, { duration, easing }: { duration: number; easing: string }) =>
+    `${property} ${duration}s ${easing}`
+  const frame: CSSProperties & Record<`--${string}`, string> = {
+    left: rect.x,
+    top: rect.y,
+    width: rect.width,
+    height: rect.height,
+    '--layer-clip': insetIn(rect, outline),
+    '--layer-clip-from': insetIn(rect, from ?? rect),
+    transition: transitions.reduced ? 'none' : css('clip-path', transitions.frame),
+  }
+  const image: CSSProperties & Record<`--${string}`, string> = {
+    '--layer-shift': `${way * shift}px`,
+    '--layer-zoom': String(1 + (2 * (shift + blur)) / rect.width),
+    '--layer-blur': `${blur}px`,
+    transition: transitions.reduced
+      ? 'opacity 0.2s ease-out'
+      : [
+          css('translate', transitions.motion),
+          css('scale', transitions.motion),
+          css('filter', transitions.frame),
+          css('opacity', fade),
+        ].join(', '),
   }
   const className = layer.leaving
-    ? cn(
-        // With reduced motion the photos swap at once, and the leaving one doesn't move first.
-        'motion-safe:[translate:var(--layer-shift)_0] motion-safe:[scale:var(--layer-zoom)] motion-safe:[filter:blur(var(--layer-blur))]',
-        layer.fadesOut && 'opacity-0',
-      )
+    ? 'motion-safe:[translate:var(--layer-shift)_0] motion-safe:[scale:var(--layer-zoom)] motion-safe:[filter:blur(var(--layer-blur))]'
     : layer.step !== 0 &&
       'starting:opacity-0 starting:[filter:blur(var(--layer-blur))] starting:[scale:var(--layer-zoom)] starting:[translate:var(--layer-shift)_0]'
-  return { style, className }
+  return { frame, image, className }
 }
 
 /**
@@ -296,8 +326,8 @@ function stepFrom(shown: Shown | null, step: Step) {
 
 /**
  * The layers once a step brings `photo` in as layer `key`: the ones there leave the way the step
- * goes, fading out unless they have its shape. Each step's own timer clears the ones it sent out
- * (settledLayers).
+ * goes, sent out by `key`, whose timer clears them (settledLayers), and the new one grows out of
+ * the outline the last one showed.
  */
 function steppedLayers(
   layers: readonly Layer[],
@@ -305,18 +335,15 @@ function steppedLayers(
   step: Step,
   key: number,
 ): Layer[] {
-  const landscape = aspectOf(photo) >= 1
   const leaving = layers.map((layer) =>
-    layer.leaving
-      ? layer
-      : { ...layer, leaving: step, fadesOut: aspectOf(layer.photo) >= 1 !== landscape },
+    layer.leaving ? layer : { ...layer, leaving: { step, by: key } },
   )
-  return [...leaving, { key, photo, step }]
+  return [...leaving, { key, photo, step, over: layers.at(-1)?.photo }]
 }
 
 /** The layers left once the step `key` brought in has finished: the ones it sent out are gone. */
 const settledLayers = (layers: readonly Layer[], key: number) =>
-  layers.filter((layer) => !layer.leaving || layer.key > key)
+  layers.filter((layer) => !layer.leaving || layer.leaving.by > key)
 
 /**
  * Fades the photo's place from tile `from` to tile `to` in the grid behind as a step hands it on:
@@ -351,8 +378,12 @@ function useStepGestures(
   const swiped = useRef(false)
   return {
     onKeyDown: (event: KeyboardEvent) => {
-      if (event.key === 'ArrowRight') navigate(1)
-      else if (event.key === 'ArrowLeft') navigate(-1)
+      // Not with a modifier: Alt+Left is the browser's Back.
+      if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return
+      const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+      if (step === 0) return
+      event.preventDefault()
+      navigate(step)
     },
     onPointerDown: (event: PointerEvent) => {
       // A swipe needn't end in a click (browsers don't send one after a move), so the flag goes
@@ -387,33 +418,42 @@ function useStepGestures(
 }
 
 /**
- * The photos on screen, the current one last and on top (`data-current`), each in a rounded frame
- * of its own at its full-screen rect (`rectOf`), which its slide and blur stay inside. Photos of
- * the same shape share a rect, so a step between them happens in one frame; a portrait and a
- * landscape one crossfade where each sits.
+ * The photos on screen, the current one last and on top (`data-current`), each in a frame at its
+ * full-screen rect (`rectOf`) clipped to the outline the newest one shows (layerMotion).
  */
 function PhotoLayers({
   layers,
   imageRef,
   rectOf,
+  scale,
   tuning,
-  transition,
+  transitions,
 }: {
   layers: readonly Layer[]
   imageRef: RefObject<HTMLImageElement | null>
   rectOf: (photo: GalleryPhoto) => Rect
+  /** The slide and blur's scale (fullScreenLayout's motionScale). */
+  scale: number
   tuning: Pick<GalleryTuning['navigate'], 'shift' | 'blur'>
-  transition: { duration: number; easing: string }
+  transitions: StepTransitions
 }) {
+  const newest = layers.at(-1)
+  const outline = newest && rectOf(newest.photo)
+  const amounts = { shift: tuning.shift * scale, blur: tuning.blur * scale }
   return layers.map((layer, index) => {
     const current = index === layers.length - 1
-    const motion = layerMotion(layer, tuning, transition)
     const rect = rectOf(layer.photo)
+    const motion = layerMotion(
+      layer,
+      { rect, outline: outline ?? rect, from: layer.over ? rectOf(layer.over) : null },
+      amounts,
+      transitions,
+    )
     return (
       <div
         key={layer.key}
-        className="absolute isolate overflow-hidden rounded-xl"
-        style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}
+        className="absolute isolate overflow-hidden rounded-xl [clip-path:var(--layer-clip)] starting:[clip-path:var(--layer-clip-from)]"
+        style={motion.frame}
       >
         <img
           ref={current ? imageRef : undefined}
@@ -426,11 +466,10 @@ function PhotoLayers({
           height={layer.photo.height}
           decoding="async"
           className={cn(
-            // Its transition is inline (layerMotion), so reduced motion needs the important flag to win.
-            'size-full bg-neutral-200 object-cover motion-reduce:transition-none! dark:bg-neutral-800',
+            'size-full bg-neutral-200 object-cover dark:bg-neutral-800',
             motion.className,
           )}
-          style={motion.style}
+          style={motion.image}
         />
       </div>
     )
@@ -484,7 +523,7 @@ function LightboxArrows({
   return arrows
 }
 
-/** Each photo of the set's readout's widths, from the unseen ReadoutMeasures in `container`. */
+/** Each photo of the set's readout's cells' widths, from the unseen ReadoutMeasures in `container`. */
 const measureReadouts = (container: Element | null) =>
   container ? Array.from(container.children, (readout) => measureReadout(readout)) : []
 
@@ -494,8 +533,8 @@ function OpenPhotoView({
   layout,
   tuning,
   fades,
+  transitions,
   imageRef,
-  readoutRef,
   measuresRef,
   canStep,
   onStep,
@@ -505,14 +544,13 @@ function OpenPhotoView({
   tuning: Pick<GalleryTuning, 'expand' | 'readout' | 'navigate'>
   /** Without the flight renderer the photo fades in by itself. */
   fades: boolean
+  transitions: StepTransitions
   imageRef: RefObject<HTMLImageElement | null>
-  readoutRef: RefObject<HTMLDListElement | null>
   measuresRef: RefObject<HTMLDivElement | null>
   canStep: (step: Step) => boolean
   onStep: (step: Step) => void
 }) {
   const { motion } = tuning.navigate
-  const layerTransition = useMemo(() => cssSpring(motion), [motion])
   // Each glyph of the readout rolls on Scritto's bouncy spring, over the photos' crossfade.
   const roll = useMemo(() => ({ duration: Math.round(springResponse(motion) * 1000) }), [motion])
   const { photo, phase } = shown
@@ -531,12 +569,12 @@ function OpenPhotoView({
           layers={shown.layers}
           imageRef={imageRef}
           rectOf={layout.rectOf}
+          scale={layout.motionScale}
           tuning={tuning.navigate}
-          transition={layerTransition}
+          transitions={transitions}
         />
       </div>
       <ExposureReadout
-        ref={readoutRef}
         photo={photo}
         row={layout.readout}
         // Up once the photo takes off or opens without a flight; gone as it closes.
@@ -546,8 +584,9 @@ function OpenPhotoView({
         trend={shown.trend}
         roll={roll}
         slots={shown.slots}
+        follow={transitions.frame}
       />
-      {shown.readouts.length === 0 && <ReadoutMeasures ref={measuresRef} photos={shown.set} />}
+      {shown.slots.length === 0 && <ReadoutMeasures ref={measuresRef} photos={shown.set} />}
       {shown.set.length > 1 && (
         <LightboxArrows
           middle={layout.middle}
@@ -586,7 +625,6 @@ export function useGalleryLightbox(
   tuning: Pick<GalleryTuning, 'expand' | 'readout' | 'navigate'>,
 ) {
   const imageRef = useRef<HTMLImageElement>(null)
-  const readoutRef = useRef<HTMLDListElement>(null)
   const measuresRef = useRef<HTMLDivElement>(null)
   const popupRef = useRef<HTMLDivElement>(null)
   const [shown, setShown] = useState<Shown | null>(null)
@@ -601,8 +639,22 @@ export function useGalleryLightbox(
   const viewport = useViewport(shown !== null)
   const { flightRef } = stage
   const { navigate: navigation } = tuning
-  // A leaving photo goes once the new one has come up over it.
-  const leavingFor = useMemo(() => cssSpring(navigation.motion).duration, [navigation.motion])
+  const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const transitions = useMemo(
+    () => ({
+      motion: cssSpring(navigation.motion),
+      frame: cssSpring(navigation.frame),
+      reveal: cssSpring(navigation.reveal),
+      reduced,
+    }),
+    [navigation.motion, navigation.frame, navigation.reveal, reduced],
+  )
+  // A leaving photo goes once the new one has come up over it and the outline has moved.
+  const leavingFor = Math.max(
+    transitions.motion.duration,
+    transitions.frame.duration,
+    transitions.reveal.duration,
+  )
 
   // The photo has lifted out of its tile or grid cell while the flight or the full-screen view
   // shows it: `data-lifted` hides the tile (data-lifted:invisible), before paint, in the commit
@@ -629,19 +681,13 @@ export function useGalleryLightbox(
       phase: flight ? 'opening' : 'open',
       airborne: false,
       set,
-      readouts: [],
       slots: [],
       layers: [{ key: ++layerKey.current, photo, step: 0 }],
       trend: 1,
     }
-    // Render every photo's readout first, unseen, to measure the bar and its lines, which the
-    // photo's full-screen rect, and so the flight's landing, leaves room for.
+    // Render every photo's readout first, unseen, to measure each cell's slot across the set.
     flushSync(() => setShown(opened))
-    const { readouts, slots } = readoutSlots(
-      measureReadouts(measuresRef.current),
-      exposureReadouts(photo.exposure).length,
-    )
-    setShown({ ...opened, readouts, slots })
+    setShown({ ...opened, slots: readoutSlots(measureReadouts(measuresRef.current)) })
     warmNeighbours(set, set.indexOf(photo))
     if (!flight) return
     const from = tilePose(photo, tile, tile.getBoundingClientRect())
@@ -666,7 +712,7 @@ export function useGalleryLightbox(
         const landing = flight.fly({
           photo: photoImage,
           from,
-          to: fullScreenPose(screen, photo, set, readouts),
+          to: fullScreenPose(screen, photo, set),
           // The corner with the longest way to its side of the screen leads.
           lags: cornerLags(from.corners, quadOf(screen), diagonal(screen)),
           direction: 'open',
@@ -740,7 +786,10 @@ export function useGalleryLightbox(
     }
     const screen = viewportRect()
     // A photo still flying out turns around where it is instead (Flight.fly).
-    const from = fullScreenPose(screen, photo, shown.set, shown.readouts)
+    const from = fullScreenPose(screen, photo, shown.set)
+    // A step's scroll to the tile may still be under way: finish it, so the photo lands where the
+    // tile ends up.
+    revealReceded(tile, 'instant')
     // Where the tile will be once the page behind the photo has grown back.
     const to = tilePose(photo, tile, fullScaleRect(tile))
     const landing = flight.fly({
@@ -763,7 +812,7 @@ export function useGalleryLightbox(
     landing.then(close, () => close(false))
   }
 
-  const layout = shown && fullScreenLayout(viewport, shown.photo, shown.set, shown.readouts)
+  const layout = shown && fullScreenLayout(viewport, shown.photo, shown.set, shown.slots)
   // Without the flight renderer the photo fades in by itself.
   const fades = !stage.ready
   const gestures = useStepGestures(navigate, requestClose, (event) => {
@@ -810,7 +859,7 @@ export function useGalleryLightbox(
               tuning={tuning}
               fades={fades}
               imageRef={imageRef}
-              readoutRef={readoutRef}
+              transitions={transitions}
               measuresRef={measuresRef}
               canStep={canStep}
               onStep={navigate}
