@@ -12,7 +12,7 @@ const card = {
   // The wall's height in CSS pixels. The scene hangs from its right edge; a wall taller than the
   // card, cropped to its middle, enlarges the shadows and carries them further left.
   wall: 630,
-  logo: 64,
+  logo: 88,
   opacity: 0.38,
 }
 
