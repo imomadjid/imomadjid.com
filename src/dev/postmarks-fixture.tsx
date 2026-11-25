@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '#/components/ui/button'
 
 import { Postmark, postmarkDesign } from './postmark'
 import type { PostmarkPlace } from './postmark'
+import { checkClearance } from './postmark-clearance'
 import places from './postmark-places.json'
 
 // A first look at passport-style postmarks for the Guestbook. Each place gets one design, seeded
@@ -31,9 +32,22 @@ const collageSpots = [
 export function PostmarksFixture() {
   const [salt, setSalt] = useState(0)
   const [visitors, setVisitors] = useState(0)
+  const page = useRef<HTMLDivElement>(null)
+  const [clearance, setClearance] = useState<ReturnType<typeof checkClearance>>()
+
+  // Measures the rendered lettering once Allo has loaded, and again for every new set of prints.
+  useEffect(() => {
+    let current = true
+    void document.fonts.ready.then(() => {
+      if (current && page.current) setClearance(checkClearance(page.current))
+    })
+    return () => {
+      current = false
+    }
+  }, [salt, visitors])
 
   return (
-    <div className="space-y-12 pb-16">
+    <div ref={page} className="space-y-12 pb-16">
       <header className="max-w-3xl space-y-1">
         <h1 className="text-display font-medium">Postmarks</h1>
         <p className="text-body text-muted-foreground">
@@ -50,12 +64,30 @@ export function PostmarksFixture() {
         <Button size="compact" variant="secondary" onClick={() => setSalt((value) => value + 1)}>
           Remix designs
         </Button>
+        {clearance && (
+          <p
+            className="self-center text-body text-muted-foreground tabular-nums"
+            aria-live="polite"
+          >
+            {clearance.clashed === 0
+              ? `Lettering clears every border in all ${clearance.checked} postmarks`
+              : `${clearance.clashed} of ${clearance.checked} postmarks have lettering over a border (dashed red)`}
+          </p>
+        )}
         {salt > 0 && (
           <Button size="compact" variant="tertiary" onClick={() => setSalt(0)}>
             Back to the first designs
           </Button>
         )}
       </div>
+
+      {clearance && clearance.messages.length > 0 && (
+        <ul className="space-y-1 text-body text-red-600 dark:text-red-400">
+          {clearance.messages.map((message) => (
+            <li key={message}>{message}</li>
+          ))}
+        </ul>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-title font-medium">On the wall</h2>
