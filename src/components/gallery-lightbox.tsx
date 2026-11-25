@@ -166,8 +166,11 @@ function useViewport(active: boolean): Rect {
   return { x: 0, y: 0, width, height }
 }
 
+/** Phones: below `sm`, where the readout pins to the bottom. */
+const isPhone = (viewport: Rect) => viewport.width < 640
+
 /** The full-screen photo's margin from the viewport's edges. */
-const screenMargin = (viewport: Rect) => (viewport.width < 640 ? 12 : 24)
+const screenMargin = (viewport: Rect) => (isPhone(viewport) ? 12 : 24)
 
 const aspectOf = (photo: GalleryPhoto) => photo.width / photo.height
 
@@ -193,7 +196,9 @@ function fullScreenLayout(
   const rect = rectOf(aspectOf(photo))
   return {
     photo: rect,
-    readout: readoutBar(viewport, side, readouts, span, rect),
+    // On a phone the readout pins to the bottom, so a step to a photo of another shape doesn't
+    // move it; the photo sits in the middle of the room above it.
+    readout: readoutBar(viewport, side, readouts, span, isPhone(viewport) ? 'pinned' : rect),
     side,
     /** Any photo's full-screen rect. */
     rectOf: (each: GalleryPhoto) => rectOf(aspectOf(each)),
@@ -332,11 +337,15 @@ function fadeHandOff(from: HTMLElement, to: HTMLElement) {
 }
 
 /**
- * The popup's ways to step: the arrow keys, and a swipe across on a touch screen. A swipe ends in
- * a click on the popup, which would close the photo, so the returned `onClick` lets that one by
- * and passes the others to `onClick`.
+ * The popup's ways to step: the arrow keys, and a swipe across on a touch screen; a swipe down
+ * closes the photo. A swipe may end in a click on the popup, which would close the photo, so the
+ * returned `onClick` lets that one by and passes the others to `onClick`.
  */
-function useStepGestures(navigate: (step: Step) => void, onClick: (event: MouseEvent) => void) {
+function useStepGestures(
+  navigate: (step: Step) => void,
+  close: () => void,
+  onClick: (event: MouseEvent) => void,
+) {
   // A swipe in progress, and whether one just stepped.
   const swipe = useRef<{ id: number; x: number; y: number } | null>(null)
   const swiped = useRef(false)
@@ -346,6 +355,9 @@ function useStepGestures(navigate: (step: Step) => void, onClick: (event: MouseE
       else if (event.key === 'ArrowLeft') navigate(-1)
     },
     onPointerDown: (event: PointerEvent) => {
+      // A swipe needn't end in a click (browsers don't send one after a move), so the flag goes
+      // with the next touch rather than swallowing its tap.
+      swiped.current = false
       swipe.current =
         event.pointerType === 'mouse'
           ? null
@@ -357,6 +369,11 @@ function useStepGestures(navigate: (step: Step) => void, onClick: (event: MouseE
       if (!start || start.id !== event.pointerId) return
       const dx = event.clientX - start.x
       const dy = event.clientY - start.y
+      if (dy >= 60 && dy >= 1.5 * Math.abs(dx)) {
+        swiped.current = true
+        close()
+        return
+      }
       if (Math.abs(dx) < 40 || Math.abs(dx) < 1.5 * Math.abs(dy)) return
       // Swiping left brings in the next photo from the right.
       swiped.current = true
@@ -441,7 +458,8 @@ function LightboxArrows({
     <div
       key={step}
       className={cn(
-        'fixed -translate-y-1/2 transition-[opacity,scale] duration-300 ease-out',
+        // Not on a touch screen, which swipes between photos instead.
+        'fixed -translate-y-1/2 transition-[opacity,scale] duration-300 ease-out pointer-coarse:hidden',
         !canStep(step) &&
           'pointer-events-none scale-90 opacity-0 duration-150 motion-reduce:scale-100',
       )}
@@ -552,7 +570,7 @@ function OpenPhotoView({
  * with their speed. Without WebGPU the photo fades in and out.
  *
  * Once open, static glass arrows at either side, the arrow keys and a swipe step to the next or previous
- * photo of the set it opened from. The photos crossfade through a blur, each sliding a little the
+ * photo of the set it opened from (on a touch screen, a swipe only, and a swipe down closes it). The photos crossfade through a blur, each sliding a little the
  * way the step goes inside its rounded frame: one frame between photos of the same shape, each
  * its own between a portrait and a landscape one, which don't resize. The readout
  * under it keeps its width and rolls its values over. The step hands the photo's place to the new
@@ -748,7 +766,7 @@ export function useGalleryLightbox(
   const layout = shown && fullScreenLayout(viewport, shown.photo, shown.set, shown.readouts)
   // Without the flight renderer the photo fades in by itself.
   const fades = !stage.ready
-  const gestures = useStepGestures(navigate, (event) => {
+  const gestures = useStepGestures(navigate, requestClose, (event) => {
     // Not while the photo is still flying out: a second click where it was would turn it
     // straight back. Escape still can.
     if (shown?.phase === 'opening') return
@@ -781,7 +799,8 @@ export function useGalleryLightbox(
           // page's flow at the locked scroll (scrollY - 5rem, 100lvh + 10rem tall), as React
           // Aria's underlay does (adobe/react-spectrum#8888), with this popup inset from the
           // edges so it no longer bands them. Untested in the simulator.
-          className="fixed inset-0 z-50 cursor-zoom-out [touch-action:pan-y_pinch-zoom] outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
+          // No panning, only pinching: a pan would cancel the swipes (useStepGestures).
+          className="fixed inset-0 z-50 cursor-zoom-out [touch-action:pinch-zoom] outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
           {...gestures}
         >
           {shown && layout && (

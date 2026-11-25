@@ -86,6 +86,12 @@ void test('the bar takes as many lines as the readout that wraps most', () => {
   assert.equal(readoutBar(phone, 12, []).lines, 1)
 })
 
+void test('a pinned bar sits on the bottom margin, whatever the photo', () => {
+  const bar = readoutBar(phone, 12, [[120, 90, 95, 64, 40, 130]], 366, 'pinned')
+  // Two lines (44px) above the 12px margin.
+  assert.equal(bar.y, 844 - 12 - 44)
+})
+
 void test('each exposure slot takes its widest readout, and the recipe keeps its own', () => {
   const { slots, readouts } = readoutSlots(
     [
