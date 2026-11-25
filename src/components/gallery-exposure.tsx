@@ -181,7 +181,7 @@ export function ExposureReadout({
               rel="noreferrer"
               tabIndex={recipe ? undefined : -1}
               className={cn(
-                'flex items-center gap-0.5 rounded-sm transition-opacity hover:opacity-70',
+                'relative flex items-center gap-0.5 rounded-sm transition-opacity hover:opacity-70',
                 shown && recipe && 'pointer-events-auto',
               )}
             >
@@ -191,7 +191,15 @@ export function ExposureReadout({
                 rolling={rolling}
                 className={row.grid ? undefined : 'justify-items-end'}
               />
-              <IconArrowUpRight aria-hidden="true" className="size-3.5 opacity-50" />
+              <IconArrowUpRight
+                aria-hidden="true"
+                className={cn(
+                  'size-3.5 opacity-50',
+                  // In the row, the name's right edge lines up with its label's, and the arrow
+                  // hangs outside it.
+                  !row.grid && 'absolute top-1/2 left-full ml-0.5 -translate-y-1/2',
+                )}
+              />
             </a>
           </dd>
         </div>
