@@ -5,12 +5,13 @@ import { Logo } from '#/components/logo'
 import { defaultAmbientSettings } from '#/lib/ambient-settings'
 import type { AmbientSettings } from '#/lib/ambient-settings'
 
-// Lit from the right and fading out to the left, as most leaf-shadow photographs are: the
-// leaves smaller and denser than the site's, a few thin slats, a narrower beam.
+// Lit from the right: dense slats and small leaves there, blurring and tapering off into plain
+// wall to the left, as most leaf-shadow photographs do. A narrow beam aimed past the logo gives
+// the falloff.
 const card = {
-  // The scene hangs from the wall's right edge; a wall taller than the card, cropped to its
-  // middle, carries the light toward the left.
-  wall: 760,
+  // The wall's height in CSS pixels. The scene hangs from its right edge; a wall taller than the
+  // card, cropped to its middle, enlarges the shadows and carries them further left.
+  wall: 630,
   logo: 64,
   opacity: 0.38,
 }
@@ -21,11 +22,11 @@ const cardSettings: AmbientSettings = {
     ...defaultAmbientSettings.light,
     intensity: 1,
     softness: 0.35,
-    progressiveSoftness: 1.5,
-    beamWidth: 0.55,
+    progressiveSoftness: 3,
+    beamWidth: 0.3,
   },
-  blinds: { ...defaultAmbientSettings.blinds, opening: 0.9, spacing: 0.2 },
-  foliage: { ...defaultAmbientSettings.foliage, density: 1, depth: 0.6, scale: 0.68 },
+  blinds: { ...defaultAmbientSettings.blinds, spacing: 0.1 },
+  foliage: { ...defaultAmbientSettings.foliage, scale: 0.75 },
 }
 
 // Tuning aid: ?wall=&logo=&opacity= and light., blinds. or foliage.<key>= (such as

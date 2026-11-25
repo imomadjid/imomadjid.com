@@ -29,7 +29,7 @@ await page.waitForFunction(
 )
 // The beam follows the pointer: aim it right of the logo (AIM=x,y overrides), and let it settle. The leaves keep
 // moving, so each capture differs; rerun for another frame.
-const [aimX = 0.78, aimY = 0.38] = (process.env.AIM ?? '').split(',').filter(Boolean).map(Number)
+const [aimX = 0.9, aimY = 0.4] = (process.env.AIM ?? '').split(',').filter(Boolean).map(Number)
 await page.mouse.move(aimX * 1200, aimY * 630)
 await page.waitForTimeout(2800)
 // Leave out the devtools and anything else beside the card.
