@@ -10,7 +10,7 @@ const ROW_HEIGHT = 14 + 2 + 20
 const ROW_GAP = 12
 
 /** Whether the readout lays its cells out as a phone's grid, three columns over two rows. */
-export const readoutGrid = (viewportWidth: number) => viewportWidth < 640
+const readoutGrid = (viewportWidth: number) => viewportWidth < 640
 
 /** The gap between cells along a row: the grid's least, or the row's (gap-x-5, gap-x-8). */
 const cellGap = (viewportWidth: number) => (readoutGrid(viewportWidth) ? 20 : 32)

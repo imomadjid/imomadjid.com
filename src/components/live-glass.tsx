@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 
+import { glassPressScale, glassPressTint } from '#/lib/glass'
 import { LIVE_GLASS_MARGIN } from '#/lib/live-glass-source'
 import type { LiveGlassSource } from '#/lib/live-glass-source'
 import { useMediaQuery } from '#/lib/media-query'
@@ -94,7 +95,8 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
             'pointer-events-none absolute -z-10',
             // Pressed, the glass pulls in 1px per side as static glass's surface does
             // (#/lib/glass), at its timing; the renderer draws it at the scaled size.
-            'transition-[scale] duration-180 ease-[cubic-bezier(0.23,1,0.32,1)] group-active:scale-(--live-glass-press) group-active:duration-80 motion-reduce:transition-none',
+            glassPressScale,
+            'group-active:scale-(--live-glass-press) motion-reduce:transition-none',
             state === 'live' ? 'opacity-100' : 'opacity-0',
           )}
           // An explicit size: a canvas sized by its insets alone takes its backing store's size,
@@ -111,7 +113,10 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
       {state === 'live' && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] transition-[inset,background-color] [transition-duration:180ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease] group-hover:bg-hover group-active:inset-px group-active:bg-active group-active:[transition-duration:80ms,80ms]"
+          className={cn(
+            'pointer-events-none absolute inset-0 -z-10 rounded-[inherit] group-hover:bg-hover group-active:bg-active',
+            glassPressTint,
+          )}
         />
       )}
     </>

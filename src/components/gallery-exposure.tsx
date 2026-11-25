@@ -5,7 +5,7 @@ import type { Ref } from 'react'
 
 import { exposureReadouts } from '#/lib/exposure-format'
 import { figuresClass } from '#/lib/figures'
-import { cssSpring } from '#/lib/flight-springs'
+import { cssSpring, cssTransition } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { GalleryTuning } from '#/lib/gallery-settings'
 import { gridColumns } from '#/lib/readout-layout'
@@ -158,7 +158,7 @@ export function ExposureReadout({
         left: row.x,
         top: row.y,
         width: row.width,
-        transition: `top ${follow.duration}s ${follow.easing}`,
+        transition: cssTransition('top', follow),
         gridTemplateColumns: columns?.join(' '),
       }}
     >

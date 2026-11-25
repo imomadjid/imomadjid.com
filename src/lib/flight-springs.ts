@@ -92,3 +92,9 @@ export function cssSpring(config: TransitionConfig) {
     easing: `linear(${stops.map((value) => Number(value.toFixed(4))).join(', ')})`,
   }
 }
+
+/** `property`'s entry in a CSS `transition` list, on a spring sampled by cssSpring. */
+export const cssTransition = (
+  property: string,
+  { duration, easing }: { duration: number; easing: string },
+) => `${property} ${duration}s ${easing}`
