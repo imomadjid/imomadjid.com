@@ -7,6 +7,7 @@ import {
   Image,
   Layers,
   LayoutGrid,
+  MapPin,
   Stamp,
 } from 'lucide-react'
 
@@ -47,6 +48,13 @@ export const devPages = [
     label: 'Social card',
     icon: Image,
     description: 'The Open Graph image: the Sunlit wall with the logo, captured by tools/og.',
+  },
+  {
+    to: '/dev/postmarks',
+    label: 'Postmarks',
+    icon: MapPin,
+    description:
+      'Passport-style Guestbook postmarks, one design per place and a print per visitor.',
   },
   {
     to: '/dev/stamps',
