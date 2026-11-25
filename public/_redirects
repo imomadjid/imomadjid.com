@@ -1,0 +1,3 @@
+# The social card was og.png until it became og.jpg; link previews cached before then still ask
+# for the old file.
+/og.png /og.jpg 301

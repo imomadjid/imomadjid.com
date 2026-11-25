@@ -106,9 +106,9 @@ fn hash(p: vec2f) -> f32 {
   return fract(sin(dot(p, vec2f(12.9898, 78.233))) * 43758.5453);
 }
 
-@fragment
-fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  let p = uv * params.size;
+// The glass at p in canvas CSS pixels, premultiplied, its edge antialiased over 1 / edge CSS
+// pixels.
+fn shade(p: vec2f, edge: f32) -> vec4f {
   let sd = shape(p);
   let e = 0.25;
   let normal = normalize(
@@ -151,7 +151,31 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   // Unclamped, as fit.py fits it: a saturated channel may leave 0-1 before the tone.
   base = vec3f(luma) + params.saturation * (base - vec3f(luma));
   let glass = clamp(m.x + m.y * base + m.z * base * base + dither, vec3f(0.0), vec3f(1.0));
-  // Antialiased edge between the glass and its shadow, over one device pixel.
-  let coverage = clamp(0.5 - sd * params.dpr, 0.0, 1.0);
+  // Antialiased edge between the glass and its shadow.
+  let coverage = clamp(0.5 - sd * edge, 0.0, 1.0);
   return mix(outside, vec4f(glass, 1.0), coverage);
+}
+
+@fragment
+fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+  let p = uv * params.size;
+  // The material table is fitted a 3x device pixel (1/3 pt) a row, and its rim light and hairline
+  // are about that thin. Below 3x a single sample would land on or between them, so the ring
+  // beads and darkens around the shape. Near the edge each pixel averages samples spaced at
+  // least that finely instead (3 x 3 at 1x, 2 x 2 at 2x); 3x screens take one, as fitted.
+  let grid = min(ceil(3.0 / params.dpr - 0.01), 3.0);
+  let sd = shape(p);
+  if (grid <= 1.0 || sd < -4.0 || sd > 3.0) {
+    return shade(p, params.dpr);
+  }
+  let n = u32(grid);
+  let spacing = 1.0 / (params.dpr * grid);
+  var sum = vec4f(0.0);
+  for (var y = 0u; y < n; y++) {
+    for (var x = 0u; x < n; x++) {
+      let offset = (vec2f(f32(x), f32(y)) + 0.5 - grid * 0.5) * spacing;
+      sum += shade(p + offset, params.dpr * grid);
+    }
+  }
+  return sum / (grid * grid);
 }
