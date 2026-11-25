@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 
 import { LIVE_GLASS_MARGIN } from '#/lib/live-glass-source'
 import type { LiveGlassSource } from '#/lib/live-glass-source'
@@ -20,6 +20,25 @@ export function LiveGlassSourceProvider({
 }
 
 /**
+ * Sets `--live-glass-press` on the canvas to the scale that pulls its control's glass in 1px per
+ * side, which depends on the control's size, and keeps it as that size changes, while the canvas
+ * is `mounted`.
+ */
+function usePressScale(canvasRef: RefObject<HTMLCanvasElement | null>, mounted: boolean) {
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const control = canvas?.parentElement
+    if (!canvas || !control) return
+    const observer = new ResizeObserver(() => {
+      const width = control.clientWidth
+      if (width > 2) canvas.style.setProperty('--live-glass-press', String((width - 2) / width))
+    })
+    observer.observe(control)
+    return () => observer.disconnect()
+  }, [canvasRef, mounted])
+}
+
+/**
  * Live glass for a glass control: a WebGPU canvas over its parent (a `group` with rounded
  * corners) and LIVE_GLASS_MARGIN around it for the shadow. `fallback` is the static glass layer:
  * it shows until the first frame, and wherever live glass can't run (no WebGPU, no source above,
@@ -30,6 +49,8 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [state, setState] = useState<'idle' | 'live' | 'failed'>('idle')
   const reduced = useMediaQuery('(prefers-reduced-transparency: reduce)')
+  const drawn = source !== null && !reduced
+  usePressScale(canvasRef, drawn && state !== 'failed')
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -65,12 +86,15 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
   return (
     <>
       {state !== 'live' && fallback}
-      {source && !reduced && state !== 'failed' && (
+      {drawn && state !== 'failed' && (
         <canvas
           ref={canvasRef}
           aria-hidden="true"
           className={cn(
             'pointer-events-none absolute -z-10',
+            // Pressed, the glass pulls in 1px per side as static glass's surface does
+            // (#/lib/glass), at its timing; the renderer draws it at the scaled size.
+            'transition-[scale] duration-180 ease-[cubic-bezier(0.23,1,0.32,1)] group-active:scale-(--live-glass-press) group-active:duration-80 motion-reduce:transition-none',
             state === 'live' ? 'opacity-100' : 'opacity-0',
           )}
           // An explicit size: a canvas sized by its insets alone takes its backing store's size,
@@ -87,7 +111,7 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
       {state === 'live' && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] transition-colors duration-80 group-hover:bg-hover group-active:bg-active"
+          className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] transition-[inset,background-color] [transition-duration:180ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease] group-hover:bg-hover group-active:inset-px group-active:bg-active group-active:[transition-duration:80ms,80ms]"
         />
       )}
     </>

@@ -8,7 +8,6 @@ import { flushSync } from 'react-dom'
 
 import { ExposureReadout, measureReadout, ReadoutMeasures } from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
-import { LiveGlassSourceProvider } from '#/components/live-glass'
 import { IconButton } from '#/components/ui/icon-button'
 import { dialogCoverClass } from '#/lib/dialog-layer'
 import { cssSpring, springOf, springResponse, stepSprings } from '#/lib/flight-springs'
@@ -28,7 +27,6 @@ import {
 import type { Rect } from '#/lib/gallery-flight-geometry'
 import { decodedImage, decodedNow } from '#/lib/gallery-images'
 import type { GalleryTuning } from '#/lib/gallery-settings'
-import type { LiveGlassSource } from '#/lib/live-glass-source'
 import { fullScaleRect, revealReceded } from '#/lib/page-recede'
 import { readoutBar, readoutSpace } from '#/lib/readout-layout'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
@@ -165,6 +163,8 @@ function fullScreenLayout(
     photo: rect,
     readout: readoutBar(viewport, side, readouts, span, rect),
     side,
+    /** Any photo's size at rest, which it keeps in the frame while the frame moves. */
+    sizeOf: (each: GalleryPhoto) => rectOf(aspectOf(each)),
     /** The middle of the room the photos take, which the arrows sit level with. */
     middle: (insets.top + viewport.height - insets.bottom) / 2,
   }
@@ -199,7 +199,7 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
  * Moves the full-screen frame (`frame`, once the dialog's portal has mounted it) and the readout's bar (`readoutRef`) to `target`: on
  * `config`'s spring when `step` changed since the last target, keeping their speed if a step lands
  * mid-move, and straight there otherwise (opening, a resize, reduced motion). Writes their boxes
- * to their styles itself, so React never renders a frame of the move. Calls `onMove` on each one.
+ * to their styles itself, so React never renders a frame of the move.
  */
 function useFrameSpring(
   frame: HTMLElement | null,
@@ -207,7 +207,6 @@ function useFrameSpring(
   target: { photo: Rect; readoutY: number } | null,
   step: number,
   config: TransitionConfig,
-  onMove: () => void,
 ) {
   const state = useRef<SpringState | null>(null)
   const lastStep = useRef(step)
@@ -239,7 +238,6 @@ function useFrameSpring(
         height: `${h}px`,
       })
       if (readoutRef.current) readoutRef.current.style.top = `${bar}px`
-      onMove()
     }
     const stepped = step !== lastStep.current
     lastStep.current = step
@@ -267,7 +265,7 @@ function useFrameSpring(
     }
     frameId = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frameId)
-  }, [frame, readoutRef, x, y, width, height, readoutY, step, config, onMove])
+  }, [frame, readoutRef, x, y, width, height, readoutY, step, config])
 }
 
 /**
@@ -373,38 +371,6 @@ function closingPose(shown: Shown, frame: HTMLElement | null, screen: Rect): Fli
 }
 
 /**
- * What the arrows' live glass sees: the photo in the frame, on the dialog's backdrop read as
- * --surface-1. `wake` draws it again, for the frame's spring to call as it moves.
- */
-function useFrameGlass(frameRef: RefObject<HTMLElement | null>) {
-  return useMemo(() => {
-    const wakers = new Set<() => void>()
-    const source: LiveGlassSource = {
-      scene() {
-        const frame = frameRef.current
-        const image = frame?.querySelector<HTMLImageElement>('img[data-current]')
-        const photos =
-          frame && image
-            ? [{ image, rect: frame.getBoundingClientRect(), radius: TILE_RADIUS }]
-            : []
-        const background = getComputedStyle(document.documentElement)
-          .getPropertyValue('--surface-1')
-          .trim()
-        return { background: background || 'white', photos }
-      },
-      subscribe(wake) {
-        wakers.add(wake)
-        return () => wakers.delete(wake)
-      },
-    }
-    const wake = () => {
-      for (const each of wakers) each()
-    }
-    return { source, wake }
-  }, [frameRef])
-}
-
-/**
  * The popup's ways to step: the arrow keys, and a swipe across on a touch screen. A swipe ends in
  * a click on the popup, which would close the photo, so the returned `onClick` lets that one by
  * and passes the others to `onClick`.
@@ -442,23 +408,29 @@ function useStepGestures(navigate: (step: Step) => void, onClick: (event: MouseE
   }
 }
 
-/** The frame's photos, the current one last and on top (`data-current`). */
+/**
+ * The frame's photos, the current one last and on top (`data-current`). Each keeps its own size
+ * at rest (`sizeOf`), centred in the frame, which crops or reveals it as it resizes: drawn to cover
+ * the frame instead, a portrait photo coming into a landscape frame would start at twice its size
+ * and shrink as the frame narrows.
+ */
 function FrameLayers({
   layers,
   imageRef,
-  sizes,
+  sizeOf,
   tuning,
   transition,
 }: {
   layers: readonly Layer[]
   imageRef: RefObject<HTMLImageElement | null>
-  sizes: string
+  sizeOf: (photo: GalleryPhoto) => Rect
   tuning: Pick<GalleryTuning['navigate'], 'shift' | 'blur'>
   transition: { duration: number; easing: string }
 }) {
   return layers.map((layer, index) => {
     const current = index === layers.length - 1
     const motion = layerMotion(layer, tuning, transition)
+    const { width, height } = sizeOf(layer.photo)
     return (
       <img
         key={layer.key}
@@ -466,16 +438,23 @@ function FrameLayers({
         data-current={current || undefined}
         src={layer.photo.large}
         srcSet={`${layer.photo.small} 640w, ${layer.photo.large} 1600w`}
-        sizes={sizes}
+        sizes={`${Math.round(width)}px`}
         alt=""
         width={layer.photo.width}
         height={layer.photo.height}
         decoding="async"
         className={cn(
-          'absolute inset-0 size-full object-cover motion-reduce:transition-none',
+          'absolute top-1/2 left-1/2 max-w-none rounded-xl bg-neutral-200 motion-reduce:transition-none dark:bg-neutral-800',
           motion.className,
         )}
-        style={motion.style}
+        // Centred by its margins: its slide moves `translate`.
+        style={{
+          ...motion.style,
+          width,
+          height,
+          marginLeft: -width / 2,
+          marginTop: -height / 2,
+        }}
       />
     )
   })
@@ -483,18 +462,16 @@ function FrameLayers({
 
 /**
  * The arrows either side of the open photo, level with the middle of the room the photos take,
- * `side` in from the edges. Each hides at its end of the set. They are live glass, refracting the
- * photo between them (`source`). The flight canvas draws above the dialog, so they wait for the
- * photo to land, as the overlay's close button does.
+ * `side` in from the edges, in static glass at the floating size. Each hides at its end of the set.
+ * The flight canvas draws above the dialog, so they wait for the photo to land, as the overlay's
+ * close button does.
  */
 function LightboxArrows({
-  source,
   middle,
   side,
   canStep,
   onStep,
 }: {
-  source: LiveGlassSource
   middle: number
   side: number
   canStep: (step: Step) => boolean
@@ -513,7 +490,7 @@ function LightboxArrows({
       <IconButton
         aria-label={step < 0 ? 'Previous photo' : 'Next photo'}
         size="4xl"
-        glass="live"
+        glass="static"
         data-step={step}
         disabled={!canStep(step)}
         onClick={() => onStep(step)}
@@ -526,7 +503,7 @@ function LightboxArrows({
       </IconButton>
     </div>
   ))
-  return <LiveGlassSourceProvider source={source}>{arrows}</LiveGlassSourceProvider>
+  return arrows
 }
 
 /** Each photo of the set's readout's widths, from the unseen ReadoutMeasures in `container`. */
@@ -546,7 +523,6 @@ function OpenPhotoView({
   imageRef,
   readoutRef,
   measuresRef,
-  glass,
   canStep,
   onStep,
 }: {
@@ -559,7 +535,6 @@ function OpenPhotoView({
   imageRef: RefObject<HTMLImageElement | null>
   readoutRef: RefObject<HTMLDListElement | null>
   measuresRef: RefObject<HTMLDivElement | null>
-  glass: LiveGlassSource
   canStep: (step: Step) => boolean
   onStep: (step: Step) => void
 }) {
@@ -574,7 +549,7 @@ function OpenPhotoView({
       <div
         ref={frameRef}
         className={cn(
-          'pointer-events-none fixed isolate overflow-hidden rounded-xl bg-neutral-200 dark:bg-neutral-800',
+          'pointer-events-none fixed isolate overflow-hidden rounded-xl',
           phase !== 'open' && 'opacity-0',
           fades &&
             'transition-[opacity,scale] duration-300 ease-out motion-reduce:transition-none starting:scale-95 starting:opacity-0',
@@ -583,7 +558,7 @@ function OpenPhotoView({
         <FrameLayers
           layers={shown.layers}
           imageRef={imageRef}
-          sizes={`${Math.round(layout.readout.width)}px`}
+          sizeOf={layout.sizeOf}
           tuning={tuning.navigate}
           transition={layerTransition}
         />
@@ -602,7 +577,6 @@ function OpenPhotoView({
       {shown.readouts.length === 0 && <ReadoutMeasures ref={measuresRef} photos={shown.set} />}
       {shown.set.length > 1 && (
         <LightboxArrows
-          source={glass}
           middle={layout.middle}
           side={layout.side}
           canStep={canStep}
@@ -622,7 +596,7 @@ function OpenPhotoView({
  * first and the far side trails in. A close while the open is under way turns the corners around
  * with their speed. Without WebGPU the photo fades in and out.
  *
- * Once open, live glass arrows at either side, the arrow keys and a swipe step to the next or previous
+ * Once open, static glass arrows at either side, the arrow keys and a swipe step to the next or previous
  * photo of the set it opened from. The frame resizes to the new photo on a spring, while inside it
  * the photos crossfade through a blur, each sliding a little the way the step goes; the readout
  * under it keeps its width and rolls its values over. The step hands the photo's place to the new
@@ -660,9 +634,6 @@ export function useGalleryLightbox(
   const { flightRef } = stage
   const { navigate: navigation } = tuning
   const layerTransition = useMemo(() => cssSpring(navigation.motion), [navigation.motion])
-
-  // Live arrows refract the photo in the frame, and draw again as it moves.
-  const glass = useFrameGlass(frameRef)
 
   // The photo has lifted out of its tile or grid cell while the flight or the full-screen view
   // shows it: `data-lifted` hides the tile (data-lifted:invisible), before paint, in the commit
@@ -756,7 +727,7 @@ export function useGalleryLightbox(
     const next = stepFrom(shown, step)
     if (!shown || !next) return
     const { photo, tile, index } = next
-    play('navigate', { emphasis: 'subtle', direction: step > 0 ? 'forward' : 'back' })
+    play('select', { emphasis: 'subtle', direction: step > 0 ? 'forward' : 'back' })
     // Behind the backdrop, so the close flies home to a tile on screen.
     revealReceded(tile)
     if (returnTo.current) returnTo.current = { ...returnTo.current, tile }
@@ -827,7 +798,6 @@ export function useGalleryLightbox(
     layout && { photo: layout.photo, readoutY: layout.readout.y },
     shown?.layers.at(-1)?.key ?? 0,
     navigation.frame,
-    glass.wake,
   )
   const gestures = useStepGestures(navigate, (event) => {
     // Not while the photo is still flying out: a second click where it was would turn it
@@ -878,7 +848,6 @@ export function useGalleryLightbox(
               imageRef={imageRef}
               readoutRef={readoutRef}
               measuresRef={measuresRef}
-              glass={glass.source}
               canStep={canStep}
               onStep={navigate}
             />
