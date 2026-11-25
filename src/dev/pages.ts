@@ -1,4 +1,4 @@
-import { Component, GlassWater, Layers, LayoutGrid } from 'lucide-react'
+import { Component, GlassWater, Layers, LayoutGrid, Stamp } from 'lucide-react'
 
 // Single source for the /dev sidebar and the overview page.
 export const devPages = [
@@ -25,5 +25,11 @@ export const devPages = [
     label: 'Surfaces',
     icon: Layers,
     description: 'The eight-level surface and shadow ladder, with nested elevation.',
+  },
+  {
+    to: '/dev/stamps',
+    label: 'Stamps',
+    icon: Stamp,
+    description: 'Pick the Guestbook stamps from what Wikimedia Commons lists per country.',
   },
 ] as const

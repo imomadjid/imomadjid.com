@@ -14,6 +14,7 @@ import { Route as DevRouteRouteImport } from './routes/dev/route'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as DevComponentsRouteImport } from './routes/dev/components'
 import { Route as DevGlassRouteImport } from './routes/dev/glass'
+import { Route as DevStampsRouteImport } from './routes/dev/stamps'
 import { Route as DevSurfacesRouteImport } from './routes/dev/surfaces'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const DevGlassRoute = DevGlassRouteImport.update({
   path: '/glass',
   getParentRoute: () => DevRouteRoute,
 } as any)
+const DevStampsRoute = DevStampsRouteImport.update({
+  id: '/stamps',
+  path: '/stamps',
+  getParentRoute: () => DevRouteRoute,
+} as any)
 const DevSurfacesRoute = DevSurfacesRouteImport.update({
   id: '/surfaces',
   path: '/surfaces',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/dev': typeof DevRouteRouteWithChildren
   '/dev/components': typeof DevComponentsRoute
   '/dev/glass': typeof DevGlassRoute
+  '/dev/stamps': typeof DevStampsRoute
   '/dev/surfaces': typeof DevSurfacesRoute
   '/dev/': typeof DevIndexRoute
 }
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dev/components': typeof DevComponentsRoute
   '/dev/glass': typeof DevGlassRoute
+  '/dev/stamps': typeof DevStampsRoute
   '/dev/surfaces': typeof DevSurfacesRoute
   '/dev': typeof DevIndexRoute
 }
@@ -68,21 +76,35 @@ export interface FileRoutesById {
   '/dev': typeof DevRouteRouteWithChildren
   '/dev/components': typeof DevComponentsRoute
   '/dev/glass': typeof DevGlassRoute
+  '/dev/stamps': typeof DevStampsRoute
   '/dev/surfaces': typeof DevSurfacesRoute
   '/dev/': typeof DevIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/dev' | '/dev/components' | '/dev/glass' | '/dev/surfaces' | '/dev/'
+    | '/'
+    | '/dev'
+    | '/dev/components'
+    | '/dev/glass'
+    | '/dev/stamps'
+    | '/dev/surfaces'
+    | '/dev/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dev/components' | '/dev/glass' | '/dev/surfaces' | '/dev'
+  to:
+    | '/'
+    | '/dev/components'
+    | '/dev/glass'
+    | '/dev/stamps'
+    | '/dev/surfaces'
+    | '/dev'
   id:
     | '__root__'
     | '/'
     | '/dev'
     | '/dev/components'
     | '/dev/glass'
+    | '/dev/stamps'
     | '/dev/surfaces'
     | '/dev/'
   fileRoutesById: FileRoutesById
@@ -129,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevGlassRouteImport
       parentRoute: typeof DevRouteRoute
     }
+    '/dev/stamps': {
+      id: '/dev/stamps'
+      path: '/stamps'
+      fullPath: '/dev/stamps'
+      preLoaderRoute: typeof DevStampsRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
     '/dev/surfaces': {
       id: '/dev/surfaces'
       path: '/surfaces'
@@ -142,6 +171,7 @@ declare module '@tanstack/react-router' {
 interface DevRouteRouteChildren {
   DevComponentsRoute: typeof DevComponentsRoute
   DevGlassRoute: typeof DevGlassRoute
+  DevStampsRoute: typeof DevStampsRoute
   DevSurfacesRoute: typeof DevSurfacesRoute
   DevIndexRoute: typeof DevIndexRoute
 }
@@ -149,6 +179,7 @@ interface DevRouteRouteChildren {
 const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevComponentsRoute: DevComponentsRoute,
   DevGlassRoute: DevGlassRoute,
+  DevStampsRoute: DevStampsRoute,
   DevSurfacesRoute: DevSurfacesRoute,
   DevIndexRoute: DevIndexRoute,
 }
