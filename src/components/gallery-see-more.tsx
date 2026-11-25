@@ -5,6 +5,7 @@ import type { RefObject } from 'react'
 import { useGalleryRenderer } from '#/components/use-gallery-renderer'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { GalleryWarp, WarpTuning } from '#/lib/gallery-warp'
+import { coarsePointerQuery } from '#/lib/media-query'
 import { cn } from '#/lib/utils'
 
 // The See more tile's CSS zoom. Left off while the warp canvas draws the tile, so the hidden grid
@@ -23,7 +24,7 @@ const thumbLongSide = 240
 /**
  * A 4x4 grid of thumbnails shown at 2x, so its middle 2x2 fills the tile. Hover or focus zooms
  * out to the whole grid and shows the label. Where the overlay has two columns, the tile is a
- * plain 2x2 grid of their rows from tileStartRow instead, which doesn't zoom. Where WebGPU runs,
+ * plain 2x2 grid of their rows from tileCells' start row instead, which doesn't zoom. Where WebGPU runs,
  * a canvas draws the grid instead (src/lib/gallery-warp.ts) and the middle zooms ahead of the
  * edges; it starts as the tile nears the viewport and takes over after its first frame, so the CSS
  * grid below is the fallback.
@@ -86,7 +87,7 @@ export function SeeMoreTile({
       warp.setZoomedOut(zoomedOutRef.current)
       return warp
     },
-    canvasRef,
+    undefined,
     warps,
   )
 
@@ -113,7 +114,7 @@ export function SeeMoreTile({
         // focus.
         if (
           event.currentTarget.matches(':focus-visible') &&
-          !matchMedia('(pointer: coarse)').matches
+          !matchMedia(coarsePointerQuery).matches
         )
           zoomOut(true)
       }}

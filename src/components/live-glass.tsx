@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { LIVE_GLASS_MARGIN } from '#/lib/live-glass-source'
 import type { LiveGlassSource } from '#/lib/live-glass-source'
+import { useMediaQuery } from '#/lib/media-query'
 import { cn } from '#/lib/utils'
 
 const LiveGlassSourceContext = createContext<LiveGlassSource | null>(null)
@@ -28,7 +29,7 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
   const source = useContext(LiveGlassSourceContext)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [state, setState] = useState<'idle' | 'live' | 'failed'>('idle')
-  const reduced = useSyncExternalStore(watchReducedTransparency, reducedTransparency, () => false)
+  const reduced = useMediaQuery('(prefers-reduced-transparency: reduce)')
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -91,16 +92,4 @@ export function LiveGlassLayer({ fallback }: { fallback: ReactNode }) {
       )}
     </>
   )
-}
-
-const reducedQuery = '(prefers-reduced-transparency: reduce)'
-
-function reducedTransparency() {
-  return matchMedia(reducedQuery).matches
-}
-
-function watchReducedTransparency(change: () => void) {
-  const query = matchMedia(reducedQuery)
-  query.addEventListener('change', change)
-  return () => query.removeEventListener('change', change)
 }

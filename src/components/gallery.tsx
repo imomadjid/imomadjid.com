@@ -13,7 +13,7 @@ import { useOverlayScrollsPage } from '#/lib/dialog-layer'
 import { figuresClass } from '#/lib/figures'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
-import { tileStartRow } from '#/lib/gallery-masonry'
+import { tileCells } from '#/lib/gallery-masonry'
 import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-settings'
 import { recedePage } from '#/lib/page-recede'
 
@@ -46,11 +46,11 @@ function Gallery({
   const featured = photos.slice(0, featuredCount)
   // The overlay's order: the photos past the featured ones first, so the See more tile can
   // preview what the page doesn't show yet. Its grid, as many cells square as the overlay has
-  // columns, is the overlay's rows from tileStartRow.
+  // columns, is the overlay's rows from tileCells' start row.
   const overlayPhotos = [...photos.slice(featuredCount), ...featured]
   const columns = useOverlayColumns()
-  const tileStart = tileStartRow(columns) * columns
-  const preview = overlayPhotos.slice(tileStart, tileStart + columns * columns)
+  const tile = tileCells(columns)
+  const preview = overlayPhotos.slice(tile.start, tile.end)
   const tuning = useGalleryTuning()
   const sectionRef = useRef<HTMLDivElement>(null)
   const tileRef = useRef<HTMLSpanElement>(null)
@@ -139,6 +139,7 @@ function Gallery({
       <GalleryOverlay
         photos={overlayPhotos}
         columns={columns}
+        scrollsPage={scrollsPage}
         photoTuning={tuning.photo}
         listRef={overlay.listRef}
         flies={overlay.flies}

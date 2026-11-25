@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { coarsePointerQuery, useMediaQuery } from '#/lib/media-query'
 
 // iOS Safari 26+ doesn't draw fixed or sticky layers under its status bar and floating toolbar:
 // only the page's flow reaches there. Worse, it hit-tests the middle of each edge, and where it
@@ -10,56 +10,29 @@ import { useSyncExternalStore } from 'react'
 // the page itself scrolls, never a scrolling layer over it.
 //
 // So on touch screens the See more overlay's photos lie in the body's flow and the page scrolls
-// them, while the page behind holds still (holdPage). The backdrops stick, as the Sunlit layers
-// do (ambient-light.tsx), 5rem past each end of the viewport, too tall to band the bars: they
-// portal into a `contents` layer at the top of the body and stick in its flow. Negative margins
-// as tall as each one, less the overscan, keep it out of that flow: the bottom one is what keeps
-// it stuck at the end of the page, since a sticky box stays within its container by its margin
-// box. The open photo's popup stays fixed, and its band covers the toolbar.
-
-/** The id of the layer the Gallery's sticky dialogs portal into, the first child of the body. */
-export const dialogLayerId = 'dialog-layer'
-
-/** The id of the layer the See more overlay portals into, right after the dialog layer. */
-export const overlayLayerId = 'overlay-layer'
-
-/** A ref to a layer that Base UI reads only when a dialog mounts, on the client. */
-function layerRef(id: string) {
-  return {
-    get current() {
-      return document.getElementById(id)
-    },
-  }
-}
-
-/** The layer for the backdrops and the open photo. Without it Base UI portals to the body. */
-export const dialogLayer = layerRef(dialogLayerId)
-
-/** The layer for the See more overlay. */
-export const overlayLayer = layerRef(overlayLayerId)
+// them, while the page behind holds still (holdPage). The backdrops reach 5rem past each end of
+// the viewport, too tall to band the bars. The open photo's popup stays viewport-sized, and its
+// band covers the toolbar.
 
 /**
- * A full-screen dialog backdrop's position: fixed over the viewport, or on touch screens stuck to
- * it and reaching 5rem past each end, too tall to band Safari's bars.
+ * The id of the layer the See more overlay portals into: the body's first child, so on touch
+ * screens its photos come first in the page's flow.
  */
-export const dialogCoverClass =
-  'fixed inset-0 pointer-coarse:sticky pointer-coarse:inset-auto pointer-coarse:-top-20 pointer-coarse:-mt-20 pointer-coarse:-mb-[calc(100lvh+5rem)] pointer-coarse:h-[calc(100lvh+10rem)]'
+export const overlayLayerId = 'overlay-layer'
 
-const coarseQuery = '(pointer: coarse)'
-
-function subscribeCoarse(change: () => void) {
-  const query = matchMedia(coarseQuery)
-  query.addEventListener('change', change)
-  return () => query.removeEventListener('change', change)
+/** The overlay's layer, as a ref Base UI reads when the dialog mounts, on the client. */
+export const overlayLayer = {
+  get current() {
+    return document.getElementById(overlayLayerId)
+  },
 }
+
+/** A full-screen dialog backdrop's box: the viewport and 5rem past each end, so it bands no bar. */
+export const dialogCoverClass = 'fixed inset-x-0 -top-20 h-[calc(100lvh+10rem)]'
 
 /** Whether the See more overlay scrolls the page (touch screens), rather than its own popup. */
 export function useOverlayScrollsPage() {
-  return useSyncExternalStore(
-    subscribeCoarse,
-    () => matchMedia(coarseQuery).matches,
-    () => false,
-  )
+  return useMediaQuery(coarsePointerQuery)
 }
 
 /**

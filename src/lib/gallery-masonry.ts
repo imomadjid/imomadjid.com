@@ -1,8 +1,8 @@
 /**
  * Splits items into masonry columns, as indices. The first `lead` items are a grid as wide as the
  * columns, row by row (the See more tile's and those above it), so item `row * columns + column`
- * is row `row` of column `column`. Each item after joins the shortest column, measured by the items' heights at
- * unit width.
+ * is row `row` of column `column`. Each item after joins the shortest column, measured by the
+ * items' heights at unit width.
  */
 export function masonryColumns(
   heights: readonly number[],
@@ -20,10 +20,13 @@ export function masonryColumns(
 }
 
 /**
- * The overlay rows above the See more tile's photos, which lead the rows after them: on a phone
- * one, so its 2x2 flies out to the middle of the screen rather than its top; with four columns
- * none, since a 4x4 fills the screen.
+ * The See more tile's photos among the overlay's, `start` to `end`: its grid, as many cells square
+ * as the overlay has columns, from row `startRow`, which leads the rows after it. On a phone one
+ * row sits above, so its 2x2 flies out to the middle of the screen rather than its top; with four
+ * columns none, since a 4x4 fills the screen.
  */
-export function tileStartRow(columns: number) {
-  return columns === 2 ? 1 : 0
+export function tileCells(columns: number) {
+  const startRow = columns === 2 ? 1 : 0
+  const start = startRow * columns
+  return { startRow, start, end: start + columns * columns }
 }

@@ -5,7 +5,7 @@ import { DialRoot } from 'dialkit'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
-import { dialogLayerId, overlayLayerId } from '#/lib/dialog-layer'
+import { overlayLayerId } from '#/lib/dialog-layer'
 import { ShapeProvider } from '#/lib/shape-context'
 import { SOUND_SCRIPT, startSounds } from '#/lib/sound'
 import { SurfaceProvider } from '#/lib/surface-context'
@@ -74,10 +74,9 @@ function RootDocument({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: SOUND_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="flow-root bg-surface-1 text-neutral-950 dark:text-neutral-50">
-        {/* The Gallery's dialogs portal here, so on touch screens they can stick, and the See
-            more overlay's photos lie in the page's flow (src/lib/dialog-layer.ts). */}
-        <div id={dialogLayerId} className="contents" />
+      <body className="bg-surface-1 text-neutral-950 dark:text-neutral-50">
+        {/* The See more overlay portals here, so on touch screens its photos lie first in the
+            page's flow (src/lib/dialog-layer.ts). */}
         <div id={overlayLayerId} className="contents" />
         {/* Site-wide FF corner style. */}
         <ShapeProvider defaultShape="pill">

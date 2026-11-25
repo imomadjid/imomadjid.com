@@ -6,7 +6,7 @@ import { flushSync } from 'react-dom'
 import { ExposureReadout, measureReadout } from '#/components/gallery-exposure'
 import type { FlightStage } from '#/components/gallery-flight-stage'
 import type { OpenPhoto } from '#/components/gallery-photo-tile'
-import { dialogCoverClass, dialogLayer } from '#/lib/dialog-layer'
+import { dialogCoverClass } from '#/lib/dialog-layer'
 import { springResponse } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { FlightPose } from '#/lib/gallery-flight'
@@ -287,9 +287,8 @@ export function useGalleryLightbox(
         if (!open) requestClose()
       }}
     >
-      {/* Portalled to the top of the body (src/lib/dialog-layer.ts) at z-50, so it covers the
-          Sunlit light and the blind wand. */}
-      <Dialog.Portal container={dialogLayer} className="contents">
+      {/* Portalled to the body at z-50, so it covers the Sunlit light and the blind wand. */}
+      <Dialog.Portal>
         {/* Nested in the See more dialog, which Base UI would leave without a backdrop. */}
         <Dialog.Backdrop
           forceRender
@@ -304,8 +303,12 @@ export function useGalleryLightbox(
           initialFocus={popupRef}
           finalFocus={() => returnFocus(returnTo.current)}
           // Fixed and viewport-sized, so Safari bands its toolbar in the page's colour: the
-          // stuck backdrop stops at the bars (src/lib/dialog-layer.ts), and the band hides what
+          // backdrop stops at the bars (src/lib/dialog-layer.ts), and the band hides what
           // would show there unblurred.
+          // TODO: Blur under Safari's bars on touch screens: an absolute backdrop fill in the
+          // page's flow at the locked scroll (scrollY - 5rem, 100lvh + 10rem tall), as React
+          // Aria's underlay does (adobe/react-spectrum#8888), with this popup inset from the
+          // edges so it no longer bands them. Untested in the simulator.
           className="fixed inset-0 z-50 cursor-zoom-out outline-none data-ending-style:opacity-0 data-ending-style:transition-opacity data-ending-style:duration-200 motion-reduce:transition-none"
           onClick={(event) => {
             // Not while the photo is still flying out: a second click where it was would turn it
