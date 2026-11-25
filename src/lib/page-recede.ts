@@ -35,21 +35,41 @@ export function recedePage(from: Element, receded: boolean, tuning: RecedeTuning
   page.style.setProperty('--recede-duration', `${duration}s`)
   page.style.setProperty('--recede-ease', easing)
   if (receded) {
-    // The viewport's middle in the wrapper's own box, from its layout position, so a shrink that
-    // starts while the last one is still easing back measures it unscaled. The overlay's photos
-    // sit in a scrolling popup, so its scroll counts too.
-    const parent = page.offsetParent ?? document.documentElement
-    const box = parent.getBoundingClientRect()
-    const left = box.left + parent.clientLeft + page.offsetLeft - parent.scrollLeft
-    const top = box.top + parent.clientTop + page.offsetTop - parent.scrollTop
-    const x = window.innerWidth / 2
-    const y = window.innerHeight / 2
-    page.style.setProperty('--recede-origin', `${x - left}px ${y - top}px`)
-    page.dataset.recedeOrigin = `${x} ${y}`
+    placeOrigin(page)
     page.setAttribute('data-receded', '')
   } else {
     page.removeAttribute('data-receded')
   }
+}
+
+/**
+ * Sets the point `page` shrinks about to the viewport's middle in its own box, from its layout
+ * position, so a shrink that starts while the last one is still easing back measures it unscaled.
+ * The overlay's photos sit in a scrolling popup, so its scroll counts too.
+ */
+function placeOrigin(page: HTMLElement) {
+  const parent = page.offsetParent ?? document.documentElement
+  const box = parent.getBoundingClientRect()
+  const left = box.left + parent.clientLeft + page.offsetLeft - parent.scrollLeft
+  const top = box.top + parent.clientTop + page.offsetTop - parent.scrollTop
+  const x = window.innerWidth / 2
+  const y = window.innerHeight / 2
+  page.style.setProperty('--recede-origin', `${x - left}px ${y - top}px`)
+  page.dataset.recedeOrigin = `${x} ${y}`
+}
+
+/**
+ * Scrolls `element` into the middle of the viewport if it isn't all in view, and re-centres the
+ * receded page around it on the viewport's middle, so `fullScaleRect` finds it there. The open
+ * photo's lightbox does this behind its backdrop when it steps to a photo whose tile is out of view,
+ * so the close flies home to a tile on screen.
+ */
+export function revealReceded(element: Element) {
+  const rect = element.getBoundingClientRect()
+  if (rect.top >= 0 && rect.bottom <= window.innerHeight) return
+  element.scrollIntoView({ block: 'center', behavior: 'instant' })
+  const page = element.closest<HTMLElement>('[data-recede]')
+  if (page?.hasAttribute('data-receded')) placeOrigin(page)
 }
 
 /**

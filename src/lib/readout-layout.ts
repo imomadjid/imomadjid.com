@@ -62,3 +62,30 @@ export function readoutRow(
     gap,
   }
 }
+
+/**
+ * The readout's bar under a full-screen photo you can step from to the others in its set: the
+ * same for every photo, so stepping moves it only as far as the photo's bottom does. It is as
+ * wide as the widest photo of the set shows (`span`, a landscape one's), or wider where the
+ * longest readout (`readouts`, each one's items' widths) needs more room for one line, up to the
+ * viewport less its `margin` either side, centred on the viewport; and it takes as many lines as
+ * the readout that wraps most. `photo` may be left out to get its lines before photos are placed.
+ */
+export function readoutBar(
+  viewport: Rect,
+  margin: number,
+  readouts: readonly (readonly number[])[],
+  span = 0,
+  photo: Rect = { x: margin, y: 0, width: 0, height: 0 },
+): ReadoutRow {
+  const rows = readouts.map((widths) => readoutRow(viewport, margin, widths))
+  const room = viewport.width - 2 * margin
+  const width = Math.min(room, Math.max(span, ...rows.map((row) => row.width)))
+  return {
+    x: viewport.x + (viewport.width - width) / 2,
+    y: photo.y + photo.height + READOUT_GAP,
+    width,
+    lines: Math.max(1, ...rows.map((row) => row.lines)),
+    gap: readoutGap(viewport.width),
+  }
+}

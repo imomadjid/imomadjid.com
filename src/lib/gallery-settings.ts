@@ -46,6 +46,24 @@ export const galleryControls = {
     stagger: [0.04, 0, 0.1, 0.005],
   },
   /**
+   * Stepping to the next or previous photo while one is open: the frame resizes to the new photo
+   * on a spring, while inside it the photos crossfade through a blur, each sliding a little the way
+   * the step goes.
+   */
+  navigate: {
+    /** The frame's move to the new photo's size: a touch of bounce, so it settles springily. */
+    frame: { type: 'spring', visualDuration: 0.5, bounce: 0.12 },
+    /** The photos' crossfade, unblur and slide, without bounce, as an opacity can't overshoot. */
+    motion: { type: 'spring', visualDuration: 0.5, bounce: 0 },
+    /**
+     * How far each photo slides, as a fraction of the frame's width. The photos scale up by
+     * twice it while they move, so the slide never shows their edges.
+     */
+    shift: [0.03, 0, 0.1, 0.005],
+    /** How blurred a photo is at the far end of its crossfade, in px. */
+    blur: [12, 0, 40, 1],
+  },
+  /**
    * The page shrinking behind an open photo or the See more overlay, on Apple's Home Screen
    * spring (0.7s, damping ratio 0.88), and back on a quicker one.
    */
@@ -59,7 +77,7 @@ export const galleryControls = {
 
 export type GalleryTuning = ResolvedValues<typeof galleryControls>
 
-const { seeMore, photo, expand, readout, recede } = galleryControls
+const { seeMore, photo, expand, readout, navigate, recede } = galleryControls
 
 // Production values; DialKit's Gallery panel tunes these in development.
 export const defaultGalleryTuning: GalleryTuning = {
@@ -72,5 +90,11 @@ export const defaultGalleryTuning: GalleryTuning = {
     relight: expand.relight[0],
   },
   readout: { start: readout.start[0], motion: readout.motion, stagger: readout.stagger[0] },
+  navigate: {
+    frame: navigate.frame,
+    motion: navigate.motion,
+    shift: navigate.shift[0],
+    blur: navigate.blur[0],
+  },
   recede: { scale: recede.scale[0], open: recede.open, close: recede.close },
 }

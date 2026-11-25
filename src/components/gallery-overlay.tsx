@@ -459,6 +459,7 @@ export function GalleryOverlay({
           <div
             ref={listRef}
             data-recede
+            data-gallery-set
             className={cn(
               'grid items-start',
               columns === 2 ? 'grid-cols-2' : 'grid-cols-4',
