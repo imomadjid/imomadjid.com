@@ -423,10 +423,8 @@ export function GalleryOverlay({
     // so it covers the Sunlit light and the blind wand. A photo opened from it portals before it, a
     // layer up (z-50).
     <Dialog.Portal container={overlayLayer} className="contents">
-      <Dialog.Backdrop
-        className={cn(galleryBackdropClass, 'z-40', closing && 'opacity-0 duration-200')}
-      >
-        <GalleryBackdropFill />
+      <Dialog.Backdrop className={cn(galleryBackdropClass, 'z-40')}>
+        <GalleryBackdropFill closing={closing} />
       </Dialog.Backdrop>
       {/* A click beside the photos closes it, as a click on an open photo closes that: from a
           photo opened in the grid, two clicks lead back to the page. */}

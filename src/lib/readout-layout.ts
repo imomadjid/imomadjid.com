@@ -89,3 +89,21 @@ export function readoutBar(
     gap: readoutGap(viewport.width),
   }
 }
+
+/**
+ * The readout's slots: each of the first `count` readouts (the exposure, not the recipe) as wide as
+ * the widest any photo's `readouts` take there, so stepping between photos changes their values
+ * in place and never moves the ones after a value that grows. Returns the slots, and the readouts'
+ * widths with them in place, which the bar is laid out from.
+ */
+export function readoutSlots(readouts: readonly (readonly number[])[], count: number) {
+  const slots = Array.from({ length: count }, (_, index) =>
+    Math.max(0, ...readouts.map((widths) => widths[index] ?? 0)),
+  )
+  return {
+    slots,
+    readouts: readouts.map((widths) =>
+      widths.map((width, index) => (index < count ? slots[index] : width)),
+    ),
+  }
+}

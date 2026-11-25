@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 
-import { readoutBar, readoutRow, readoutSpace, wrapLines } from '#/lib/readout-layout'
+import { readoutBar, readoutRow, readoutSlots, readoutSpace, wrapLines } from '#/lib/readout-layout'
 
 const desktop = { x: 0, y: 0, width: 1440, height: 900 }
 const phone = { x: 0, y: 0, width: 390, height: 844 }
@@ -84,4 +84,19 @@ void test('the bar takes as many lines as the readout that wraps most', () => {
   assert.equal(bar.lines, 2)
   assert.equal(bar.x, 12)
   assert.equal(readoutBar(phone, 12, []).lines, 1)
+})
+
+void test('each exposure slot takes its widest readout, and the recipe keeps its own', () => {
+  const { slots, readouts } = readoutSlots(
+    [
+      [60, 40, 50, 120],
+      [64, 52, 50],
+    ],
+    3,
+  )
+  assert.deepEqual(slots, [64, 52, 50])
+  assert.deepEqual(readouts, [
+    [64, 52, 50, 120],
+    [64, 52, 50],
+  ])
 })

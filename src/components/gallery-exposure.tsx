@@ -68,7 +68,7 @@ export function ReadoutMeasures({
  * The photo's exposure under it, set like a camera's info display: each label beside its
  * readout, in Allo's tabular figures with a slashed zero, from the row's left edge, and the recipe
  * its settings match, if any, linked on the right. `row` places it across (src/lib/readout-layout.ts);
- * the lightbox moves its top with the photo's bottom. The readouts come up one after another,
+ * its top follows the photo's bottom. The readouts come up one after another,
  * `delay` in, each rising a little out of a blur on `tuning.motion`'s spring, and go together as
  * the photo's close starts. Stepping to another photo rolls each value and the recipe's name
  * over to the new one, glyph by glyph on Scritto's bouncy preset, the way the step goes (`trend`); a recipe that
@@ -83,6 +83,7 @@ export function ExposureReadout({
   tuning,
   trend,
   roll,
+  slots,
 }: {
   ref: Ref<HTMLDListElement>
   photo: GalleryPhoto
@@ -95,6 +96,11 @@ export function ExposureReadout({
   trend: 1 | -1
   /** Scritto's roll, each glyph's: a duration in ms, and an easing, or its own bouncy spring. */
   roll: { duration: number; easing?: string }
+  /**
+   * Each exposure readout's least width: the widest it takes across the photos it steps between
+   * (readoutSlots), so a value that grows doesn't push the ones after it. Empty until measured.
+   */
+  slots: readonly number[]
 }) {
   const enter = useMemo(() => cssSpring(tuning.motion), [tuning.motion])
   const readouts = exposureReadouts(photo.exposure)
@@ -120,6 +126,10 @@ export function ExposureReadout({
         }
       : { transitionDuration: '150ms', transitionTimingFunction: 'ease-in' },
   })
+  const withSlot = (props: ReturnType<typeof motion>, slot: number | undefined) => ({
+    ...props,
+    style: { ...props.style, minWidth: slot },
+  })
   // Scritto's bouncier spring, which overshoots a little as each glyph lands. Its own label is an
   // image role; without it the value reads as the plain text it keeps.
   const rolling = {
@@ -135,11 +145,12 @@ export function ExposureReadout({
       ref={ref}
       // A click on it closes the photo, as one beside it does; only the recipe's link takes one,
       // and only while it shows.
-      className="pointer-events-none fixed flex flex-wrap items-baseline gap-y-1"
-      style={{ left: row.x, width: row.width, columnGap: row.gap }}
+      // Under a photo of another shape it moves to the new photo's bottom, where that differs.
+      className="pointer-events-none fixed flex flex-wrap items-baseline gap-y-1 transition-[top] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+      style={{ left: row.x, top: row.y, width: row.width, columnGap: row.gap }}
     >
       {readouts.map(({ label, value }, index) => (
-        <div key={label} {...motion(index, shown)}>
+        <div key={label} {...withSlot(motion(index, shown), slots[index])}>
           <dt className={labelClass}>{label}</dt>
           <dd className={valueClass}>
             <Scritto value={value} {...rolling} />
