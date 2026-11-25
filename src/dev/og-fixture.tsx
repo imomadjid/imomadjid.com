@@ -1,9 +1,11 @@
-import { useSyncExternalStore } from 'react'
+import { useMemo } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
 import { Logo } from '#/components/logo'
 import { defaultAmbientSettings } from '#/lib/ambient-settings'
 import type { AmbientSettings } from '#/lib/ambient-settings'
+
+import { tunedNumber, tunedSettings, useTuningQuery } from './scene-tuning'
 
 // Lit from the right: dense slats and small leaves there, blurring and tapering off into plain
 // wall to the left, as most leaf-shadow photographs do. A narrow beam aimed past the logo gives
@@ -29,48 +31,17 @@ const cardSettings: AmbientSettings = {
   foliage: { ...defaultAmbientSettings.foliage, scale: 0.75 },
 }
 
-// Tuning aid: ?wall=&logo=&opacity= and light., blinds. or foliage.<key>= (such as
-// foliage.scale=0.7) override the card's values.
-const untuned = { ...card, settings: cardSettings }
-let clientTuning: typeof untuned | undefined
-
-function tuned() {
-  const search = new URLSearchParams(location.search)
-  const read = (key: string, fallback: number) =>
-    search.has(key) ? Number(search.get(key)) : fallback
-  const settings = structuredClone(cardSettings)
-  const groups = Object.entries({
-    light: settings.light,
-    blinds: settings.blinds,
-    foliage: settings.foliage,
-  })
-  for (const [key, value] of search) {
-    const [group, name = ''] = key.split('.')
-    const values = groups.find(([named]) => named === group)?.[1]
-    if (values && name in values) Reflect.set(values, name, Number(value))
-  }
-  return {
-    wall: read('wall', card.wall),
-    logo: read('logo', card.logo),
-    opacity: read('opacity', card.opacity),
-    settings,
-  }
-}
-
-const noChanges = () => () => {}
-
 /**
  * The social card: the Sunlit wall with the logo printed in the middle, lit as the page's
  * content is. It covers the viewport; `tools/og/shoot.ts` aims the beam and captures it.
+ * ?wall=, ?logo=, ?opacity= and the scene-tuning overrides tune it.
  */
 export function OgFixture() {
-  // The server renders the defaults; the query applies after hydration, which keeps its own
-  // attributes.
-  const { wall, logo, opacity, settings } = useSyncExternalStore(
-    noChanges,
-    () => (clientTuning ??= tuned()),
-    () => untuned,
-  )
+  const query = useTuningQuery()
+  const settings = useMemo(() => tunedSettings(cardSettings, query), [query])
+  const wall = tunedNumber(query, 'wall', card.wall)
+  const logo = tunedNumber(query, 'logo', card.logo)
+  const opacity = tunedNumber(query, 'opacity', card.opacity)
   return (
     <main data-og className="fixed inset-0 isolate z-50 grid place-items-center">
       <style>{`[data-og] > div > * { top: calc(50% - ${wall / 2}px) !important; height: ${wall}px !important }`}</style>

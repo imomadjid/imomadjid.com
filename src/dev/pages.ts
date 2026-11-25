@@ -1,5 +1,6 @@
 import {
   Aperture,
+  Clapperboard,
   Component,
   GlassWater,
   Grid2x2,
@@ -52,6 +53,12 @@ export const devPages = [
     label: 'Stamps',
     icon: Stamp,
     description: 'Pick the Guestbook stamps from what Wikimedia Commons lists per country.',
+  },
+  {
+    to: '/dev/story',
+    label: 'Story',
+    icon: Clapperboard,
+    description: 'The Sunlit wall in portrait, from day to night, recorded by tools/story.',
   },
   {
     to: '/dev/surfaces',
