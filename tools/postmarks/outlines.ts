@@ -17,6 +17,7 @@ const places = [
     name: 'Depok',
     region: 'West Java',
     country: 'Indonesia',
+    countryCode: 'ID',
     query: 'Depok, Jawa Barat',
   },
   {
@@ -24,6 +25,7 @@ const places = [
     name: 'West Jakarta',
     region: 'Jakarta',
     country: 'Indonesia',
+    countryCode: 'ID',
     query: 'Jakarta Barat',
   },
   {
@@ -31,6 +33,7 @@ const places = [
     name: 'Bandung',
     region: 'West Java',
     country: 'Indonesia',
+    countryCode: 'ID',
     query: 'Kota Bandung',
   },
   {
@@ -38,6 +41,7 @@ const places = [
     name: 'Yogyakarta',
     region: 'Yogyakarta',
     country: 'Indonesia',
+    countryCode: 'ID',
     query: 'Kota Yogyakarta',
   },
   {
@@ -45,14 +49,23 @@ const places = [
     name: 'San Francisco',
     region: 'California',
     country: 'United States',
+    countryCode: 'US',
     query: 'San Francisco, California',
   },
-  { key: 'shibuya', name: 'Shibuya', region: 'Tokyo', country: 'Japan', query: 'Shibuya, Tokyo' },
+  {
+    key: 'shibuya',
+    name: 'Shibuya',
+    region: 'Tokyo',
+    country: 'Japan',
+    countryCode: 'JP',
+    query: 'Shibuya, Tokyo',
+  },
   {
     key: 'london',
     name: 'London',
     region: 'England',
     country: 'United Kingdom',
+    countryCode: 'GB',
     query: 'Greater London',
   },
   {
@@ -60,6 +73,7 @@ const places = [
     name: 'Singapore',
     region: 'Singapore',
     country: 'Singapore',
+    countryCode: 'SG',
     query: 'Singapore',
   },
 ]

@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '#/components/ui/button'
 
-import { Postmark, postmarkDesign } from './postmark'
+import { Postmark } from './postmark'
 import type { PostmarkPlace } from './postmark'
 import { checkClearance } from './postmark-clearance'
+import { families, familyNames, postmarkDesign } from './postmark-kit'
 import places from './postmark-places.json'
 
-// A first look at passport-style postmarks for the Guestbook. Each place gets one design, seeded
-// from its key (Remix designs reseeds them all); each visitor's print varies its date, angle,
-// serial and how the ink took (New visitors).
+// Postmarks for the Guestbook. Each place gets one design, seeded from its key (Remix designs
+// reseeds them all): a layout family after real postmarks and the place's pictorial, or its map
+// outline where it has none. Each visitor's print varies its date, angle, serial and how the ink
+// took (New visitors).
 
 const typedPlaces: PostmarkPlace[] = places
 
@@ -32,6 +34,7 @@ const collageSpots = [
 export function PostmarksFixture() {
   const [salt, setSalt] = useState(0)
   const [visitors, setVisitors] = useState(0)
+  const [outline, setOutline] = useState(false)
   const page = useRef<HTMLDivElement>(null)
   const [clearance, setClearance] = useState<ReturnType<typeof checkClearance>>()
 
@@ -44,16 +47,18 @@ export function PostmarksFixture() {
     return () => {
       current = false
     }
-  }, [salt, visitors])
+  }, [salt, visitors, outline])
 
   return (
     <div ref={page} className="space-y-12 pb-16">
       <header className="max-w-3xl space-y-1">
         <h1 className="text-display font-medium">Postmarks</h1>
         <p className="text-body text-muted-foreground">
-          Passport-style stamps for the Guestbook. A place&apos;s design (shape, ink, rings, how its
-          outline is drawn) is seeded from the place, so every visitor from Depok gets Depok&apos;s
-          stamp; each visitor&apos;s print varies the date, angle, serial and ink.
+          Postmarks for the Guestbook, after real ones: scenic and station stamps, special
+          handstamps, machine cancels, passport stamps. A place&apos;s design (layout, ink, its
+          pictorial) is seeded from the place, so every visitor from Depok gets Depok&apos;s stamp;
+          each visitor&apos;s print varies the date, angle, serial and ink. A place without a
+          pictorial falls back to its map outline.
         </p>
       </header>
 
@@ -64,6 +69,25 @@ export function PostmarksFixture() {
         <Button size="compact" variant="secondary" onClick={() => setSalt((value) => value + 1)}>
           Remix designs
         </Button>
+        <fieldset className="flex gap-1">
+          <legend className="sr-only">Picture</legend>
+          <Button
+            size="compact"
+            variant={outline ? 'ghost' : 'secondary'}
+            aria-pressed={!outline}
+            onClick={() => setOutline(false)}
+          >
+            Pictorials
+          </Button>
+          <Button
+            size="compact"
+            variant={outline ? 'secondary' : 'ghost'}
+            aria-pressed={outline}
+            onClick={() => setOutline(true)}
+          >
+            Map outlines
+          </Button>
+        </fieldset>
         {clearance && (
           <p
             className="self-center text-body text-muted-foreground tabular-nums"
@@ -101,7 +125,8 @@ export function PostmarksFixture() {
                 place={place}
                 visitor={visitors * 31 + index}
                 salt={salt}
-                size={170}
+                outline={outline}
+                size={128}
                 className="absolute mix-blend-multiply dark:mix-blend-screen"
                 style={{ left: `${left * 100}%`, top: `${top * 100}%` }}
               />
@@ -119,8 +144,11 @@ export function PostmarksFixture() {
               <h3 className="text-body font-medium">
                 {place.name}
                 <span className="ml-2 text-muted-foreground">
-                  {place.region}, {place.country} · {design.shape}, {design.ink.name} ink,{' '}
-                  {design.outlineStyle} outline
+                  {place.region}, {place.country} ·{' '}
+                  {design.family === 'classic'
+                    ? `${design.shape} (classic)`
+                    : familyNames[design.family]}
+                  , {design.ink.name} ink
                 </span>
               </h3>
               <div className="flex flex-wrap items-center gap-6">
@@ -130,13 +158,40 @@ export function PostmarksFixture() {
                     place={place}
                     visitor={visitors + index}
                     salt={salt}
-                    size={170}
+                    outline={outline}
+                    size={150}
                   />
                 ))}
               </div>
             </div>
           )
         })}
+      </section>
+
+      <section className="space-y-8">
+        <h2 className="text-title font-medium">Every family</h2>
+        {families.map((family, row) => (
+          <div key={family} className="space-y-3">
+            <h3 className="text-body font-medium">{familyNames[family]}</h3>
+            <div className="flex flex-wrap items-center gap-6">
+              {[0, 1, 2].map((index) => {
+                const place = typedPlaces[(row * 3 + index) % typedPlaces.length]
+                if (!place) return null
+                return (
+                  <Postmark
+                    key={place.key}
+                    place={place}
+                    family={family}
+                    visitor={visitors + index}
+                    salt={salt}
+                    outline={outline}
+                    size={150}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </section>
 
       <p className="text-caption text-muted-foreground">
