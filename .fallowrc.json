@@ -43,7 +43,8 @@
     "tools/glass-live/lag.ts",
     "tools/og/shoot.ts",
     "tools/stamps/fetch.ts",
-    "tools/stamps/import.ts"
+    "tools/stamps/import.ts",
+    "tools/story/record.ts"
   ],
   "ignoreBinaries": ["exiftool"]
 }
