@@ -6,6 +6,7 @@ import { Postmark } from './postmark'
 import type { PostmarkPlace } from './postmark'
 import { checkClearance } from './postmark-clearance'
 import { families, familyNames, postmarkDesign } from './postmark-kit'
+import { PictorialSheet } from './postmark-pictorial-sheet'
 import places from './postmark-places.json'
 
 // Postmarks for the Guestbook. Each place gets one design, seeded from its key (Remix designs
@@ -112,6 +113,16 @@ export function PostmarksFixture() {
           ))}
         </ul>
       )}
+
+      <section className="space-y-3">
+        <h2 className="text-title font-medium">Pictorials</h2>
+        <p className="max-w-3xl text-body text-muted-foreground">
+          Each place&apos;s drawing at 200 px and at 64 px, its size on the wall, with its stored
+          ink box dashed. New drawings follow tools/postmarks/pictorial-style.md and should look cut
+          by the same hand as these.
+        </p>
+        <PictorialSheet />
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-title font-medium">On the wall</h2>

@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 
 // Pictorials for the Guestbook postmarks: one subject per place, drawn as a postmark's die would
-// cut it, in one ink. Each is a 100 x 100 drawing in currentColor, set in round-capped strokes of
-// three weights (3.4 contours, 2.4 secondary lines, 1.6 to 1.8 ticks) with small solid accents,
-// following the rules in the postmark design research (scenic fukeiin and special handstamps,
-// thickened for a 60 to 70 px screen). `ink` is the drawing's measured ink box, which lettering
-// clears instead of the whole 100 x 100 box. A place without one falls back to its map outline.
+// cut it, in one ink. tools/postmarks/pictorial-style.md is the style guide every new drawing
+// follows (canvas, the three stroke weights, detail budget, subject rules, review checklist), and
+// postmark-pictorials.test.ts enforces what markup can show. `ink` is the drawing's ink box, which
+// lettering clears instead of the whole 100 x 100 box; the Pictorials sheet on /dev/postmarks
+// measures it. A place without a pictorial falls back to its map outline.
 
 export type Pictorial = {
   // What the drawing shows, for the postmark's accessible name.
