@@ -288,7 +288,7 @@ function Home() {
 
             <p className="animate-enter [--enter-index:4]">
               I want you to guess my taste in design and engineering from just playing around with
-              this portfolio. I’m the type of guy who cares less about what I’m building and more{' '}
+              this site. I’m the type of guy who cares less about what I’m building and more{' '}
               <em>how</em> to make it leave a lasting impression, something that inspires people and
               genuinely makes them look up and say “wow.”
             </p>
