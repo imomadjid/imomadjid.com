@@ -1,4 +1,5 @@
 import { coarsePointerQuery, useMediaQuery } from '#/lib/media-query'
+import { tw } from '#/lib/tw'
 
 // iOS Safari 26+ doesn't draw fixed or sticky layers under its status bar and floating toolbar:
 // only the page's flow reaches there. Worse, it hit-tests the middle of each edge, and where it
@@ -28,7 +29,7 @@ export const overlayLayer = {
 }
 
 /** A full-screen dialog backdrop's box: the viewport and 5rem past each end, so it bands no bar. */
-export const dialogCoverClass = 'fixed inset-x-0 -top-20 h-[calc(100lvh+10rem)]'
+export const dialogCoverClass = tw('fixed inset-x-0 -top-20 h-[calc(100lvh+10rem)]')
 
 /** Whether the See more overlay scrolls the page (touch screens), rather than its own popup. */
 export function useOverlayScrollsPage() {

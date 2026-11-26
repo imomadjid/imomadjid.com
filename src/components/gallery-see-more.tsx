@@ -6,12 +6,14 @@ import { useGalleryRenderer } from '#/components/use-gallery-renderer'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { GalleryWarp, WarpTuning } from '#/lib/gallery-warp'
 import { coarsePointerQuery } from '#/lib/media-query'
+import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
 
 // The See more tile's CSS zoom. Left off while the warp canvas draws the tile, so the hidden grid
 // doesn't run a layout transition and hold a layer on every hover.
-const seeMoreZoomClass =
-  'transition-[scale,inset] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:inset-0 group-hover:scale-100 group-hover:will-change-transform pointer-fine:group-focus-visible:inset-0 pointer-fine:group-focus-visible:scale-100 pointer-fine:group-focus-visible:will-change-transform motion-reduce:transition-none'
+const seeMoreZoomClass = tw(
+  'transition-[scale,inset] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:inset-0 group-hover:scale-100 group-hover:will-change-transform motion-reduce:transition-none pointer-fine:group-focus-visible:inset-0 pointer-fine:group-focus-visible:scale-100 pointer-fine:group-focus-visible:will-change-transform',
+)
 
 // A resting See more cell shows about half the tile (at most 88px of a 176px tile) and crops a
 // 3:2 photo to its short side, so it needs about 1.5x that width: 132px, or a quarter of the

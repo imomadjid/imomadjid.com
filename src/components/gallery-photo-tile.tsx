@@ -7,6 +7,7 @@ import type { GalleryPhoto } from '#/lib/gallery'
 import { decodedImage } from '#/lib/gallery-images'
 import type { PhotoZoom, PhotoZoomTuning } from '#/lib/gallery-photo-zoom'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
+import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
 
 /**
@@ -19,12 +20,14 @@ export type OpenPhoto = (photo: GalleryPhoto, tile: HTMLElement, keyboard: boole
 
 // Hides a tile at once while its photo is lifted out (data-lifted), for a takeoff or a landing,
 // and fades it while the lightbox steps away from it or to it (data-step-fade, fadeHandOff).
-const liftedTileClass =
-  'data-lifted:invisible data-lifted:opacity-0 data-step-fade:transition-[opacity,visibility] data-step-fade:duration-300 data-step-fade:ease-out'
+const liftedTileClass = tw(
+  'data-lifted:invisible data-lifted:opacity-0 data-step-fade:transition-[opacity,visibility] data-step-fade:duration-300 data-step-fade:ease-out',
+)
 
 // The CSS fallback's hover zoom, left off while the canvas draws the photo.
-const photoZoomClass =
-  'transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06] group-focus-visible:scale-[1.06] motion-reduce:transition-none'
+const photoZoomClass = tw(
+  'transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06] group-focus-visible:scale-[1.06] motion-reduce:transition-none',
+)
 
 /**
  * A photo that zooms in a little inside its frame on hover or keyboard focus, the middle first

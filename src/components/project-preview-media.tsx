@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 
+import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
 
 /** One recording: VP9 WebM first, H.264 MP4 for browsers without WebM, and its first frame. */
@@ -14,7 +15,7 @@ export type ProjectPreview =
   | { kind: 'image'; light: string; dark?: string; className?: string }
 
 // The dark variant follows the Sunlit scene's tone, so each theme's copy hides with it.
-const themeClass = { light: 'dark:hidden', dark: 'hidden dark:block' } as const
+const themeClass = { light: tw('dark:hidden'), dark: tw('hidden dark:block') }
 
 function themed<T>(light: T, dark: T | undefined) {
   return dark === undefined

@@ -53,7 +53,7 @@ Use Bun and update `bun.lock` with dependency changes. Node 26 is pinned in `.no
 
 Let Oxfmt enforce formatting. Use PascalCase for React components and camelCase for functions and variables. Follow TanStack file-based route naming. Use type-only imports where appropriate.
 
-Use Tailwind utilities for styling. Keep Oxfmt settings in `.oxfmtrc.json`, which the `oxfmt` CLI, the Oxc editor extension and `vp fmt` all read (`vite.config.ts` imports it), and format with `bun run format`. Keep Oxlint and anti-slop settings in `vite.config.ts`. Do not add Biome. Treat `tools/oxlint/anti-slop/` as vendored code.
+Use Tailwind utilities for styling, and wrap a class string kept in a constant in `tw` (`src/lib/tw.ts`) so Oxfmt sorts it. Keep Oxfmt, Oxlint, and anti-slop settings in `vite.config.ts`, which `vp fmt`, `vp lint` and the Oxc editor extension read. Format with `bun run format` (`vp fmt`), never the bare `oxfmt` binary, which doesn't read `vite.config.ts` and falls back to its defaults (double quotes, semicolons). Do not add Biome. Treat `tools/oxlint/anti-slop/` as vendored code.
 
 ## Icons
 

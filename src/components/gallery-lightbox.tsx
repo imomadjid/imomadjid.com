@@ -28,6 +28,7 @@ import { useMediaQuery } from '#/lib/media-query'
 import { fullScaleRect, revealReceded } from '#/lib/page-recede'
 import { readoutBar, readoutGrid, readoutSpace } from '#/lib/readout-layout'
 import { TILE_RADIUS } from '#/lib/see-more-grid'
+import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
 
 type Phase = 'opening' | 'open' | 'closing'
@@ -109,8 +110,9 @@ const fillHidden = {
 // On touch screens Safari bands its bars in the page's colour over a blurred backdrop
 // (src/lib/dialog-layer.ts), which leaves a seam where the blur shows darker photos. A strip of
 // that colour at each edge, fading into the blur, makes the band read as part of it.
-const edgeFadeClass =
-  'pointer-events-none fixed inset-x-0 hidden h-3 bg-surface-1 pointer-coarse:block after:absolute after:inset-x-0 after:h-12 after:from-surface-1 after:to-transparent'
+const edgeFadeClass = tw(
+  'pointer-events-none fixed inset-x-0 hidden h-3 bg-surface-1 after:absolute after:inset-x-0 after:h-12 after:from-surface-1 after:to-transparent pointer-coarse:block',
+)
 
 /**
  * The Gallery backdrop's colour and blur, in its Dialog.Backdrop (galleryBackdropClass): blurring

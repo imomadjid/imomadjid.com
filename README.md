@@ -1,8 +1,8 @@
 # imomadjid.com
 
 Personal portfolio built with TanStack Start, React 19, Tailwind CSS v4, and
-Cloudflare Workers. Bun manages dependencies. Vite+ provides Vite, Oxlint, and
-type-aware linting; Oxfmt formats; TypeScript 7 checks application types.
+Cloudflare Workers. Bun manages dependencies. Vite+ provides Vite, Oxfmt,
+Oxlint, and type-aware linting; TypeScript 7 checks application types.
 
 ## AI coding guidance
 
@@ -47,7 +47,7 @@ with the light. Without WebGPU it falls back to `.dark`.
 ## Quality checks
 
 ```bash
-bun run format        # Oxfmt: format files, sort imports and Tailwind classes
+bun run format        # Format files; sort imports and Tailwind classes
 bun run lint          # Oxlint with type-aware checks and anti-slop rules
 bun run lint:fix      # Apply safe lint fixes
 bun run typecheck     # Run TypeScript 7
@@ -66,18 +66,21 @@ For browser overflow checks, start the app and run:
 bun run audit:ui:browser http://localhost:3000
 ```
 
-Formatting rules live in `.oxfmtrc.json`, which the `oxfmt` CLI, the Oxc
-editor extension, and `vp fmt` all read; lint rules live in `vite.config.ts`.
-Oxfmt sorts Tailwind classes in JSX and `clsx`, `cn`, `cva`, and `twMerge`
-calls. All 15 generic
+Formatting and lint rules live in `vite.config.ts`. Oxfmt sorts Tailwind
+classes in `className` and in `cn`, `cva`, and `tw` calls; wrap a class string
+kept in a constant in `tw` (`src/lib/tw.ts`) so it is sorted too. All 15 generic
 anti-slop rules are enabled. Their vendored source is in
 `tools/oxlint/anti-slop/`, copied from the local `install-anti-slop` skill.
 Generated files, build output, and this vendor directory are excluded.
 Biome is not installed or configured.
 
 Install the recommended Oxc and Tailwind CSS IntelliSense editor extensions
-for format-on-save and lint fixes. Keep formatting configuration in
-`.oxfmtrc.json` and lint configuration in Vite+; don't add an `.oxlintrc.json`.
+for format-on-save and lint fixes. In a Vite+ project the Oxc extension runs
+`vp fmt --lsp` and `vp lint --lsp`, so it reads the same `vite.config.ts`.
+Keep formatting and lint configuration in Vite+ rather than adding separate
+Oxc configuration files, and format through `vp fmt` (`bun run format`): the
+bare `oxfmt` binary doesn't read `vite.config.ts` and falls back to its
+defaults.
 
 ## Fluid Functionalism
 

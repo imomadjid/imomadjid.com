@@ -2,6 +2,7 @@ import type { TransitionConfig } from 'dialkit'
 
 import { cssSpring } from '#/lib/flight-springs'
 import type { Rect } from '#/lib/gallery-flight-geometry'
+import { tw } from '#/lib/tw'
 
 export type RecedeTuning = {
   /** How small the page gets behind an open Gallery dialog: 0.94 is 94%. */
@@ -16,8 +17,9 @@ export type RecedeTuning = {
  * The classes that let a `[data-recede]` wrapper shrink: it scales only while `data-receded`, so
  * it forms a stacking context only then, and not at all with reduced motion.
  */
-export const recedeClass =
-  'origin-(--recede-origin) transition-[scale] duration-(--recede-duration) ease-(--recede-ease) motion-safe:data-receded:scale-(--recede-scale)'
+export const recedeClass = tw(
+  'origin-(--recede-origin) transition-[scale] duration-(--recede-duration) ease-(--recede-ease) motion-safe:data-receded:scale-(--recede-scale)',
+)
 
 /**
  * Shrinks the `[data-recede]` wrapper that holds `from` (the page below About in

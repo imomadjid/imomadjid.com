@@ -8,12 +8,14 @@ import { cssSpring, cssTransition } from '#/lib/flight-springs'
 import type { GalleryPhoto } from '#/lib/gallery'
 import type { GalleryTuning } from '#/lib/gallery-settings'
 import type { ReadoutRow } from '#/lib/readout-layout'
+import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
 
 // A cell: its label over its value, as a camera's info display stacks them.
-const cellClass = 'flex flex-col gap-0.5 whitespace-nowrap'
-const labelClass =
-  'text-[10px] leading-3.5 font-semibold tracking-[0.08em] text-foreground/50 uppercase dark:text-yellow-400'
+const cellClass = tw('flex flex-col gap-0.5 whitespace-nowrap')
+const labelClass = tw(
+  'text-[10px] leading-3.5 font-semibold tracking-[0.08em] text-foreground/50 uppercase dark:text-yellow-400',
+)
 const valueClass = cn(
   'text-sm leading-5 font-medium text-neutral-950 dark:text-white',
   figuresClass,
