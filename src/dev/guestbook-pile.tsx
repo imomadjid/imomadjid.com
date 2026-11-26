@@ -12,15 +12,27 @@ import { Postmark } from './postmark'
 // off the sides and the foot, which darkens a little and goes out of focus under the footer that
 // `children` lays over it. Once full, the pile reaches up to just under the page's contents.
 
-// The foot of the pile blurs by blurring each stamp, by how far into the fade its centre lies,
-// rather than with backdrop-filter. The stamps don't move, so a stamp's filter is painted once
-// into the page's tiles, and scrolling or the Sunlit light's frames cost nothing more. A
-// backdrop-filter is the compositor's to run, every frame the light changes, across the whole
-// width of the fade; it suits a backdrop that moves, which this one doesn't. Stamps lie at every
-// depth, so the blur still deepens smoothly down the pile.
-function stampBlur(into: number, settings: PileSettings, stamp: number) {
-  const radius = settings.foot.blur * (stamp / 124) * into ** settings.foot.blurCurve
-  return radius < 0.25 ? undefined : `blur(${radius.toFixed(2)}px)`
+// The foot of the pile goes out of focus through a backdrop blur across the whole width, as
+// skiper41 does it: masked in from the top of the fade, and full over its lower part. A
+// backdrop-filter is the compositor's to run again every frame the Sunlit light changes, so it
+// takes one layer by default; more layers start lower and blur harder (each blurs what the ones
+// before it already blurred), so the blur itself grows toward the foot, at a pass each.
+function blurLayers(settings: PileSettings) {
+  const { blur, solid } = settings.foot
+  const count = Math.max(1, Math.round(settings.foot.layers))
+  const ramp = 1 - solid
+  return Array.from({ length: count }, (_, layer) => {
+    // Stacked blurs add as the root of their squares' sum: halving each layer's radius on the way
+    // up keeps the foot at `blur`.
+    const radius = (blur * 2 ** (layer - count + 1)) / Math.sqrt(4 / 3 - 4 ** (1 - count) / 3)
+    // Each layer fades in over its own share of the ramp, the strongest lowest.
+    const start = (ramp * layer) / count
+    const end = (ramp * (layer + 1)) / count
+    return {
+      radius,
+      mask: `linear-gradient(to bottom, transparent ${start * 100}%, black ${end * 100}%)`,
+    }
+  })
 }
 
 /**
@@ -111,7 +123,6 @@ export function GuestbookPile({
           [...spots].reverse().map(({ index, across, down }) => {
             const record = records[index]
             if (!record) return null
-            const into = Math.min(1, Math.max(0, (down - (height - fade)) / fade))
             return (
               <Postmark
                 key={index}
@@ -129,11 +140,23 @@ export function GuestbookPile({
                   left: `${across * 100}%`,
                   top: down,
                   translate: '-50% -50%',
-                  filter: stampBlur(into, settings, stamp),
                 }}
               />
             )
           })}
+        {settings.foot.blur > 0 &&
+          blurLayers(settings).map(({ radius, mask }) => (
+            <div
+              key={mask}
+              className="pointer-events-none absolute inset-x-0 bottom-0"
+              style={{
+                height: fade,
+                backdropFilter: `blur(${radius.toFixed(2)}px)`,
+                WebkitBackdropFilter: `blur(${radius.toFixed(2)}px)`,
+                maskImage: mask,
+              }}
+            />
+          ))}
         {(['light', 'dark'] as const).map((scheme) => (
           <div
             key={scheme}

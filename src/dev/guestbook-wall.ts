@@ -102,11 +102,16 @@ export const pileControls = {
   /** The foot of the pile, darkening a little and going out of focus under the footer. */
   foot: {
     /** How much of the pile the fade covers, from its foot up. */
-    fade: [0.5, 0.1, 1, 0.01],
-    /** The softest stamps' blur radius at the foot, in px on a 124 px stamp. */
-    blur: [10, 0, 32, 0.5],
-    /** How steeply the blur comes in: 1 evenly, higher keeps more of the fade sharp. */
-    blurCurve: [2, 0.5, 5, 0.1],
+    fade: [0.6, 0.1, 1, 0.01],
+    /** The blur at the foot, in px. Each layer of it costs the compositor a pass every frame. */
+    blur: [8, 0, 24, 0.5],
+    /**
+     * How many blur layers build it up: 1 fades a single blur in, as skiper41 does; more start
+     * lower and blur harder, so the blur itself grows toward the foot, at a pass each.
+     */
+    layers: [1, 1, 4, 1],
+    /** How much of the fade, from the foot up, is at the full blur. */
+    solid: [0.5, 0, 0.9, 0.01],
     /** How dark the foot gets, light and dark. */
     darken: [0.15, 0, 0.6, 0.01],
     darkenDark: [0.45, 0, 0.9, 0.01],
@@ -135,7 +140,8 @@ export const pileSettings: PileSettings = {
   foot: {
     fade: foot.fade[0],
     blur: foot.blur[0],
-    blurCurve: foot.blurCurve[0],
+    layers: foot.layers[0],
+    solid: foot.solid[0],
     darken: foot.darken[0],
     darkenDark: foot.darkenDark[0],
   },
