@@ -15,9 +15,9 @@ import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as DevComponentsRouteImport } from './routes/dev/components'
 import { Route as DevGalleryWarpRouteImport } from './routes/dev/gallery-warp'
 import { Route as DevGlassRouteImport } from './routes/dev/glass'
-import { Route as DevGuestbookRouteImport } from './routes/dev/guestbook'
 import { Route as DevLiveGlassRouteImport } from './routes/dev/live-glass'
 import { Route as DevOgRouteImport } from './routes/dev/og'
+import { Route as DevPostmarkFooterRouteImport } from './routes/dev/postmark-footer'
 import { Route as DevPostmarksRouteImport } from './routes/dev/postmarks'
 import { Route as DevStampsRouteImport } from './routes/dev/stamps'
 import { Route as DevStoryRouteImport } from './routes/dev/story'
@@ -53,11 +53,6 @@ const DevGlassRoute = DevGlassRouteImport.update({
   path: '/glass',
   getParentRoute: () => DevRouteRoute,
 } as any)
-const DevGuestbookRoute = DevGuestbookRouteImport.update({
-  id: '/guestbook',
-  path: '/guestbook',
-  getParentRoute: () => DevRouteRoute,
-} as any)
 const DevLiveGlassRoute = DevLiveGlassRouteImport.update({
   id: '/live-glass',
   path: '/live-glass',
@@ -66,6 +61,11 @@ const DevLiveGlassRoute = DevLiveGlassRouteImport.update({
 const DevOgRoute = DevOgRouteImport.update({
   id: '/og',
   path: '/og',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevPostmarkFooterRoute = DevPostmarkFooterRouteImport.update({
+  id: '/postmark-footer',
+  path: '/postmark-footer',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevPostmarksRoute = DevPostmarksRouteImport.update({
@@ -95,9 +95,9 @@ export interface FileRoutesByFullPath {
   '/dev/components': typeof DevComponentsRoute
   '/dev/gallery-warp': typeof DevGalleryWarpRoute
   '/dev/glass': typeof DevGlassRoute
-  '/dev/guestbook': typeof DevGuestbookRoute
   '/dev/live-glass': typeof DevLiveGlassRoute
   '/dev/og': typeof DevOgRoute
+  '/dev/postmark-footer': typeof DevPostmarkFooterRoute
   '/dev/postmarks': typeof DevPostmarksRoute
   '/dev/stamps': typeof DevStampsRoute
   '/dev/story': typeof DevStoryRoute
@@ -109,9 +109,9 @@ export interface FileRoutesByTo {
   '/dev/components': typeof DevComponentsRoute
   '/dev/gallery-warp': typeof DevGalleryWarpRoute
   '/dev/glass': typeof DevGlassRoute
-  '/dev/guestbook': typeof DevGuestbookRoute
   '/dev/live-glass': typeof DevLiveGlassRoute
   '/dev/og': typeof DevOgRoute
+  '/dev/postmark-footer': typeof DevPostmarkFooterRoute
   '/dev/postmarks': typeof DevPostmarksRoute
   '/dev/stamps': typeof DevStampsRoute
   '/dev/story': typeof DevStoryRoute
@@ -125,9 +125,9 @@ export interface FileRoutesById {
   '/dev/components': typeof DevComponentsRoute
   '/dev/gallery-warp': typeof DevGalleryWarpRoute
   '/dev/glass': typeof DevGlassRoute
-  '/dev/guestbook': typeof DevGuestbookRoute
   '/dev/live-glass': typeof DevLiveGlassRoute
   '/dev/og': typeof DevOgRoute
+  '/dev/postmark-footer': typeof DevPostmarkFooterRoute
   '/dev/postmarks': typeof DevPostmarksRoute
   '/dev/stamps': typeof DevStampsRoute
   '/dev/story': typeof DevStoryRoute
@@ -142,9 +142,9 @@ export interface FileRouteTypes {
     | '/dev/components'
     | '/dev/gallery-warp'
     | '/dev/glass'
-    | '/dev/guestbook'
     | '/dev/live-glass'
     | '/dev/og'
+    | '/dev/postmark-footer'
     | '/dev/postmarks'
     | '/dev/stamps'
     | '/dev/story'
@@ -156,9 +156,9 @@ export interface FileRouteTypes {
     | '/dev/components'
     | '/dev/gallery-warp'
     | '/dev/glass'
-    | '/dev/guestbook'
     | '/dev/live-glass'
     | '/dev/og'
+    | '/dev/postmark-footer'
     | '/dev/postmarks'
     | '/dev/stamps'
     | '/dev/story'
@@ -171,9 +171,9 @@ export interface FileRouteTypes {
     | '/dev/components'
     | '/dev/gallery-warp'
     | '/dev/glass'
-    | '/dev/guestbook'
     | '/dev/live-glass'
     | '/dev/og'
+    | '/dev/postmark-footer'
     | '/dev/postmarks'
     | '/dev/stamps'
     | '/dev/story'
@@ -230,13 +230,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevGlassRouteImport
       parentRoute: typeof DevRouteRoute
     }
-    '/dev/guestbook': {
-      id: '/dev/guestbook'
-      path: '/guestbook'
-      fullPath: '/dev/guestbook'
-      preLoaderRoute: typeof DevGuestbookRouteImport
-      parentRoute: typeof DevRouteRoute
-    }
     '/dev/live-glass': {
       id: '/dev/live-glass'
       path: '/live-glass'
@@ -249,6 +242,13 @@ declare module '@tanstack/react-router' {
       path: '/og'
       fullPath: '/dev/og'
       preLoaderRoute: typeof DevOgRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/postmark-footer': {
+      id: '/dev/postmark-footer'
+      path: '/postmark-footer'
+      fullPath: '/dev/postmark-footer'
+      preLoaderRoute: typeof DevPostmarkFooterRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/postmarks': {
@@ -286,9 +286,9 @@ interface DevRouteRouteChildren {
   DevComponentsRoute: typeof DevComponentsRoute
   DevGalleryWarpRoute: typeof DevGalleryWarpRoute
   DevGlassRoute: typeof DevGlassRoute
-  DevGuestbookRoute: typeof DevGuestbookRoute
   DevLiveGlassRoute: typeof DevLiveGlassRoute
   DevOgRoute: typeof DevOgRoute
+  DevPostmarkFooterRoute: typeof DevPostmarkFooterRoute
   DevPostmarksRoute: typeof DevPostmarksRoute
   DevStampsRoute: typeof DevStampsRoute
   DevStoryRoute: typeof DevStoryRoute
@@ -300,9 +300,9 @@ const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevComponentsRoute: DevComponentsRoute,
   DevGalleryWarpRoute: DevGalleryWarpRoute,
   DevGlassRoute: DevGlassRoute,
-  DevGuestbookRoute: DevGuestbookRoute,
   DevLiveGlassRoute: DevLiveGlassRoute,
   DevOgRoute: DevOgRoute,
+  DevPostmarkFooterRoute: DevPostmarkFooterRoute,
   DevPostmarksRoute: DevPostmarksRoute,
   DevStampsRoute: DevStampsRoute,
   DevStoryRoute: DevStoryRoute,

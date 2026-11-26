@@ -9,7 +9,6 @@ import { ProfileAvatar } from '#/components/profile-avatar'
 import { ProjectList } from '#/components/project-list'
 import type { Project } from '#/components/project-list'
 import { Signature } from '#/components/signature'
-import { SiteFooter } from '#/components/site-footer'
 import { TableOfContents } from '#/components/table-of-contents'
 import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
@@ -176,12 +175,13 @@ const projects = [
 // Lazy, so the first load carries neither its code nor its photos.
 const GallerySection = lazy(() => import('#/components/gallery'))
 
-// The Guestbook, a pile of visitors' postmarks under the footer, shows only with the dev tools
-// until it has real visitors, so merging dev into master never puts it on imomadjid.com.
-const GuestbookFooter = import.meta.env.DEV_TOOLS
+// The postmark footer, a pile of visitors' postmarks at the foot of the page, shows only with
+// the dev tools until it has real visitors, so merging dev into master never puts it on
+// imomadjid.com.
+const PostmarkFooter = import.meta.env.DEV_TOOLS
   ? lazy(() =>
-      import('#/dev/guestbook-footer').then(({ GuestbookFooter }) => ({
-        default: GuestbookFooter,
+      import('#/dev/postmark-footer').then(({ PostmarkFooter }) => ({
+        default: PostmarkFooter,
       })),
     )
   : undefined
@@ -328,12 +328,13 @@ function Home() {
             </Suspense>
           </Section>
 
-          {GuestbookFooter ? (
-            <Suspense fallback={<SiteFooter />}>
-              <GuestbookFooter />
+          {/* The page ends 8rem past the Gallery, or at the postmark footer's foot. */}
+          {PostmarkFooter ? (
+            <Suspense fallback={<div className="h-32" />}>
+              <PostmarkFooter />
             </Suspense>
           ) : (
-            <SiteFooter />
+            <div className="h-32" />
           )}
         </div>
       </div>

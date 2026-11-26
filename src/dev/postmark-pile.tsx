@@ -1,17 +1,16 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 
 import { cn } from '#/lib/utils'
 
-import { pileLayout, pileSettings } from './guestbook-wall'
-import type { StampRecord } from './guestbook-wall'
-import { YouNote } from './guestbook-you'
 import { Postmark } from './postmark'
+import { pileLayout, pileSettings } from './postmark-visits'
+import type { StampRecord } from './postmark-visits'
+import { YouNote } from './postmark-you'
 
-// The Guestbook's pile at the foot of the page (guestbook-wall.ts): the newest stamps on top,
-// spread out enough that every name shows, the older ones packed tighter as they sink, running
-// off the sides and the foot, which darkens a little and goes out of focus under the footer that
-// `children` lays over it. Once full, the pile reaches up to just under the page's contents.
+// The postmark footer's pile at the foot of the page (postmark-visits.ts): the newest stamps on
+// top, spread out enough that every name shows, the older ones packed tighter as they sink,
+// running off the sides and the foot, which darkens a little and goes out of focus. Once full,
+// the pile reaches up to just under the page's contents.
 
 // How wide a round postmark shows: a phone's pile is narrower, so its stamps are smaller.
 function stampSize(width: number) {
@@ -67,22 +66,20 @@ function useFrame() {
   return [element, width, Math.max(1, room)] as const
 }
 
-export function GuestbookPile({
+export function PostmarkPile({
   records,
   you,
   bleed = true,
   className,
-  children,
 }: {
   // Every stamp so far, oldest first.
   records: readonly StampRecord[]
-  // The visitor's own stamp, by its place in the Guestbook: it lies at the top in the middle,
+  // The visitor's own stamp, by its place among the visitors: it lies at the top in the middle,
   // with "you!" written beside it, however long ago they first came.
   you?: number
-  // Span the viewport's width from inside the page's column, as the homepage's footer does.
+  // Span the viewport's width from inside the page's column, as the homepage's does.
   bleed?: boolean
   className?: string
-  children?: ReactNode
 }) {
   const id = useId().replace(/[^\w-]/g, '')
   const [element, width, room] = useFrame()
@@ -91,7 +88,7 @@ export function GuestbookPile({
     () => pileLayout(records.length, width, stamp, room, you),
     [records.length, width, stamp, room, you],
   )
-  // The darkening covers the blur's fade, and at least the footer's row.
+  // The darkening covers the blur's fade, at least the bottom 120 px.
   const fade = Math.max(120, height * fadeShare)
   // Deepest first, so the newest lie on top, and the visitor's own over them all.
   const deepestFirst = spots.filter((spot) => !spot.you).reverse()
@@ -100,7 +97,7 @@ export function GuestbookPile({
 
   return (
     <section
-      aria-label="Guestbook"
+      aria-label="Visitors' postmarks"
       // Full width from inside the page's column; main clips the overhang a scrollbar adds.
       className={cn(bleed ? 'relative ml-[calc(50%-50vw)] w-screen' : 'relative w-full', className)}
     >
@@ -186,11 +183,6 @@ export function GuestbookPile({
           }}
         />
       </div>
-      {children && (
-        <div className="absolute inset-x-0 bottom-0 flex justify-center px-6">
-          <div className="w-full max-w-[34rem]">{children}</div>
-        </div>
-      )}
     </section>
   )
 }

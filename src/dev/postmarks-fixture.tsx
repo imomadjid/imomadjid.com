@@ -15,7 +15,7 @@ import places from './postmark-places.json'
 import { stressPlaces } from './postmark-stress-places'
 import { PostmarkSweep } from './postmark-sweep'
 
-// Postmarks for the Guestbook, dealt per visitor (postmark-deal.ts). A city has a house style
+// Postmarks for the postmark footer, dealt per visitor (postmark-deal.ts). A city has a house style
 // (an ink and three or four frame families that letter its name readably); each visitor gets the
 // next family and pictorial from the city's shuffle bags, the pictorials drawn from the city, its
 // region and its country, plus their own lettering, date format, ornaments, border and print
@@ -84,7 +84,7 @@ export function PostmarksFixture() {
         <header className="max-w-3xl space-y-1">
           <h1 className="text-display font-medium">Postmarks</h1>
           <p className="text-body text-muted-foreground">
-            Postmarks for the Guestbook, after real ones: scenic and station stamps, special
+            Postmarks for the postmark footer, after real ones: scenic and station stamps, special
             handstamps, machine cancels, passport stamps. Each city has a house style, an ink and
             three or four frames that letter its name readably, so its stamps read as related; each
             visitor is dealt the next frame and pictorial from the city&apos;s shuffle bags, with

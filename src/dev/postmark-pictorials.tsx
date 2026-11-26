@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-// Pictorials for the Guestbook postmarks, drawn as a postmark's die would cut it, in one ink. Each
+// Pictorials for the postmark footer's postmarks, drawn as a postmark's die would cut it, in one ink. Each
 // belongs to the places its `scopes` name, at three levels: a city (`city:<place key>`), a region
 // (`region:<country code>:<region>`, as Cloudflare names it) and a country (`country:<code>`). A
 // visitor's pictorial is dealt from every drawing their city, region and country have

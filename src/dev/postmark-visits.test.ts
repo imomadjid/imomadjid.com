@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { wallPlaces } from './guestbook-places'
-import { fakeArrivals, pileLayout, pileSettings, stampRecords } from './guestbook-wall'
+import { visitorPlaces } from './postmark-visitor-places'
+import { fakeArrivals, pileLayout, pileSettings, stampRecords } from './postmark-visits'
 
-void test('a longer guestbook starts with the shorter one, stamped the same', () => {
-  const shorter = stampRecords(fakeArrivals(50, wallPlaces))
-  const longer = stampRecords(fakeArrivals(400, wallPlaces))
+void test('a longer list of visitors starts with the shorter one, stamped the same', () => {
+  const shorter = stampRecords(fakeArrivals(50, visitorPlaces))
+  const longer = stampRecords(fakeArrivals(400, visitorPlaces))
   for (const [index, record] of shorter.entries()) {
     assert.deepEqual(record, longer[index])
   }
@@ -27,7 +27,7 @@ void test('the newest stamp lies on top, and stamps sink as visitors arrive', ()
   assert.ok(after.height >= before.height)
 })
 
-void test('a short guestbook makes a short pile, its stamps whole', () => {
+void test('a few visitors make a short pile, its stamps whole', () => {
   const { spots, height } = pileLayout(6, 1200, 124, 600)
   assert.equal(spots.length, 6)
   assert.ok(height < 600)
@@ -81,4 +81,16 @@ void test("the visitor's own stamp lies at the top in the middle, and only there
   // The rest are the newest, as without it.
   const others = spots.filter((spot) => !spot.you).map((spot) => spot.index)
   assert.equal(others[0], 299)
+})
+
+void test("no stamp lands on the visitor's own, however the visitors come", () => {
+  for (let count = 2; count < 400; count += 1) {
+    const { spots } = pileLayout(count, 1200, 124, 600, count - 1)
+    const [yours, ...others] = spots
+    assert.ok(yours?.you)
+    for (const spot of others) {
+      const apart = Math.max(Math.abs(spot.across - 0.5) * 1200, spot.down - yours.down)
+      assert.ok(apart >= 124 * 0.95, `stamp ${spot.index} of ${count} sits on yours`)
+    }
+  }
 })

@@ -6,9 +6,9 @@
    src/dev/dev.css. Drop a file from these lists once a production page renders it, and move
    any FF runtime CSS it needs (spinner keyframes, scroll fades) from dev.css into this file. */
 @source not './dev';
-/* The Guestbook's pile renders under the homepage's footer with the dev tools, so its classes
+/* The postmark footer renders at the foot of the homepage with the dev tools, so its classes
    are the site's own; it costs production a few unused rules until it ships. */
-@source './dev/{guestbook-footer,guestbook-pile,guestbook-you,postmark}.tsx';
+@source './dev/{postmark-footer,postmark-pile,postmark-you,postmark}.tsx';
 @source not './hooks';
 @source not './components/fluid-hover-highlight.tsx';
 @source not './components/ui/{badge,button,checkbox,field,input,radio-group,scroll-area,sidebar,sidebar-core,sidebar-menu,slider,switch,textarea,tooltip}.tsx';

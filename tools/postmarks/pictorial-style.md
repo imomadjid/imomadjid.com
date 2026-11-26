@@ -1,6 +1,6 @@
 # Postmark pictorials: style guide
 
-Every Guestbook postmark carries a pictorial of the visitor's place, drawn as a postmark die would cut it: one ink, line first, a single subject. Many hands (people and agents) will add pictorials over time. On a shared wall they must look as if one engraver cut them all, so this guide is a contract, not a mood.
+Every postmark in the postmark footer carries a pictorial of the visitor's place, drawn as a postmark die would cut it: one ink, line first, a single subject. Many hands (people and agents) will add pictorials over time. On a shared wall they must look as if one engraver cut them all, so this guide is a contract, not a mood.
 
 The look comes from Japan Post's scenic postmarks (風景印, fūkeiin) and Deutsche Post's special handstamps, thickened for a screen. Postal dies print lines of 0.2–0.4 mm on a 35 mm stamp, which would vanish on a 64 px screen tile, so every line here is about 2–2.5 times the die's relative weight.
 

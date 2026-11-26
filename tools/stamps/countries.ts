@@ -1,4 +1,4 @@
-// Countries whose postage stamps the Guestbook draws from, keyed by ISO 3166-1 alpha-2 code, as
+// Countries whose postage stamps the postmark footer draws from, keyed by ISO 3166-1 alpha-2 code, as
 // Cloudflare reports a visitor's country. Each lists the Wikimedia Commons category that holds
 // one subcategory per year ("1971 stamps of Indonesia").
 export type Country = {

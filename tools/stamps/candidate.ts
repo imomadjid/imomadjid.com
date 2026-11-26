@@ -1,4 +1,4 @@
-// One Commons file that could become a Guestbook stamp, as fetch.ts records it and the
+// One Commons file that could become a postmark footer stamp, as fetch.ts records it and the
 // /dev/stamps review page reads it.
 export type Candidate = {
   // Commons file name, without the "File:" prefix.

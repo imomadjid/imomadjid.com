@@ -39,11 +39,11 @@ export const devPages = [
     description: 'Static liquid glass on Button, matched against an iOS 26 capture.',
   },
   {
-    to: '/dev/guestbook',
-    label: 'Guestbook pile',
+    to: '/dev/postmark-footer',
+    label: 'Postmark footer',
     icon: BookOpen,
     description:
-      "The Guestbook's pile of postmarks under the footer, filled with made-up visitors.",
+      "The pile of visitors' postmarks at the foot of the homepage, filled with made-up visitors.",
   },
   {
     to: '/dev/live-glass',
@@ -62,13 +62,13 @@ export const devPages = [
     label: 'Postmarks',
     icon: MapPin,
     description:
-      'Passport-style Guestbook postmarks, one design per place and a print per visitor.',
+      'Passport-style postmarks for the postmark footer, one design per place and a print per visitor.',
   },
   {
     to: '/dev/stamps',
     label: 'Stamps',
     icon: Stamp,
-    description: 'Pick the Guestbook stamps from what Wikimedia Commons lists per country.',
+    description: "Pick the postmark footer's stamps from what Wikimedia Commons lists per country.",
   },
   {
     to: '/dev/story',

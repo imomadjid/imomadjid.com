@@ -8,7 +8,7 @@ import type { Candidate } from '../../tools/stamps/candidate.ts'
 import { countries } from '../../tools/stamps/countries.ts'
 import type { CountryKey } from '../../tools/stamps/countries.ts'
 
-// Picks the Guestbook's stamps from what tools/stamps/fetch.ts listed on Wikimedia Commons. Tap a
+// Picks the postmark footer's stamps from what tools/stamps/fetch.ts listed on Wikimedia Commons. Tap a
 // stamp to keep it; Copy keep list gives the text for tools/stamps/keep/<country>.txt, which
 // tools/stamps/import.ts turns into site assets. Picks persist in this browser until then.
 
@@ -149,8 +149,8 @@ export function StampsFixture() {
         <h1 className="text-display font-medium">Stamps</h1>
         <p className="text-body text-muted-foreground">
           Every stamp Wikimedia Commons lists for a country, from tools/stamps/fetch.ts. Tap the
-          ones the Guestbook should use: landmarks, food, animals, scenes. Copy keep list gives the
-          text for tools/stamps/keep/{country}.txt.
+          ones the postmark footer should use: landmarks, food, animals, scenes. Copy keep list
+          gives the text for tools/stamps/keep/{country}.txt.
         </p>
       </header>
 

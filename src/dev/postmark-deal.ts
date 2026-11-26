@@ -104,7 +104,7 @@ export type HouseStyle = { ink: InkName; families: Family[] }
 export function houseStyle(place: PostmarkPlace, salt: number): HouseStyle {
   const next = generator(hash(`${place.key}:${salt}:house`))
   const ink = pick(next, axisValues.ink)
-  // A guestbook stamp says where its visitor came from, so a family that letters no name (mute)
+  // A visitor's stamp says where its visitor came from, so a family that letters no name (mute)
   // stays out of every house.
   const naming = families.filter((family) => Number.isFinite(smallestName(family, place)))
   const legible = naming.filter((family) => smallestName(family, place) >= readableName)

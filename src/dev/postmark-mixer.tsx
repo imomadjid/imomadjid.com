@@ -4,7 +4,7 @@ import { Postmark } from './postmark'
 import { accepts, axisValues, families, familyNames, postmarkStyle } from './postmark-kit'
 import type { Axis, Family, PostmarkPlace, Style } from './postmark-kit'
 
-// Assembles one place's postmark from a family and a choice on each style axis, as the Guestbook
+// Assembles one place's postmark from a family and a choice on each style axis, as the postmark footer
 // will at run time. Options a family doesn't accept are disabled; left on the place's own, an
 // axis keeps its seeded choice.
 

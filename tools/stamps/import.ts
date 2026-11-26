@@ -1,4 +1,4 @@
-// Turns a country's keep list into Guestbook assets: each kept Commons stamp becomes
+// Turns a country's keep list into postmark footer assets: each kept Commons stamp becomes
 // src/assets/stamps/<country>/<slug>-160.webp and -320.webp (never upscaled, metadata stripped),
 // and stamps.json records its size, title and source. Stamps no longer kept are removed.
 //

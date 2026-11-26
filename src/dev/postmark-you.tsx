@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
-// "you!" written beside the visitor's own stamp at the top of the Guestbook's pile, with a drawn
+// "you!" written beside the visitor's own stamp at the top of the postmark footer's pile, with a drawn
 // arrow down onto it, in the hand and ink of the blind wand's note (src/components/wand-hint.tsx).
 // It writes itself in the first time the pile comes into view, once its font has loaded, and
 // stays. The hand's font is cut to lowercase (src/styles.css), so the word is too. Lengths are

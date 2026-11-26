@@ -24,7 +24,7 @@ const find = (key: string) => {
   return place
 }
 
-export const wallPlaces: { place: PostmarkPlace; weight: number }[] = [
+export const visitorPlaces: { place: PostmarkPlace; weight: number }[] = [
   { place: find('depok'), weight: 24 },
   { place: find('jakarta-barat'), weight: 9 },
   { place: extra('jakarta-selatan', 'South Jakarta', 'Jakarta', 'Indonesia', 'ID'), weight: 7 },

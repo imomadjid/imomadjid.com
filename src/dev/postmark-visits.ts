@@ -3,7 +3,7 @@ import type { Deal } from './postmark-deal'
 import { generator, hash, visitorPrint } from './postmark-kit'
 import type { PostmarkPlace, Print } from './postmark-kit'
 
-// The Guestbook is a pile of postmarks at the foot of the page. Each visitor's stamp is saved
+// The postmark footer is a pile of visitors' postmarks at the foot of the page. Each visitor's stamp is saved
 // when they arrive (its deal and its print), so drawings added later never change it; the
 // backend will store these records as they are. The newest stamp lies on top of the pile, the
 // older ones under it, packed tighter the older they are: the last few dozen visitors read
@@ -18,7 +18,7 @@ export type Arrival = {
 }
 
 export type StampRecord = Arrival & {
-  // Its place in the Guestbook, 0 for the first visitor.
+  // Its place among the visitors, 0 for the first.
   index: number
   deal: Deal
   print: Print
@@ -37,7 +37,7 @@ export function stampRecords(arrivals: readonly Arrival[], salt = 0): StampRecor
 /**
  * Made-up visitors for the prototype: `count` arrivals from 2026 on, one every six hours, each
  * from a place drawn by weight and numbered among their place's visitors in the order they came.
- * A longer list starts with the shorter one, as a real guestbook only grows.
+ * A longer list starts with the shorter one, as real visits only add up.
  */
 export function fakeArrivals(
   count: number,
@@ -77,7 +77,7 @@ export const pileSettings = {
   // How far a stamp may hang off the sides, as a share of its width.
   bleed: 0.4,
   // How far past the pile's foot stamps keep lying, in stamps' widths. They're drawn without
-  // taking up room (guestbook-pile.tsx), so a scroll that bounces past the page's end still finds
+  // taking up room (postmark-pile.tsx), so a scroll that bounces past the page's end still finds
   // the pile there.
   runOut: 1,
   // The deepest stamp drawn.
@@ -86,12 +86,15 @@ export const pileSettings = {
 
 export type PileSettings = typeof pileSettings
 
+// How far apart, in stamps, the visitor's own stamp and any other keep their centres.
+const clearance = 0.95
+
 // The golden ratio's fraction: stepping by it spreads consecutive stamps across the width as
 // evenly as any sequence can, and a stamp keeps its spot however many arrive after it.
 const golden = 0.6180339887498949
 
 type PileSpot = {
-  // The stamp's place in the Guestbook.
+  // The stamp's place among the visitors.
   index: number
   // Its centre: across as a share of the pile's width (past 0 or 1 where it hangs off a side),
   // down in px from the pile's top.
@@ -129,10 +132,11 @@ export function pileLayout(
   // The last stamps lie past the foot, where the page ends.
   const end = room + stamp * runOut
   // A little over half a stamp, so a turned stamp's corners clear the top edge.
-  let down = stamp * 0.6
+  const first = stamp * 0.6
+  let down = first
   const pinned = you !== undefined && you >= 0 && you < count ? you : undefined
   const spots: PileSpot[] =
-    pinned === undefined ? [] : [{ index: pinned, across: 0.5, down, you: true }]
+    pinned === undefined ? [] : [{ index: pinned, across: 0.5, down: first, you: true }]
   let index = count
   for (let depth = 0; depth < shown && down <= end; depth += 1) {
     index -= 1
@@ -140,10 +144,17 @@ export function pileLayout(
     if (index < 0) break
     const next = generator(hash(`pile:${index}`))
     const spread = (index * golden + next() * 0.08) % 1
+    const x = from + spread * span
+    const jittered = down + (next() - 0.5) * stamp * 0.1
     spots.push({
       index,
-      across: (from + spread * span) / Math.max(1, width),
-      down: down + (next() - 0.5) * stamp * 0.1,
+      across: x / Math.max(1, width),
+      // One that would land on the visitor's own stamp sinks just under it instead, so theirs
+      // reads clearly.
+      down:
+        pinned !== undefined && Math.abs(x - width / 2) < stamp * clearance
+          ? Math.max(jittered, first + stamp * clearance)
+          : jittered,
     })
     // Stamps pack tighter with the stamps above them or with how far down the pile they lie,
     // whichever is further along, so a short pile still reaches its dense layer at its foot.

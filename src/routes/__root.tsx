@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 
 import { overlayLayerId } from '#/lib/dialog-layer'
 import { ShapeProvider } from '#/lib/shape-context'
-import { SOUND_SCRIPT, startSounds } from '#/lib/sound'
+import { startSounds } from '#/lib/sound'
 import { SurfaceProvider } from '#/lib/surface-context'
 import { textLinkClass } from '#/lib/text-link'
 import { THEME_SCRIPT } from '#/lib/theme'
@@ -62,7 +62,6 @@ function RootDocument({ children }: { children: ReactNode }) {
         {/* The script inlines a function's compiled source, which differs between the server
             and client bundles. It only matters on the server: it has run before hydration. */}
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: SOUND_SCRIPT }} />
         <HeadContent />
       </head>
       <body className="bg-surface-1 text-neutral-950 dark:text-neutral-50">
