@@ -98,7 +98,7 @@ export function PostmarkPile({
         ? pileLayout(records.length, width, stamp, room, {
             index: pinned.index,
             left: keep,
-            right: keep + thanksReach,
+            right: keep + thanksReach(stamp),
           })
         : pileLayout(records.length, width, stamp, room),
     [records.length, width, stamp, room, pinned, keep],
@@ -180,6 +180,7 @@ export function PostmarkPile({
                 width={yourSize.width}
                 height={yourSize.height}
                 rotation={pinned.print.rotation}
+                stamp={stamp}
               />
             )}
             {/* The darkening holds its depth on past the foot, under the stamps that run on. */}

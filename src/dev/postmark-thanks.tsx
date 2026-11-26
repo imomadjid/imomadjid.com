@@ -10,9 +10,20 @@ const TEXT = 'thanks for visiting!'
 // pixels, before the stamp's turn.
 const GAP = 8
 const BASELINE = 0.3
-// How far past the stamp's edge the words reach, at the hand's size: the pile keeps other stamps
-// out of it (postmark-visits.ts).
-export const thanksReach = GAP + 150
+
+/** The hand's size beside a stamp `stamp` px across: smaller with a phone's smaller stamps. */
+function letterSize(stamp: number) {
+  return stamp < 124 ? 16 : 20
+}
+
+/**
+ * How far past the stamp's edge the words reach, beside a stamp `stamp` px across: the pile keeps
+ * other stamps out of it (postmark-visits.ts). The words run about 6.5 times the hand's size.
+ */
+export function thanksReach(stamp: number) {
+  return GAP + letterSize(stamp) * 7.5
+}
+
 const TILT = -4
 
 const WRITE_DELAY = 300
@@ -26,6 +37,7 @@ export function ThanksNote({
   width,
   height,
   rotation,
+  stamp,
 }: {
   // The stamp's centre, and its size and turn.
   x: number
@@ -33,6 +45,8 @@ export function ThanksNote({
   width: number
   height: number
   rotation: number
+  // How wide a round stamp shows in the pile, which the hand's size follows.
+  stamp: number
 }) {
   const ref = useRef<SVGGElement>(null)
   const [writing, setWriting] = useState(false)
@@ -83,6 +97,7 @@ export function ThanksNote({
   }, [writing])
 
   const left = width / 2 + GAP
+  const letter = letterSize(stamp)
   const baseline = -height / 2 + height * BASELINE
   return (
     <g
@@ -91,13 +106,20 @@ export function ThanksNote({
       className="pointer-events-none text-neutral-500 select-none dark:text-neutral-400"
     >
       {/* What the pile watches for coming into view, before the words are there. */}
-      <rect x={left} y={baseline - 20} width={thanksReach - GAP} height={26} fill="none" />
+      <rect
+        x={left}
+        y={baseline - letter}
+        width={thanksReach(stamp) - GAP}
+        height={letter * 1.3}
+        fill="none"
+      />
       {writing && (
         <text
           x={left}
           y={baseline}
           fill="currentColor"
-          className="font-hand text-xl"
+          fontSize={letter}
+          className="font-hand"
           transform={`rotate(${TILT} ${left} ${baseline})`}
         >
           {TEXT}
