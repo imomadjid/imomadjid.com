@@ -2,8 +2,9 @@ import { useId } from 'react'
 import type { CSSProperties } from 'react'
 
 import { dealPostmark, drawFamily } from './postmark-deal'
+import type { Deal } from './postmark-deal'
 import { dates, familyNames, inkOf, subjectOf, visitorPrint } from './postmark-kit'
-import type { Family, Kit, PostmarkPlace, Style } from './postmark-kit'
+import type { Family, Kit, PostmarkPlace, Print, Style } from './postmark-kit'
 
 // A passport-style postmark for a visitor's place, dealt by postmark-deal.ts: the place's house
 // ink and the next family and pictorial from its shuffle bags, with the visitor's own lettering,
@@ -23,6 +24,8 @@ export function Postmark({
   family: familyOverride,
   choices,
   outline = false,
+  deal: stored,
+  print: printed,
   className,
   style,
 }: {
@@ -37,13 +40,17 @@ export function Postmark({
   choices?: Partial<Style>
   // Draw the map outline even where the place has a pictorial.
   outline?: boolean
+  // A stamp saved when its visitor arrived: drawn as saved, not dealt again, so drawings added
+  // later don't change it.
+  deal?: Deal
+  print?: Print
   className?: string
   style?: CSSProperties
 }) {
   const id = useId().replaceAll(':', '')
-  const deal = dealPostmark(place, visitor, salt, { family: familyOverride, choices })
+  const deal = stored ?? dealPostmark(place, visitor, salt, { family: familyOverride, choices })
   const { design, family, pictorial } = deal
-  const print = visitorPrint(place.key, visitor)
+  const print = printed ?? visitorPrint(place.key, visitor)
   const looks = deal.style
   const ink = inkOf(looks.ink)
   const kit: Kit = { id, place, design, print, style: looks, pictorial, outline }

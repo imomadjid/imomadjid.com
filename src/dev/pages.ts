@@ -1,5 +1,6 @@
 import {
   Aperture,
+  BookOpen,
   Clapperboard,
   Component,
   GlassWater,
@@ -36,6 +37,12 @@ export const devPages = [
     label: 'Glass',
     icon: GlassWater,
     description: 'Static liquid glass on Button, matched against an iOS 26 capture.',
+  },
+  {
+    to: '/dev/guestbook',
+    label: 'Guestbook wall',
+    icon: BookOpen,
+    description: "The Guestbook's wall as one shared passport, filled with made-up visitors.",
   },
   {
     to: '/dev/live-glass',
