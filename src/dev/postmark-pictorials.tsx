@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react'
 
-// Pictorials for the Guestbook postmarks: one subject per place, drawn as a postmark's die would
-// cut it, in one ink. tools/postmarks/pictorial-style.md is the style guide every new drawing
-// follows (canvas, the three stroke weights, detail budget, subject rules, review checklist), and
+// Pictorials for the Guestbook postmarks, drawn as a postmark's die would cut it, in one ink. Each
+// belongs to the places its `scopes` name, at three levels: a city (`city:<place key>`), a region
+// (`region:<country code>:<region>`, as Cloudflare names it) and a country (`country:<code>`). A
+// visitor's pictorial is dealt from every drawing their city, region and country have
+// (postmark-deal.ts), so a subject can have several drawings, each a different composition.
+// tools/postmarks/pictorial-style.md is the style guide every new drawing follows (canvas, the
+// three stroke weights, detail budget, subject rules, review checklist), and
 // postmark-pictorials.test.ts enforces what markup can show. `ink` is the drawing's ink box, which
 // lettering clears instead of the whole 100 x 100 box; the Pictorials sheet on /dev/postmarks
 // measures it. A place without a pictorial falls back to its map outline.
@@ -10,6 +14,8 @@ import type { ReactNode } from 'react'
 export type Pictorial = {
   // What the drawing shows, for the postmark's accessible name.
   subject: string
+  // The places it stands for, most specific first.
+  scopes: readonly string[]
   ink: readonly [x: number, y: number, width: number, height: number]
   // `id` keeps mask ids unique when several postmarks share a page.
   draw: (id: string) => ReactNode
@@ -18,6 +24,7 @@ export type Pictorial = {
 export const pictorials = {
   depok: {
     subject: 'Belimbing dewa, Depok',
+    scopes: ['city:depok'],
     ink: [11, 4.6, 85.8, 86.7],
     draw: (id) => (
       <>
@@ -101,6 +108,7 @@ export const pictorials = {
   },
   'jakarta-barat': {
     subject: 'Museum Fatahillah, Kota Tua, West Jakarta',
+    scopes: ['city:jakarta-barat', 'region:ID:Jakarta'],
     ink: [2.3, 5.4, 95.4, 89.8],
     draw: (_id) => (
       <>
@@ -136,6 +144,7 @@ export const pictorials = {
   },
   bandung: {
     subject: 'Gedung Sate, Bandung',
+    scopes: ['city:bandung', 'region:ID:West Java'],
     ink: [0.3, 4.2, 99.4, 83.5],
     draw: (_id) => (
       <>
@@ -168,6 +177,7 @@ export const pictorials = {
   },
   yogyakarta: {
     subject: 'Tugu Yogyakarta and Merapi',
+    scopes: ['city:yogyakarta', 'region:ID:Yogyakarta'],
     ink: [2.8, 4.3, 94.4, 89.4],
     draw: (_id) => (
       <>
@@ -194,6 +204,7 @@ export const pictorials = {
   },
   'san-francisco': {
     subject: 'Golden Gate Bridge tower, San Francisco',
+    scopes: ['city:san-francisco'],
     ink: [0.3, 5.3, 99.4, 88.4],
     draw: (_id) => (
       <>
@@ -224,6 +235,7 @@ export const pictorials = {
   },
   shibuya: {
     subject: 'Hachikō, Shibuya',
+    scopes: ['city:shibuya'],
     ink: [8.3, 9.3, 83.4, 84.4],
     draw: (_id) => (
       <>
@@ -243,6 +255,7 @@ export const pictorials = {
   },
   london: {
     subject: 'Elizabeth Tower, London',
+    scopes: ['city:london'],
     ink: [2.3, 0.3, 95.4, 93.1],
     draw: (_id) => (
       <>
@@ -268,6 +281,7 @@ export const pictorials = {
   },
   singapore: {
     subject: 'Supertree Grove, Singapore',
+    scopes: ['city:singapore', 'country:SG'],
     ink: [2.3, 8.9, 95.4, 82.8],
     draw: (_id) => (
       <>

@@ -9,8 +9,9 @@ The eight drawings in `src/dev/postmark-pictorials.tsx` are the reference set. W
 ## The canvas
 
 - `viewBox="0 0 100 100"`, one ink: `currentColor`. The postmark sets the colour, so never name one.
-- Each entry in `pictorials` (keyed by place) has:
+- Each entry in `pictorials` has a key of its own (`bandung`, or `san-francisco-lombard` for a second drawing) and:
   - `subject`: what it shows, in a few words (`'Gedung Sate, Bandung'`). It becomes part of the postmark's accessible name.
+  - `scopes`: the places it stands for, most specific first. `city:<place key>` for a city, `region:<country code>:<region>` for a region as Cloudflare names it (`region:ID:West Java`), `country:<code>` for a country (`country:SG`). A visitor is dealt from every drawing their city, region and country have, the city's about half the time, so a drawing scoped to a region turns up for every city in it.
   - `ink`: the box `[x, y, w, h]` the drawing's ink covers, strokes included. Lettering clears this box instead of the whole square, so a wrong box lets text run into the drawing. The review sheet measures it for you.
   - `draw(id)`: the drawing. Prefix any `id` with the one passed in (`` `${id}-cut` ``), because many postmarks share a page.
 - The drawing inherits `pictorialStroke`: no fill, stroke `currentColor` at 3.4, round caps and round joins. Rubber rounds every corner anyway, so never use butt caps or miter joins.
@@ -57,12 +58,16 @@ Nothing thinner, ever. A stroke inside a `mask` (the black cut around an overlap
 - **Diminishing repetition.** Suspender cables, waves, bars, steps.
 - **Height in the picture.** Distant things sit higher and smaller.
 
+## Several drawings of a place
+
+A city with many visitors needs several drawings, or its wall repeats. Each drawing is a different composition, never a variant of another: a second subject (Lombard Street beside the Golden Gate), or the same subject from another view (the bridge's whole span from the side, one tower from below, the span from above with the bay). Keep to frontal, side and top-down views: they're the ones a die cuts cleanly in three weights. Don't make a drawing by mirroring, cropping or adding a layer to another one; two drawings of one subject should each pass the squint test as a different blob.
+
 ## Choosing the subject
 
 1. **It must belong to the place, and you must verify it.** Check the administrative area, not just the city. Monas is in Central Jakarta, so it can't stand for West Jakarta. Borobudur is in Magelang, so it can't stand for Yogyakarta. Write one comment line in the entry saying why the subject belongs (an official city icon, a landmark's address, a festival).
 2. **Order of preference:**
    - a city's own official icon or its most-recognised landmark;
-   - a building, bridge, monument or natural feature;
+   - a building, bridge, monument or natural feature, places of worship included, drawn as architecture;
    - a plant, animal or food the place is known for;
    - a generic figure in local dress.
 3. **For a country,** follow the same order, preferring something every visitor from there would recognise over the capital's skyline.
@@ -71,7 +76,7 @@ Nothing thinner, ever. A stroke inside a `mask` (the black cut around an overlap
    - logos, mascots or trademarked designs;
    - symbols whose depiction is controlled (Singapore's Merlion, which the Singapore Tourism Board licenses);
    - a likeness of a real living person;
-   - religious figures as decoration;
+   - religious figures, symbols or scripture, on a place of worship or anywhere else;
    - anything that mocks the place.
 5. **Original drawings only.** Draw from the subject's real geometry. Never trace or copy someone else's artwork, icons or emoji. Public-domain engravings may guide proportions.
 
@@ -91,7 +96,7 @@ Nothing thinner, ever. A stroke inside a `mask` (the black cut around an overlap
 ## Process
 
 1. Pick the subject and write its "why it belongs" line.
-2. Draw it in `src/dev/postmark-pictorials.tsx`, in an entry keyed by the place.
+2. Draw it in `src/dev/postmark-pictorials.tsx`, in an entry of its own with its `scopes`.
 3. Open `/dev/postmarks` and find it in **Pictorials**, which shows every drawing at 64 px and 200 px beside the reference set. Check it at 64 px: that's its size on the wall.
 4. Copy the **measured** ink box from the sheet into `ink`. The sheet flags any drawing whose stored box is off by more than 2 units.
 5. Run `bun test src/dev/postmark-pictorials.test.ts`. It enforces the canvas, weights, colours and budgets above.

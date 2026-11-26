@@ -60,7 +60,7 @@ export type Shape = 'circle' | 'double-circle' | 'octagon' | 'hexagon' | 'oval' 
 type OutlineStyle = 'fill' | 'stroke' | 'hatch'
 type Layout = 'band' | 'stack'
 
-const shapes: readonly Shape[] = [
+export const shapes: readonly Shape[] = [
   'circle',
   'double-circle',
   'octagon',
@@ -83,6 +83,12 @@ const inks = [
   { name: 'black', light: '#262626', dark: '#e6e6e6' },
   { name: 'rust', light: '#a4541b', dark: '#f0a464' },
   { name: 'tobiiro', light: '#8a3324', dark: '#e58a72' },
+  { name: 'teal', light: '#1b6b70', dark: '#6fd0d4' },
+  { name: 'navy', light: '#1f2f63', dark: '#a3b6f2' },
+  { name: 'plum', light: '#842a5e', dark: '#f08cc6' },
+  { name: 'olive', light: '#55601c', dark: '#c3d07a' },
+  { name: 'ochre', light: '#87620f', dark: '#efc35a' },
+  { name: 'slate', light: '#3d4856', dark: '#b8c3d0' },
 ] as const
 export type InkName = (typeof inks)[number]['name']
 const inkNames = inks.map((ink) => ink.name)
@@ -93,7 +99,7 @@ export function inkOf(name: InkName) {
 
 const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
-function hash(text: string) {
+export function hash(text: string) {
   let value = 2166136261
   for (let index = 0; index < text.length; index += 1) {
     value ^= text.charCodeAt(index)
@@ -103,7 +109,7 @@ function hash(text: string) {
 }
 
 // mulberry32: a small seeded generator, so designs survive reloads and server rendering.
-function generator(seed: number) {
+export function generator(seed: number) {
   let state = seed >>> 0
   return () => {
     state = (state + 0x6d2b79f5) >>> 0
@@ -114,7 +120,7 @@ function generator(seed: number) {
   }
 }
 
-function pick<T>(next: () => number, list: readonly T[]): T {
+export function pick<T>(next: () => number, list: readonly T[]): T {
   const item = list[Math.floor(next() * list.length)] ?? list[0]
   if (item === undefined) throw new Error('pick needs a non-empty list')
   return item
@@ -131,7 +137,6 @@ export function postmarkDesign(placeKey: string, salt: number) {
     label: pick(next, labels),
     innerRing: next() < 0.6,
     ticks: next() < 0.45,
-    family: pick(next, families),
     // A family's own alternative: a ground chord, a solid banner, a square seal, a frame.
     variant: next() < 0.5,
     // Where a wavy cancel's picture falls along its lines, 0 to 1.
@@ -296,8 +301,12 @@ export type Kit = {
   design: Design
   print: Print
   style: Style
+  // The pictorial dealt to this print (a key of `pictorials`), or none for the map outline.
+  pictorial: PictorialKey | undefined
   // Draw the map outline even where the place has a pictorial.
   outline: boolean
+  // Told each line's text and size as the layout sets it, to measure a family's lettering.
+  measure?: (text: string, size: number) => void
 }
 
 // Allo's capitals stand 0.73 em tall (1490 of 2048 units); accents rise to about 0.94 em and
@@ -389,12 +398,22 @@ export function line(
   length: number,
   max: number,
 ): Line {
-  const weight = letterWeights[kit.style.weight][tier]
-  const tracked = spacing * trackings[kit.style.tracking]
-  return sized(text, Math.min(max, length / textUnits(text, tracked, weight)), weight, tracked)
+  const set = fitLine(kit, text, tier, spacing, length, max)
+  return sized(kit, text, set.size, set.weight, set.spacing)
 }
 
-function sized(text: string, size: number, weight: number, spacing: number): Line {
+function fitLine(kit: Kit, text: string, tier: Tier, spacing: number, length: number, max: number) {
+  const weight = letterWeights[kit.style.weight][tier]
+  const tracked = spacing * trackings[kit.style.tracking]
+  return {
+    size: Math.min(max, length / textUnits(text, tracked, weight)),
+    weight,
+    spacing: tracked,
+  }
+}
+
+function sized(kit: Kit, text: string, size: number, weight: number, spacing: number): Line {
+  kit.measure?.(text, size)
   const { ascent, descent } = inkHeights(text)
   return { size, weight, spacing, ascent: ascent * size, descent: descent * size }
 }
@@ -484,10 +503,10 @@ export function rimLettering(
 ) {
   const room = reach - ring - gap * 2
   const top = inkHeights(name)
-  const nameSet = line(kit, name, 'heavy', 0.08, span * (ring + gap), nameMax)
+  const nameSet = fitLine(kit, name, 'heavy', 0.08, span * (ring + gap), nameMax)
   const nameSize = Math.min(nameSet.size, room / (top.ascent + top.descent))
   const under = inkHeights(bottom)
-  const bottomSet = line(
+  const bottomSet = fitLine(
     kit,
     bottom,
     'light',
@@ -497,8 +516,8 @@ export function rimLettering(
   )
   const bottomSize = Math.min(bottomSet.size, room / (under.ascent + under.descent))
   return {
-    name: sized(name, nameSize, nameSet.weight, nameSet.spacing),
-    bottom: sized(bottom, bottomSize, bottomSet.weight, bottomSet.spacing),
+    name: sized(kit, name, nameSize, nameSet.weight, nameSet.spacing),
+    bottom: sized(kit, bottom, bottomSize, bottomSet.weight, bottomSet.spacing),
     topRadius: reach - gap - top.ascent * nameSize,
     bottomRadius: reach - gap - under.descent * bottomSize,
   }
@@ -713,13 +732,10 @@ export function Ticks({
   )
 }
 
-function hasPictorial(key: string): key is keyof typeof pictorials {
-  return Object.hasOwn(pictorials, key)
-}
+export type PictorialKey = keyof typeof pictorials
 
 function pictorialOf(kit: Kit) {
-  const { key } = kit.place
-  return kit.outline || !hasPictorial(key) ? undefined : pictorials[key]
+  return kit.outline || kit.pictorial === undefined ? undefined : pictorials[kit.pictorial]
 }
 
 // What the picture shows, for the postmark's accessible name.

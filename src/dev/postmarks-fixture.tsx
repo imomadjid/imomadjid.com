@@ -5,38 +5,60 @@ import { Button } from '#/components/ui/button'
 import { Postmark } from './postmark'
 import type { PostmarkPlace } from './postmark'
 import { checkClearance } from './postmark-clearance'
-import { families, familyNames, postmarkDesign, postmarkStyle } from './postmark-kit'
+import { houseStyle, pictorialPool } from './postmark-deal'
+import { families, familyNames } from './postmark-kit'
+import type { PictorialKey } from './postmark-kit'
 import { PostmarkMixer } from './postmark-mixer'
 import { PictorialSheet } from './postmark-pictorial-sheet'
+import { pictorials } from './postmark-pictorials'
 import places from './postmark-places.json'
 import { stressPlaces } from './postmark-stress-places'
 import { PostmarkSweep } from './postmark-sweep'
 
-// Postmarks for the Guestbook. Each place gets one design, seeded from its key (Remix designs
-// reseeds them all): a layout family after real postmarks, a style assembled from independent
-// choices the family accepts (ink, lettering weight and tracking, date, ornaments, border), and
-// the place's pictorial, or its map outline where it has none. Each visitor's print varies its
-// date, angle, serial and how the ink took (New visitors). Mix and match assembles one by hand;
-// the combination sweep checks every accepted combination against hard names.
+// Postmarks for the Guestbook, dealt per visitor (postmark-deal.ts). A city has a house style
+// (an ink and three or four frame families that letter its name readably); each visitor gets the
+// next family and pictorial from the city's shuffle bags, the pictorials drawn from the city, its
+// region and its country, plus their own lettering, date format, ornaments, border and print
+// (New visitors deals the next ones; Remix designs reseeds everything). Mix and match assembles
+// one by hand; the combination sweep checks every accepted combination against hard names.
 
 const typedPlaces: PostmarkPlace[] = places
 const everyPlace = [...typedPlaces, ...stressPlaces]
 
-// Where each stamp lands in the collage, as fractions of its box, so the layout survives a resize.
-const collageSpots = [
-  [0.06, 0.08],
-  [0.3, 0.02],
-  [0.55, 0.12],
-  [0.76, 0.04],
-  [0.14, 0.46],
-  [0.4, 0.4],
-  [0.64, 0.5],
-  [0.84, 0.42],
-  [0.02, 0.7],
-  [0.26, 0.74],
-  [0.5, 0.72],
-  [0.72, 0.76],
+// A wall as visitors might fill it: mostly Depok, then nearby cities, and a few from farther away.
+const crowd = [
+  'depok',
+  'jakarta-barat',
+  'depok',
+  'san-francisco',
+  'bandung',
+  'depok',
+  'jakarta-barat',
+  'depok',
+  'shibuya',
+  'yogyakarta',
+  'depok',
+  'bandung',
+  'london',
+  'depok',
+  'jakarta-barat',
+  'singapore',
+  'depok',
+  'depok',
 ] as const
+
+// Where each stamp lands in the collage, as fractions of its box, so the layout survives a resize:
+// six columns over three rows, nudged off the grid.
+const collageSpots = crowd.map((_, index) => {
+  const [column, row] = [index % 6, Math.floor(index / 6)]
+  const nudge = ((index * 37) % 11) / 100
+  return [0.01 + column * 0.16 + nudge * 0.6, 0.03 + row * 0.3 + nudge] as const
+})
+
+// Each crowd member's ordinal among their place's visitors.
+const ordinals = crowd.map(
+  (key, index) => crowd.slice(0, index).filter((other) => other === key).length,
+)
 
 export function PostmarksFixture() {
   const [salt, setSalt] = useState(0)
@@ -63,10 +85,12 @@ export function PostmarksFixture() {
           <h1 className="text-display font-medium">Postmarks</h1>
           <p className="text-body text-muted-foreground">
             Postmarks for the Guestbook, after real ones: scenic and station stamps, special
-            handstamps, machine cancels, passport stamps. A place&apos;s design (layout, ink, its
-            pictorial) is seeded from the place, so every visitor from Depok gets Depok&apos;s
-            stamp; each visitor&apos;s print varies the date, angle, serial and ink. A place without
-            a pictorial falls back to its map outline.
+            handstamps, machine cancels, passport stamps. Each city has a house style, an ink and
+            three or four frames that letter its name readably, so its stamps read as related; each
+            visitor is dealt the next frame and pictorial from the city&apos;s shuffle bags, with
+            their own lettering, date, ornaments, border and print. Pictorials come from the city,
+            its region and its country, weighted to the city; a place without any falls back to its
+            map outline.
           </p>
         </header>
 
@@ -143,15 +167,19 @@ export function PostmarksFixture() {
 
         <section className="space-y-3">
           <h2 className="text-title font-medium">On the wall</h2>
-          <div className="relative isolate h-[560px] overflow-hidden rounded-2xl bg-surface-2">
+          <p className="max-w-3xl text-body text-muted-foreground">
+            Eighteen visitors, eight of them from Depok: its stamps share an ink and a set of
+            frames, and no two repeat.
+          </p>
+          <div className="relative isolate h-[600px] overflow-hidden rounded-2xl bg-surface-2">
             {collageSpots.map(([left, top], index) => {
-              const place = typedPlaces[index % typedPlaces.length]
+              const place = typedPlaces.find((candidate) => candidate.key === crowd[index])
               if (!place) return null
               return (
                 <Postmark
                   key={`${left}:${top}`}
                   place={place}
-                  visitor={visitors * 31 + index}
+                  visitor={visitors + (ordinals[index] ?? 0)}
                   salt={salt}
                   outline={outline}
                   size={128}
@@ -164,24 +192,30 @@ export function PostmarksFixture() {
         </section>
 
         <section className="space-y-8">
-          <h2 className="text-title font-medium">Each place, four visitors</h2>
+          <h2 className="text-title font-medium">Each place, eight visitors</h2>
           {typedPlaces.map((place) => {
-            const design = postmarkDesign(place.key, salt)
-            const style = postmarkStyle(place.key, salt, design.family)
+            const house = houseStyle(place, salt)
+            const pool = pictorialPool(place)
+            const counts = new Map<PictorialKey, number>()
+            for (const key of pool) counts.set(key, (counts.get(key) ?? 0) + 1)
             return (
               <div key={place.key} className="space-y-3">
                 <h3 className="text-body font-medium">
                   {place.name}
                   <span className="ml-2 text-muted-foreground">
-                    {place.region}, {place.country} ·{' '}
-                    {design.family === 'classic'
-                      ? `${design.shape} (classic)`
-                      : familyNames[design.family]}
-                    , {style.ink} ink, {style.weight} {style.tracking} lettering
+                    {place.region}, {place.country} · {house.ink} ink,{' '}
+                    {house.families.map((family) => familyNames[family]).join(', ')}
                   </span>
                 </h3>
+                <p className="text-caption text-muted-foreground">
+                  {pool.length === 0
+                    ? 'No pictorials yet: map outline'
+                    : `Pictorial bag: ${[...counts]
+                        .map(([key, count]) => `${pictorials[key].subject} ×${count}`)
+                        .join(', ')}`}
+                </p>
                 <div className="flex flex-wrap items-center gap-6">
-                  {[0, 1, 2, 3].map((index) => (
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
                     <Postmark
                       key={index}
                       place={place}

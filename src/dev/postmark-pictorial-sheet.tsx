@@ -105,6 +105,7 @@ export function PictorialSheet() {
               <span className="block text-muted-foreground tabular-nums">
                 {key} · ink {format(pictorial.ink)}
               </span>
+              <span className="block text-muted-foreground">{pictorial.scopes.join(', ')}</span>
               <span
                 data-ink-note={key}
                 className="block text-muted-foreground tabular-nums data-[off=true]:text-red-600 dark:data-[off=true]:text-red-400"
