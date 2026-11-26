@@ -20,9 +20,9 @@ Each line is one drawing, under the scope it goes in (`region:US:California`, as
 | Alaska        | Denali                                | Nebraska       | Chimney Rock                         |
 | Arizona       | Saguaro                               | Nevada         | Hoover Dam (also Arizona)            |
 | Arkansas      | Thorncrown Chapel, Eureka Springs     | New Hampshire  | Mount Washington and its cog railway |
-| California    | Half Dome                             | New Jersey     | Lucy the Elephant, Margate           |
+| California    | Half Dome _(have)_                    | New Jersey     | Lucy the Elephant, Margate           |
 | Colorado      | Maroon Bells                          | New Mexico     | Balloons over the Sandias            |
-| Connecticut   | Charles W. Morgan whaleship, Mystic   | New York       | Statue of Liberty                    |
+| Connecticut   | Charles W. Morgan whaleship, Mystic   | New York       | Statue of Liberty _(have)_           |
 | Delaware      | Breakwater East End Lighthouse, Lewes | North Carolina | Wright Flyer, Kitty Hawk             |
 | D.C.          | Capitol dome                          | North Dakota   | Badlands buttes                      |
 | Florida       | Alligator in the Everglades           | Ohio           | Buckeye nut and leaf                 |
@@ -33,10 +33,10 @@ Each line is one drawing, under the scope it goes in (`region:US:California`, as
 | Indiana       | Covered bridge, Parke County          | South Carolina | Angel Oak                            |
 | Iowa          | The American Gothic house, Eldon      | South Dakota   | Corn Palace, Mitchell                |
 | Kansas        | Sunflower                             | Tennessee      | Parthenon, Nashville                 |
-| Kentucky      | Thoroughbred horse                    | Texas          | The Alamo                            |
+| Kentucky      | Thoroughbred horse                    | Texas          | The Alamo _(have)_                   |
 | Louisiana     | Brown pelican                         | Utah           | Delicate Arch                        |
 | Maine         | Portland Head Light                   | Vermont        | Sugar maple with a sap bucket        |
-| Maryland      | Blue crab                             | Virginia       | Monticello                           |
+| Maryland      | Blue crab _(have)_                    | Virginia       | Monticello                           |
 | Massachusetts | Old North Church steeple              | Washington     | Mount Rainier                        |
 | Michigan      | Mackinac Bridge                       | West Virginia  | New River Gorge Bridge               |
 | Minnesota     | Common loon                           | Wisconsin      | Holstein cow                         |
@@ -46,7 +46,7 @@ Each line is one drawing, under the scope it goes in (`region:US:California`, as
 **Depth, first:**
 
 - **California:** Joshua tree; giant sequoia; California poppy.
-- **San Francisco** (`city:san-francisco`): Golden Gate tower _(have)_; the whole span from the side; Lombard Street from above; cable car; Painted Ladies; Coit Tower.
+- **San Francisco** (`city:san-francisco`): Golden Gate tower _(have)_; the whole span from the side _(have)_; cable car _(have)_; Painted Ladies; Coit Tower.
 - **New York:** Brooklyn Bridge; Flatiron Building; Niagara Falls.
 - **Texas:** longhorn; bluebonnets; oil pumpjack.
 - **Washington:** orca; state ferry.
@@ -57,9 +57,9 @@ Each line is one drawing, under the scope it goes in (`region:US:California`, as
 
 **Breadth, first wave** (the six provinces on Java, then Bali, North Sumatra and South Sulawesi):
 
-- **Jakarta:** Museum Fatahillah _(have, West Jakarta)_; Monas; Istiqlal Mosque; ondel-ondel; bajaj.
+- **Jakarta:** Museum Fatahillah _(have, West Jakarta)_; Monas _(have)_; Istiqlal Mosque; ondel-ondel; bajaj.
 - **West Java:** Gedung Sate _(have)_; Tangkuban Perahu crater; angklung.
-  - **Depok** (`city:depok`): starfruit cross-section _(have)_; starfruit on the branch; Masjid Kubah Emas; UI Central Library.
+  - **Depok** (`city:depok`): starfruit cross-section _(have)_; Masjid Kubah Emas _(have)_; UI Central Library.
   - **Bandung** (`city:bandung`): Gedung Merdeka; Pasupati bridge.
 - **Banten:** Masjid Agung Banten; Javan rhino, Ujung Kulon.
 - **Central Java:** Borobudur; Lawang Sewu, Semarang.
@@ -75,7 +75,7 @@ The other provinces follow, one each, once the first wave is drawn.
 
 Country drawings first, then the regions that send visitors.
 
-- **Japan:** Mount Fuji; cherry blossom branch; five-storey pagoda; maneki-neko.
+- **Japan:** Mount Fuji _(have)_; cherry blossom branch; five-storey pagoda; maneki-neko.
   - **Tokyo:** Kaminarimon gate, its lantern without lettering. **Shibuya** (`city:shibuya`): Hachikō _(have)_; the Scramble crossing from above.
 - **United Kingdom:** England: Stonehenge. Scotland: Highland cow.
   - **London** (`city:london`): Elizabeth Tower _(have)_; Tower Bridge; St Paul's dome.
@@ -91,5 +91,7 @@ Country drawings first, then the regions that send visitors.
 - **Canada:** moose; canoe on a spruce lake. Quebec: Château Frontenac.
 
 ## Not on the list
+
+Tried and dropped, because they don't read at 64 px: the starfruit on the branch (without its cut star, a side-view starfruit reads as a bell pepper or okra) and Lombard Street from above (its switchbacks in plan read as a coil spring).
 
 Left out under the style guide's never-draw rules: the Sydney Opera House, Marina Bay Sands, the Petronas Towers, Tokyo Tower, Tokyo Skytree, the Space Needle, the Empire State Building, the Hollywood sign, Churchill Downs' twin spires, Cloud Gate, the Transamerica Pyramid, the K6 phone box, the Shinkansen and the Merlion (protected designs); Uluru and Taos Pueblo (their peoples restrict images of them); the Eiffel Tower lit at night; torii gates and the lotus (religious symbols); the Garuda and the maple leaf (national emblems).
