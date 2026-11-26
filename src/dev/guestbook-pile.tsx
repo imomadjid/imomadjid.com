@@ -17,9 +17,24 @@ function stampSize(width: number) {
   return width < 640 ? 84 : 124
 }
 
-// Each layer blurs what's behind it, the ones before included, so together they reach about
-// 4.6 px at the foot: slight, as a shallow depth of field would.
-const blurSteps = [0.5, 1, 2, 4] as const
+// The foot of the pile blurs by blurring each stamp, by how far into the fade its centre lies,
+// rather than with backdrop-filter. The stamps don't move, so a stamp's filter is painted once
+// into the page's tiles, and scrolling or the Sunlit light's frames cost nothing more. A
+// backdrop-filter is the compositor's to run, every frame the light changes, across the whole
+// width of the fade; it suits a backdrop that moves, which this one doesn't. Stamps lie at every
+// depth, so the blur still deepens smoothly down the pile.
+function stampBlur(
+  down: number,
+  height: number,
+  fade: number,
+  settings: PileSettings,
+  stamp: number,
+) {
+  const into = Math.min(1, Math.max(0, (down - (height - fade)) / fade))
+  // Eased in, so the top of the fade stays nearly sharp and the foot goes soft.
+  const radius = settings.blur * (stamp / 124) * into * into
+  return radius < 0.25 ? undefined : `blur(${radius.toFixed(2)}px)`
+}
 
 function useWidth() {
   const element = useRef<HTMLDivElement>(null)
@@ -98,22 +113,15 @@ export function GuestbookPile({
                     ? 'outline-2 outline-offset-4 outline-foreground/50 outline-dashed'
                     : ''
                 }`}
-                style={{ left: `${across * 100}%`, top: down, translate: '-50% -50%' }}
+                style={{
+                  left: `${across * 100}%`,
+                  top: down,
+                  translate: '-50% -50%',
+                  filter: stampBlur(down, height, fade, settings, stamp),
+                }}
               />
             )
           })}
-        {blurSteps.map((blur, step) => (
-          <div
-            key={blur}
-            className="pointer-events-none absolute inset-x-0 bottom-0"
-            style={{
-              height: fade,
-              backdropFilter: `blur(${blur}px)`,
-              WebkitBackdropFilter: `blur(${blur}px)`,
-              maskImage: `linear-gradient(to bottom, transparent ${step * 22}%, black ${step * 22 + 34}%)`,
-            }}
-          />
-        ))}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-b from-transparent to-black/15 dark:to-black/45"
           style={{ height: fade }}

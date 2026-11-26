@@ -76,6 +76,9 @@ export const pileSettings = {
   // footer, out of sight.
   depth: 160,
   reach: 10,
+  // How soft the stamps at the foot of the pile are, as a blur's radius in px on a 124 px stamp:
+  // the pile's lower part softens toward it, out of focus like a shallow depth of field.
+  blur: 10,
 }
 
 export type PileSettings = typeof pileSettings

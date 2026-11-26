@@ -21,6 +21,7 @@ const settingNames = {
   settle: 'Settles over',
   depth: 'Stamps drawn',
   reach: 'Tallest, in stamps',
+  blur: 'Blur at the foot, px',
 } as const satisfies Record<keyof typeof pileSettings, string>
 
 const settingRanges = {
@@ -29,6 +30,7 @@ const settingRanges = {
   settle: [20, 400, 10],
   depth: [40, 400, 10],
   reach: [3, 20, 1],
+  blur: [0, 24, 1],
 } as const satisfies Record<keyof typeof pileSettings, readonly [number, number, number]>
 
 const settingKeys = Object.keys(settingNames).filter(
