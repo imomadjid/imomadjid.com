@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from 'react'
 
 import { getSoundOn, setSoundOn, subscribeSound } from '#/lib/sound'
+import { cn } from '#/lib/utils'
 
 /** The page's footer: a quiet row at the end of the column, holding the Sound switch. */
-export function SiteFooter() {
+export function SiteFooter({ className }: { className?: string }) {
   return (
-    <footer className="mt-32 flex justify-end text-sm">
+    <footer className={cn('mt-32 flex justify-end text-sm', className)}>
       <SoundSwitch />
     </footer>
   )

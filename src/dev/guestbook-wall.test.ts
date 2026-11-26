@@ -2,53 +2,55 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { wallPlaces } from './guestbook-places'
-import { fakeArrivals, fillPages, page } from './guestbook-wall'
+import { fakeArrivals, pileLayout, pileSettings, stampRecords } from './guestbook-wall'
 
-const arrivals = fakeArrivals(400, wallPlaces)
-const records = fillPages(arrivals)
-
-void test('pages already filled never change as visitors arrive', () => {
-  const earlier = fillPages(arrivals.slice(0, 150))
-  for (const [index, record] of earlier.entries()) {
-    const later = records[index]
-    assert.ok(later)
-    assert.deepEqual(
-      [later.page, later.x, later.y, later.deal.family, later.deal.pictorial],
-      [record.page, record.x, record.y, record.deal.family, record.deal.pictorial],
-    )
+void test('a longer guestbook starts with the shorter one, stamped the same', () => {
+  const shorter = stampRecords(fakeArrivals(50, wallPlaces))
+  const longer = stampRecords(fakeArrivals(400, wallPlaces))
+  for (const [index, record] of shorter.entries()) {
+    assert.deepEqual(record, longer[index])
   }
 })
 
-void test('a longer guestbook starts with the shorter one', () => {
-  const shorter = fakeArrivals(50, wallPlaces)
-  for (const [index, arrival] of shorter.entries()) {
-    assert.deepEqual(arrival, arrivals[index])
+void test('the newest stamp lies on top, and stamps sink as visitors arrive', () => {
+  const before = pileLayout(100, 1200, 124)
+  const after = pileLayout(101, 1200, 124)
+  assert.equal(before.spots[0]?.index, 99)
+  assert.equal(after.spots[0]?.index, 100)
+  for (const spot of before.spots) {
+    const later = after.spots.find((candidate) => candidate.index === spot.index)
+    if (!later) continue
+    // Its place across is its own for good; it only sinks.
+    assert.equal(later.across, spot.across)
+    assert.ok(later.down > spot.down, `stamp ${spot.index}`)
+  }
+  assert.ok(after.height >= before.height)
+})
+
+void test('stamps pack tighter the deeper they lie, and stay inside the width', () => {
+  const { spots, height } = pileLayout(1500, 1200, 124)
+  assert.ok(spots.length <= pileSettings.depth)
+  assert.ok(height <= (pileSettings.reach + 1) * 124, 'no taller than its reach')
+  const gap = (depth: number) => (spots[depth + 1]?.down ?? 0) - (spots[depth]?.down ?? 0)
+  const average = (from: number, to: number) => {
+    let total = 0
+    for (let depth = from; depth < to; depth += 1) total += gap(depth)
+    return total / (to - from)
+  }
+  const deep = spots.length - 20
+  assert.ok(
+    average(deep, deep + 18) < average(0, 18) / 2,
+    'the deep layer packs at least twice as tight',
+  )
+  const inset = 62 / 1200
+  for (const spot of spots) {
+    assert.ok(spot.across >= inset - 1e-9 && spot.across <= 1 - inset + 1e-9, `stamp ${spot.index}`)
   }
 })
 
-void test('every stamp keeps inside its page and pages fill in order', () => {
-  let page_ = 0
-  for (const record of records) {
-    assert.ok(record.page === page_ || record.page === page_ + 1, `stamp ${record.index}`)
-    page_ = record.page
-    const angle = (record.print.rotation * Math.PI) / 180
-    const [cos, sin] = [Math.abs(Math.cos(angle)), Math.abs(Math.sin(angle))]
-    const half = {
-      x: (record.width * cos + record.height * sin) / 2,
-      y: (record.width * sin + record.height * cos) / 2,
-    }
-    // A stamp too wide for the page at its angle is centred instead.
-    if (half.x * 2 < page.width) {
-      assert.ok(record.x - half.x >= 0 && record.x + half.x <= page.width, `stamp ${record.index}`)
-    }
-    assert.ok(record.y - half.y >= 0 && record.y + half.y <= page.height, `stamp ${record.index}`)
-  }
-})
-
-void test('a page holds a handful of stamps', () => {
-  const counts = new Map<number, number>()
-  for (const record of records) counts.set(record.page, (counts.get(record.page) ?? 0) + 1)
-  const full = [...counts.values()].slice(0, -1)
-  const average = full.reduce((sum, count) => sum + count, 0) / full.length
-  assert.ok(average >= 4 && average <= 10, `about ${average.toFixed(1)} a page`)
+void test('the top of the pile spreads its stamps across the width', () => {
+  const { spots } = pileLayout(300, 1200, 124)
+  const top = spots.slice(0, 8).map((spot) => spot.across)
+  const thirds = new Set(top.map((across) => Math.min(2, Math.floor(across * 3))))
+  assert.equal(thirds.size, 3, 'the newest eight reach every third of the width')
 })

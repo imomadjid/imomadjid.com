@@ -174,21 +174,24 @@ const projects = [
   },
 ] as const satisfies readonly Project[]
 
-// Sections still being built. They show only with the dev tools, so merging dev into master
-// never puts them on imomadjid.com. Guestbook says Coming soon for now.
-const draftSections = [
-  { id: 'guestbook', label: 'Guestbook' },
-] as const satisfies readonly PageSection[]
-
 // Lazy, so the first load carries neither its code nor its photos.
 const GallerySection = lazy(() => import('#/components/gallery'))
+
+// The Guestbook, a pile of visitors' postmarks under the footer, shows only with the dev tools
+// until it has real visitors, so merging dev into master never puts it on imomadjid.com.
+const GuestbookFooter = import.meta.env.DEV_TOOLS
+  ? lazy(() =>
+      import('#/dev/guestbook-footer').then(({ GuestbookFooter }) => ({
+        default: GuestbookFooter,
+      })),
+    )
+  : undefined
 
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
   { id: 'about', label: 'About', mark: Logo },
   { id: 'projects', label: 'Random bullshit' },
   { id: 'gallery', label: 'Gallery' },
-  ...(import.meta.env.DEV_TOOLS ? draftSections : []),
 ] as const satisfies readonly PageSection[]
 
 type SectionId = (typeof sections)[number]['id']
@@ -347,15 +350,13 @@ function Home() {
             </Suspense>
           </Section>
 
-          {import.meta.env.DEV_TOOLS && (
-            <Section id="guestbook" className="mt-32">
-              <div className="flex h-[70svh] items-center justify-center rounded-3xl border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
-                Coming soon
-              </div>
-            </Section>
+          {GuestbookFooter ? (
+            <Suspense fallback={<SiteFooter />}>
+              <GuestbookFooter />
+            </Suspense>
+          ) : (
+            <SiteFooter />
           )}
-
-          <SiteFooter />
         </div>
       </div>
     </main>

@@ -40,9 +40,10 @@ export const devPages = [
   },
   {
     to: '/dev/guestbook',
-    label: 'Guestbook wall',
+    label: 'Guestbook pile',
     icon: BookOpen,
-    description: "The Guestbook's wall as one shared passport, filled with made-up visitors.",
+    description:
+      "The Guestbook's pile of postmarks under the footer, filled with made-up visitors.",
   },
   {
     to: '/dev/live-glass',

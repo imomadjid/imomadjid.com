@@ -1,37 +1,13 @@
-import { dealPostmark, drawFamily } from './postmark-deal'
+import { dealPostmark } from './postmark-deal'
 import type { Deal } from './postmark-deal'
 import { generator, hash, visitorPrint } from './postmark-kit'
 import type { PostmarkPlace, Print } from './postmark-kit'
 
-// The Guestbook wall is one shared passport. Each visitor's stamp is saved when they arrive (its
-// deal, its print and where it landed), so drawings added later never change it; the backend
-// will store these records as they are. Stamps fill a page as passport stamps do, overlapping a
-// little at whatever angle they were pressed, and a page that can't take the next stamp without
-// covering too much of the others is full: the next one opens a new page. Placing a stamp looks
-// only at the stamps before it, so the pages already filled never change as visitors arrive.
-
-// A passport page, 88 x 125 mm, in tenths of a millimetre.
-export const page = { width: 880, height: 1250 } as const
-
-// How large a stamp is on the page: a 220-unit round postmark comes out about 30 mm across, as
-// real ones are, about a third of the page's width.
-const stampScale = 1.35
-
-// Stamps keep this far inside the page's edge, and clear of the page number at its foot.
-const margin = 24
-const foot = 90
-// The occupancy grid's cell, in page units.
-const cell = 10
-const columns = Math.ceil(page.width / cell)
-const rows = Math.ceil(page.height / cell)
-// Where a new stamp may land, tried in turn; the least covered wins.
-const candidates = 48
-// A new stamp may land on up to this share of inked footprint: a little overlap reads as real,
-// more starts hiding names.
-const crowded = 0.1
-// The share of each stamp's box its footprint spans, a rounded rectangle (a superellipse), so a
-// box stamp's edges, where names run, are claimed while round stamps leave their corners free.
-const footprint = 0.96
+// The Guestbook is a pile of postmarks at the foot of the page. Each visitor's stamp is saved
+// when they arrive (its deal and its print), so drawings added later never change it; the
+// backend will store these records as they are. The newest stamp lies on top of the pile, the
+// older ones under it, packed tighter the older they are: the last few dozen visitors read
+// clearly, and the rest settle into a dense layer that darkens and blurs into the footer.
 
 export type Arrival = {
   place: PostmarkPlace
@@ -42,138 +18,20 @@ export type Arrival = {
 }
 
 export type StampRecord = Arrival & {
-  // Its place on the wall, 0 for the first stamp.
+  // Its place in the Guestbook, 0 for the first visitor.
   index: number
   deal: Deal
   print: Print
-  page: number
-  // Its centre on the page and its unrotated size, in page units; it turns by print.rotation.
-  x: number
-  y: number
-  width: number
-  height: number
 }
 
-/** The stamp a visitor is dealt and its print, saved as it was on the day they arrived. */
-function stampFor({ place, ordinal, date }: Arrival, salt = 0) {
-  const deal = dealPostmark(place, ordinal, salt)
-  const print: Print = { ...visitorPrint(place.key, ordinal), ...date }
-  const { width, height } = drawFamily(deal.family, {
-    id: 'size',
-    place,
-    design: deal.design,
-    print,
-    style: deal.style,
-    pictorial: deal.pictorial,
-    outline: false,
-  })
-  return { deal, print, width: width * stampScale, height: height * stampScale }
-}
-
-type Footprint = { x: number; y: number; width: number; height: number; rotation: number }
-
-// Calls `visit` with each grid cell inside a stamp's rotated footprint, scaled by `share`, until it
-// returns false. (Plain arithmetic: this runs for every candidate spot of every stamp.)
-function eachCellUnder(
-  { x, y, width, height, rotation }: Footprint,
-  share: number,
-  visit: (index: number) => boolean,
-) {
-  const angle = (rotation * Math.PI) / 180
-  const cos = Math.cos(angle)
-  const sin = Math.sin(angle)
-  const rx = (width / 2) * share
-  const ry = (height / 2) * share
-  const reach = Math.hypot(rx, ry)
-  const top = Math.max(0, Math.floor((y - reach) / cell))
-  const bottom = Math.min(rows - 1, Math.ceil((y + reach) / cell))
-  const left = Math.max(0, Math.floor((x - reach) / cell))
-  const right = Math.min(columns - 1, Math.ceil((x + reach) / cell))
-  for (let row = top; row <= bottom; row += 1) {
-    const dy = (row + 0.5) * cell - y
-    for (let column = left; column <= right; column += 1) {
-      const dx = (column + 0.5) * cell - x
-      const u = (dx * cos + dy * sin) / rx
-      const v = (-dx * sin + dy * cos) / ry
-      const [uu, vv] = [u * u, v * v]
-      if (uu * uu + vv * vv <= 1 && !visit(row * columns + column)) return
-    }
-  }
-}
-
-// The share of a stamp's footprint already inked at a spot, or `limit` once it's clear the spot
-// covers at least that much.
-function coverage(grid: Uint8Array, stamp: Footprint, limit: number) {
-  // A superellipse of exponent 4 fills about 0.927 of its box.
-  const area = (0.927 * stamp.width * stamp.height * footprint * footprint) / (cell * cell)
-  const stop = limit * area
-  let inked = 0
-  eachCellUnder(stamp, footprint, (index) => {
-    if (grid[index] === 1) inked += 1
-    return inked < stop
-  })
-  return Math.min(limit, inked / Math.max(1, area))
-}
-
-// How far a stamp reaches from its centre along each axis once it's turned.
-function reach(width: number, height: number, rotation: number) {
-  const angle = (rotation * Math.PI) / 180
-  const [cos, sin] = [Math.abs(Math.cos(angle)), Math.abs(Math.sin(angle))]
-  return {
-    x: (width * cos + height * sin) / 2,
-    y: (width * sin + height * cos) / 2,
-  }
-}
-
-type Spot = { x: number; y: number; covered: number }
-
-// The least covered spot for a stamp on a page, among seeded candidates that keep it inside.
-function bestSpot(grid: Uint8Array, stamp: Omit<Footprint, 'x' | 'y'>, seed: string): Spot {
-  const next = generator(hash(seed))
-  const extent = reach(stamp.width, stamp.height, stamp.rotation)
-  const range = (half: number, size: number) => {
-    const [low, high] = [margin + half, size - margin - half]
-    return low <= high ? { low, high } : { low: size / 2, high: size / 2 }
-  }
-  const [xs, ys] = [range(extent.x, page.width), range(extent.y, page.height - foot)]
-  let best: Spot = { x: page.width / 2, y: page.height / 2, covered: 1 }
-  for (let attempt = 0; attempt < candidates; attempt += 1) {
-    const x = xs.low + next() * (xs.high - xs.low)
-    const y = ys.low + next() * (ys.high - ys.low)
-    const covered = coverage(grid, { ...stamp, x, y }, best.covered)
-    if (covered < best.covered) best = { x, y, covered }
-    if (covered === 0) break
-  }
-  return best
-}
-
-/**
- * Lays arrivals out on the passport's pages in order: each stamp takes the least covered spot on
- * the current page, or opens a new page when every spot would cover more than `crowded` of it.
- */
-export function fillPages(arrivals: readonly Arrival[], salt = 0): StampRecord[] {
-  const records: StampRecord[] = []
-  let grid = new Uint8Array(columns * rows)
-  let current = 0
-  let onPage = 0
-  for (const [index, arrival] of arrivals.entries()) {
-    const stamp = stampFor(arrival, salt)
-    const shape = { width: stamp.width, height: stamp.height, rotation: stamp.print.rotation }
-    let spot = bestSpot(grid, shape, `page:${current}:${onPage}`)
-    if (onPage > 0 && spot.covered > crowded) {
-      grid = new Uint8Array(columns * rows)
-      current += 1
-      onPage = 0
-      spot = bestSpot(grid, shape, `page:${current}:${onPage}`)
-    }
-    eachCellUnder({ ...shape, x: spot.x, y: spot.y }, footprint, (at) => {
-      grid[at] = 1
-      return true
-    })
-    records.push({ ...arrival, ...stamp, index, page: current, x: spot.x, y: spot.y })
-    onPage += 1
-  }
-  return records
+/** Each arrival's stamp, dealt and printed as it was on the day they came. */
+export function stampRecords(arrivals: readonly Arrival[], salt = 0): StampRecord[] {
+  return arrivals.map((arrival, index) => ({
+    ...arrival,
+    index,
+    deal: dealPostmark(arrival.place, arrival.ordinal, salt),
+    print: { ...visitorPrint(arrival.place.key, arrival.ordinal), ...arrival.date },
+  }))
 }
 
 /**
@@ -203,4 +61,69 @@ export function fakeArrivals(
       date: { day: day.getUTCDate(), month: day.getUTCMonth(), year: day.getUTCFullYear() },
     }
   })
+}
+
+export const pileSettings = {
+  // How many stamps lie across the top of the pile per stamp's height of it: under 1, they
+  // overlap a little and every name shows.
+  topDensity: 0.7,
+  // How tightly the oldest stamps pack, as many again as the top's.
+  deepDensity: 2.6,
+  // How many stamps down the pile takes to pack from the top's density to the deepest, at most:
+  // a pile also packs fully by its reach.
+  settle: 140,
+  // The deepest stamp drawn, and how tall the pile may grow, in stamps: the rest lie under the
+  // footer, out of sight.
+  depth: 160,
+  reach: 10,
+}
+
+export type PileSettings = typeof pileSettings
+
+// The golden ratio's fraction: stepping by it spreads consecutive stamps across the width as
+// evenly as any sequence can, and a stamp keeps its spot however many arrive after it.
+const golden = 0.6180339887498949
+
+export type PileSpot = {
+  // The stamp's place in the Guestbook.
+  index: number
+  // Its centre: across as a share of the pile's width, down in px from the pile's top.
+  across: number
+  down: number
+}
+
+/**
+ * Where each of the newest stamps lies in a pile `width` px wide, with stamps `stamp` px across:
+ * the newest first, at the top. A stamp's place across is its own for good, so as visitors
+ * arrive it only sinks, and the deeper it lies the more tightly the stamps around it pack.
+ */
+export function pileLayout(
+  count: number,
+  width: number,
+  stamp: number,
+  settings: PileSettings = pileSettings,
+) {
+  const across = Math.max(1, width / stamp)
+  const shown = Math.min(count, settings.depth)
+  // A stamp near the edge would hang off it by half: keep centres half a stamp in.
+  const inset = Math.min(0.5, stamp / 2 / Math.max(1, width))
+  const spots: PileSpot[] = []
+  let down = stamp / 2
+  for (let depth = 0; depth < shown && down < settings.reach * stamp; depth += 1) {
+    const index = count - 1 - depth
+    const next = generator(hash(`pile:${index}`))
+    const spread = (index * golden + next() * 0.08) % 1
+    spots.push({
+      index,
+      across: inset + spread * (1 - 2 * inset),
+      down: down + (next() - 0.5) * stamp * 0.1,
+    })
+    // Stamps pack tighter with the stamps above them or with how far down the pile they lie,
+    // whichever is further along, so a narrow pile reaches its dense layer within its reach.
+    const settled = Math.min(1, Math.max(depth / settings.settle, down / (settings.reach * stamp)))
+    const eased = settled * settled * (3 - 2 * settled)
+    const density = settings.topDensity + (settings.deepDensity - settings.topDensity) * eased
+    down += stamp / (across * density)
+  }
+  return { spots, height: down + stamp / 2 }
 }
