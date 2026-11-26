@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 
-const userAgent = 'imomadjid.com postmark tools (https://imomadjid.com)'
+import { nominatimOutline } from '../../src/lib/osm-outline'
 
 // A visitor's place as the stamp names it, and the Nominatim search that finds its boundary.
 const places = [
@@ -78,72 +78,13 @@ const places = [
   },
 ]
 
-type Ring = [number, number][]
-type Geometry =
-  | { type: 'Polygon'; coordinates: Ring[] }
-  | { type: 'MultiPolygon'; coordinates: Ring[][] }
-
-function area(ring: Ring) {
-  let sum = 0
-  for (let index = 0; index < ring.length; index += 1) {
-    const [x1, y1] = ring[index] ?? [0, 0]
-    const [x2, y2] = ring[(index + 1) % ring.length] ?? [0, 0]
-    sum += x1 * y2 - x2 * y1
-  }
-  return Math.abs(sum / 2)
-}
-
-// The largest outer ring: a city's mainland, without far-off islands.
-function mainRing(geometry: Geometry) {
-  const rings =
-    geometry.type === 'Polygon'
-      ? [geometry.coordinates[0]]
-      : geometry.coordinates.map((polygon) => polygon[0])
-  return rings.filter((ring): ring is Ring => Boolean(ring)).sort((a, b) => area(b) - area(a))[0]
-}
-
-// Equirectangular, scaled by the cosine of the latitude, fitted into 100 x 100 and centred.
-function toPath(ring: Ring) {
-  const latitude = ring.reduce((sum, [, lat]) => sum + lat, 0) / ring.length
-  const scale = Math.cos((latitude * Math.PI) / 180)
-  const points = ring.map(([lon, lat]) => [lon * scale, -lat] as const)
-  const xs = points.map(([x]) => x)
-  const ys = points.map(([, y]) => y)
-  const [minX, maxX, minY, maxY] = [
-    Math.min(...xs),
-    Math.max(...xs),
-    Math.min(...ys),
-    Math.max(...ys),
-  ]
-  const size = Math.max(maxX - minX, maxY - minY)
-  const offsetX = (size - (maxX - minX)) / 2
-  const offsetY = (size - (maxY - minY)) / 2
-  const fit = (value: number, min: number, offset: number) =>
-    (((value - min + offset) / size) * 100).toFixed(1)
-  const commands = points.map(
-    ([x, y], index) =>
-      `${index === 0 ? 'M' : 'L'}${fit(x, minX, offsetX)} ${fit(y, minY, offsetY)}`,
-  )
-  return `${commands.join('')}Z`
-}
-
 const out = []
 for (const place of places) {
-  const url = `https://nominatim.openstreetmap.org/search?${new URLSearchParams({
-    q: place.query,
-    format: 'jsonv2',
-    polygon_geojson: '1',
-    polygon_threshold: '0.0007',
-    limit: '1',
-  })}`
-  const response = await fetch(url, { headers: { 'User-Agent': userAgent } })
-  if (!response.ok) throw new Error(`Nominatim answered ${response.status} for ${place.query}`)
-  const [hit]: { geojson?: Geometry }[] = await response.json()
-  const ring = hit?.geojson ? mainRing(hit.geojson) : undefined
-  if (!ring) throw new Error(`No boundary for ${place.query}`)
+  const outline = await nominatimOutline({ q: place.query })
+  if (!outline) throw new Error(`No boundary for ${place.query}`)
   const { query: _query, ...rest } = place
-  out.push({ ...rest, outline: toPath(ring) })
-  console.log(`${place.name}: ${ring.length} points`)
+  out.push({ ...rest, outline })
+  console.log(place.name)
   // Nominatim's usage policy allows one request a second.
   await sleep(1100)
 }

@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 
 import { Button } from '#/components/ui/button'
 
+import { currentStats, subscribeStats } from './postmark-ledger-client'
 import { PostmarkPile } from './postmark-pile'
 import { visitorPlaces } from './postmark-visitor-places'
 import { fakeArrivals, stampRecords } from './postmark-visits'
@@ -10,9 +11,10 @@ import type { Arrival } from './postmark-visits'
 // The postmark footer's pile (postmark-pile.tsx) with made-up visitors, at any count: the newest
 // stamps lie on top where every name shows, the older ones pack tighter as they sink, and the
 // foot of the pile darkens and blurs. The visitor's own stamp lies at the top in the middle,
-// marked "you!": at first the newest, or the one Stamp adds. Others visit adds eight visitors
-// after them, as a visitor coming back later finds the pile: theirs still on top, the rest fresh.
-// Shuffle shows another day: other visitors, and however many had come by then.
+// marked "thanks for visiting!": at first the newest, or the one Stamp adds. Others visit adds
+// eight visitors after them, as a visitor coming back later finds the pile: theirs still on top,
+// the rest fresh. Shuffle shows another day: other visitors, and however many had come by then.
+// Above them, the ledger's live counts (src/lib/postmark-ledger.ts), which the site doesn't show.
 
 const counts = [12, 60, 300, 1500] as const
 // Shuffle's days run from this many visitors in to this many, evenly on a log scale, so a young
@@ -51,6 +53,7 @@ export function PostmarkFooterFixture() {
   const records = useMemo(() => stampRecords(arrivals), [arrivals])
   const yours = you ?? records.length - 1
   const newest = records.at(-1)
+  const stats = useSyncExternalStore(subscribeStats, currentStats, () => undefined)
 
   function stampVisitor() {
     const chosen = visitorPlaces.find(({ place }) => place.key === placeKey)
@@ -87,13 +90,37 @@ export function PostmarkFooterFixture() {
           saved as it was dealt the day they arrived. The newest lie on top, spread out enough that
           every name shows; older ones pack tighter as they sink, and the pile&apos;s foot darkens
           and blurs. A stamp keeps its place across the page for good and only sinks. Your own stamp
-          lies at the top in the middle, marked &ldquo;you!&rdquo;, however long ago you first came:
-          Others visit adds eight visitors after you, as coming back later would. Shuffle shows
-          another day, with other visitors. The homepage shows it too, with 60 visitors or{' '}
-          <code>?postmarks=</code> as many, and
-          <code>?you=</code> pins an older stamp as yours.
+          lies at the top in the middle, marked &ldquo;thanks for visiting!&rdquo;, however long ago
+          you first came: Others visit adds eight visitors after you, as coming back later would.
+          Shuffle shows another day, with other visitors. The homepage shows the live ledger: real
+          visitors&apos; stamps over 60 made-up ones, which they bury as they come.{' '}
+          <code>?postmarks=</code> shows that many made-up visitors there instead, and{' '}
+          <code>?you=</code> pins one of them as yours.
         </p>
       </header>
+
+      <dl className="flex flex-wrap gap-x-6 gap-y-1 text-caption text-muted-foreground tabular-nums">
+        {stats ? (
+          (
+            [
+              ['Visitors', stats.visitors],
+              ['Visits', stats.visits],
+              ['Returning', stats.returning],
+              ['New today', stats.newToday],
+              ['Places', stats.places],
+              ['Countries', stats.countries],
+              ['Online', stats.online],
+            ] as const
+          ).map(([label, value]) => (
+            <div key={label} className="flex gap-1.5">
+              <dt>{label}</dt>
+              <dd className="text-foreground">{value.toLocaleString('en')}</dd>
+            </div>
+          ))
+        ) : (
+          <div>The ledger isn&apos;t running here.</div>
+        )}
+      </dl>
 
       <div className="flex flex-wrap items-end gap-3">
         <fieldset className="flex gap-1">

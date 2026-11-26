@@ -68,14 +68,21 @@ function useFrame() {
 
 export function PostmarkPile({
   records,
+  count = records.length,
+  visitors = count,
   you,
   bleed = true,
   className,
 }: {
-  // Every stamp so far, oldest first.
+  // The stamps the pile can show, each at its `index`: every one so far, or the newest of them
+  // and the visitor's own.
   records: readonly StampRecord[]
-  // The visitor's own stamp, by its place among the visitors: it lies at the top in the middle,
-  // with "thanks for visiting!" written beside it, however long ago they first came.
+  // How many stamps there are, the newest at `count - 1`.
+  count?: number
+  // How many of them are real visitors', for screen readers: the newest are.
+  visitors?: number
+  // The visitor's own stamp, by its index: it lies at the top in the middle, with "thanks for
+  // visiting!" written beside it, however long ago they first came.
   you?: number
   // Span the viewport's width from inside the page's column, as the homepage's does.
   bleed?: boolean
@@ -84,7 +91,8 @@ export function PostmarkPile({
   const id = useId().replace(/[^\w-]/g, '')
   const [element, width, room] = useFrame()
   const stamp = stampSize(width)
-  const pinned = you === undefined ? undefined : records[you]
+  const byIndex = useMemo(() => new Map(records.map((record) => [record.index, record])), [records])
+  const pinned = you === undefined ? undefined : byIndex.get(you)
   // The visitor's own stamp's size, which its note starts past.
   const yourSize = useMemo(
     () => pinned && postmarkSize(pinned.place, pinned.deal, pinned.print, stamp),
@@ -95,20 +103,22 @@ export function PostmarkPile({
   const { spots, height } = useMemo(
     () =>
       pinned && keep !== undefined
-        ? pileLayout(records.length, width, stamp, room, {
+        ? pileLayout(count, width, stamp, room, {
             index: pinned.index,
             left: keep,
             right: keep + thanksReach(stamp),
           })
-        : pileLayout(records.length, width, stamp, room),
-    [records.length, width, stamp, room, pinned, keep],
+        : pileLayout(count, width, stamp, room),
+    [count, width, stamp, room, pinned, keep],
   )
   // The darkening covers the blur's fade, at least the bottom 120 px.
   const fade = Math.max(120, height * fadeShare)
   // Deepest first, so the newest lie on top, and the visitor's own over them all.
   const deepestFirst = spots.filter((spot) => !spot.you).reverse()
   const yours = spots.find((spot) => spot.you)
-  const recent = records.slice(-5).reverse()
+  const recent = records
+    .filter((record) => record.index >= count - Math.min(5, visitors))
+    .sort((a, b) => b.index - a.index)
 
   return (
     <section
@@ -117,9 +127,11 @@ export function PostmarkPile({
       className={cn(bleed ? 'relative ml-[calc(50%-50vw)] w-screen' : 'relative w-full', className)}
     >
       <p className="sr-only">
-        {`${records.length.toLocaleString('en')} visitors. Most recently from ${recent
-          .map((record) => `${record.place.name}, ${record.place.country}`)
-          .join('; ')}.`}
+        {visitors === 0
+          ? 'No visitors yet.'
+          : `${visitors.toLocaleString('en')} ${visitors === 1 ? 'visitor' : 'visitors'}. Most recently from ${recent
+              .map((record) => `${record.place.name}, ${record.place.country}`)
+              .join('; ')}.`}
       </p>
       <div
         ref={element}
@@ -153,7 +165,7 @@ export function PostmarkPile({
               ))}
             </defs>
             {[...deepestFirst, ...(yours ? [yours] : [])].map(({ index, across, down }) => {
-              const record = records[index]
+              const record = byIndex.get(index)
               if (!record) return null
               const pastFoot = down + stamp * 0.72 > height
               return (

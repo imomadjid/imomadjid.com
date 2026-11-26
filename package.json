@@ -7,7 +7,7 @@
   },
   "scripts": {
     "intent": "node ./node_modules/@tanstack/intent/dist/cli.mjs",
-    "dev": "vp dev --port 3000",
+    "dev": "CLOUDFLARE_ENV=dev vp dev --port 3000",
     "build": "vp build",
     "build:dev": "CLOUDFLARE_ENV=dev vp build",
     "preview": "vp preview",

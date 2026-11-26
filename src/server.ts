@@ -5,8 +5,19 @@ import {
 } from '@tanstack/react-start/server'
 
 import { withByteRange } from '#/lib/byte-range'
+import { postmarkApi, postmarkPath } from '#/lib/postmark-api'
+import type { LedgerStub } from '#/lib/postmark-api'
 
-type Env = { ASSETS: { fetch: (request: Request) => Promise<Response> } }
+// The postmark footer's ledger, a Durable Object only the dev site binds until the footer ships.
+export { PostmarkLedger } from '#/lib/postmark-ledger-object'
+
+// A Durable Object's id, which only its namespace reads.
+type ObjectId = { toString: () => string }
+
+type Env = {
+  ASSETS: { fetch: (request: Request) => Promise<Response> }
+  POSTMARKS?: { idFromName: (name: string) => ObjectId; get: (id: ObjectId) => LedgerStub }
+}
 
 // Start's own entry, as @tanstack/react-start/server-entry builds it.
 const start = createServerEntry({ fetch: createStartHandler(defaultStreamHandler) })
@@ -18,7 +29,10 @@ const rangedMedia = /^\/assets\/[^/]+\.(?:webm|mp4)$/
 
 export default {
   async fetch(request: Request, env: Env) {
-    if (!rangedMedia.test(new URL(request.url).pathname)) return start.fetch(request)
+    const { pathname } = new URL(request.url)
+    if (import.meta.env.DEV_TOOLS && env.POSTMARKS && pathname.startsWith(postmarkPath))
+      return postmarkApi(request, env.POSTMARKS.get(env.POSTMARKS.idFromName('ledger')))
+    if (!rangedMedia.test(pathname)) return start.fetch(request)
     const response = await withByteRange(request, await env.ASSETS.fetch(request))
     if (response.ok) response.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
     return response

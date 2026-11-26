@@ -5,8 +5,9 @@ import places from './postmark-places.json'
 // rest of Indonesia, then the places the pilot drew for. Places beyond postmark-places.json have
 // no map outline of their own; their region's or country's drawings stand in.
 
-// A rounded blob standing in for a map outline.
-const outline =
+// A rounded blob standing in for a map outline: the last fallback for a place nobody has drawn
+// and OpenStreetMap has no boundary for.
+export const placeholderOutline =
   'M50 6C71 6 92 20 94 42C96 62 84 80 66 90C52 97 34 96 21 86C8 76 4 58 8 42C12 22 30 6 50 6Z'
 
 const extra = (
@@ -15,7 +16,7 @@ const extra = (
   region: string,
   country: string,
   countryCode: string,
-): PostmarkPlace => ({ key, name, region, country, countryCode, outline })
+): PostmarkPlace => ({ key, name, region, country, countryCode, outline: placeholderOutline })
 
 const known: PostmarkPlace[] = places
 const find = (key: string) => {
