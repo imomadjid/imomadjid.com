@@ -15,7 +15,7 @@ export const page = { width: 880, height: 1250 } as const
 
 // How large a stamp is on the page: a 220-unit round postmark comes out about 30 mm across, as
 // real ones are, about a third of the page's width.
-export const stampScale = 1.35
+const stampScale = 1.35
 
 // Stamps keep this far inside the page's edge, and clear of the page number at its foot.
 const margin = 24
@@ -55,7 +55,7 @@ export type StampRecord = Arrival & {
 }
 
 /** The stamp a visitor is dealt and its print, saved as it was on the day they arrived. */
-export function stampFor({ place, ordinal, date }: Arrival, salt = 0) {
+function stampFor({ place, ordinal, date }: Arrival, salt = 0) {
   const deal = dealPostmark(place, ordinal, salt)
   const print: Print = { ...visitorPrint(place.key, ordinal), ...date }
   const { width, height } = drawFamily(deal.family, {
