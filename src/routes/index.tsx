@@ -250,11 +250,13 @@ function Home() {
           </div>
 
           <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
+            {/* Cut for now, kept to revisit. It ended the first sentence: “…worthy of being called
+                a design engineer, though honestly, I’m still in the shadows of some inspiring giants
+                in this field.” */}
             <p className="animate-enter text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
               Hey, I’m Imo. I’m a software engineer, but in the fast-paced, messy world of tech
               we’re in, I like to think my love for design, engineering, and product makes me worthy
-              of being called a design engineer, though honestly, I’m still in the shadows of some
-              inspiring giants in this field.
+              of being called a design engineer.
             </p>
 
             <p className="animate-enter [--enter-index:2]">
