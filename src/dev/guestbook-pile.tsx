@@ -26,7 +26,7 @@ const roomShare = 0.5
 // The blur is skiper41's: one backdrop blur across the whole width, masked to full strength over
 // the lower half of the fade and fading out above it.
 const fadeShare = 0.6
-const footBlur = 8
+const footBlur = 2
 const blurMask = 'linear-gradient(to top, black 50%, transparent)'
 const darken = { light: 0.15, dark: 0.45 }
 
