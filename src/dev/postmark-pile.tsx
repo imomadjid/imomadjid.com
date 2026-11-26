@@ -1,4 +1,5 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
+import type { CSSProperties } from 'react'
 
 import { cn } from '#/lib/utils'
 
@@ -30,18 +31,68 @@ const footBlur = 2
 const blurMask = 'linear-gradient(to top, black 50%, transparent)'
 const darken = { light: 0.15, dark: 0.45 }
 
+// The stamps land one by one once the pile is reached and has stayed in view for `wait`
+// (src/styles.css): the deepest first and the newest last, over `spread`. Their delays follow a cube of their place
+// in the pile, so the buried ones come in a rush and the top ones land singly. The visitor's
+// own lands `yours` after the last of them, and the note starts writing `note` after that.
+// The pile starts once its top is `reached` of the way up the viewport.
+const landing = { wait: 400, spread: 1600, curve: 3, yours: 260, note: 420, reached: 0.25 }
+
+/** When the stamp `order` places from the bottom lands, of `count`, in ms from the start. */
+function landDelay(order: number, count: number) {
+  const share = count > 1 ? order / (count - 1) : 1
+  return landing.spread * share ** landing.curve
+}
+
+/**
+ * Whether the pile has been reached and its stamps are landing, and whether they all have:
+ * stamps that arrive after that, such as the visitor's own once they're stamped, land at once.
+ */
+function useLanding(element: HTMLElement | null) {
+  const [phase, setPhase] = useState<'waiting' | 'landing' | 'landed'>('waiting')
+  // When they started, in the page's clock.
+  const [startedAt, setStartedAt] = useState<number>()
+  useEffect(() => {
+    if (!element) return undefined
+    let pending: ReturnType<typeof setTimeout> | undefined
+    let done: ReturnType<typeof setTimeout> | undefined
+    // The pile starts once it has stayed in view for `wait`: one in view only until the Gallery
+    // above it loads and pushes it down doesn't.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        clearTimeout(pending)
+        if (!entry?.isIntersecting) return
+        pending = setTimeout(() => {
+          observer.disconnect()
+          setPhase('landing')
+          setStartedAt(performance.now())
+          done = setTimeout(() => setPhase('landed'), landing.spread + landing.yours + landing.note)
+        }, landing.wait)
+      },
+      { rootMargin: `0px 0px -${landing.reached * 100}% 0px` },
+    )
+    observer.observe(element)
+    return () => {
+      observer.disconnect()
+      clearTimeout(pending)
+      clearTimeout(done)
+    }
+  }, [element])
+  return [phase, startedAt] as const
+}
+
 /**
  * The pile's width, and its room: from just under the contents to the viewport's foot, which
  * the page's foot meets once it's scrolled to the end. Without the contents (a narrow
  * viewport), a share of the viewport's height.
  */
 function useFrame() {
-  const element = useRef<HTMLDivElement>(null)
+  const [element, setElement] = useState<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(0)
   const [contentsFoot, setContentsFoot] = useState<number>()
   const [viewport, setViewport] = useState(0)
   useEffect(() => {
-    const target = element.current
+    const target = element
     if (!target) return undefined
     const observer = new ResizeObserver(([entry]) => {
       if (entry) setWidth(entry.contentRect.width)
@@ -60,10 +111,10 @@ function useFrame() {
       observer.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [])
+  }, [element])
   const room =
     contentsFoot === undefined ? viewport * roomShare : viewport - contentsFoot - contentsGap
-  return [element, width, Math.max(1, room)] as const
+  return [element, setElement, width, Math.max(1, room)] as const
 }
 
 export function PostmarkPile({
@@ -89,7 +140,8 @@ export function PostmarkPile({
   className?: string
 }) {
   const id = useId().replace(/[^\w-]/g, '')
-  const [element, width, room] = useFrame()
+  const [element, setElement, width, room] = useFrame()
+  const [phase, startedAt] = useLanding(width > 0 ? element : null)
   const stamp = stampSize(width)
   const byIndex = useMemo(() => new Map(records.map((record) => [record.index, record])), [records])
   const pinned = you === undefined ? undefined : byIndex.get(you)
@@ -116,6 +168,17 @@ export function PostmarkPile({
   // Deepest first, so the newest lie on top, and the visitor's own over them all.
   const deepestFirst = spots.filter((spot) => !spot.you).reverse()
   const yours = spots.find((spot) => spot.you)
+  // The visitor's own lands after the rest, and the note writes after it.
+  const yoursDelay = landing.spread + landing.yours
+  const noteDelay = yoursDelay + landing.note
+  // Stamps wait, hidden, until the pile is reached; once every one has landed, new ones land at
+  // once.
+  const landStyle = (delay: number) =>
+    // SAFETY: custom properties, which CSSProperties doesn't list.
+    ({
+      '--land-delay': `${phase === 'landed' ? 0 : delay}ms`,
+      '--land-state': phase === 'waiting' ? 'paused' : 'running',
+    }) as CSSProperties
   const recent = records
     .filter((record) => record.index >= count - Math.min(5, visitors))
     .sort((a, b) => b.index - a.index)
@@ -134,7 +197,7 @@ export function PostmarkPile({
               .join('; ')}.`}
       </p>
       <div
-        ref={element}
+        ref={setElement}
         aria-hidden="true"
         // Cut at the sides. The stamps run on past the foot, drawn as SVG past its box, which is
         // painted without taking up room, as the blind wand reaches past the top of the page:
@@ -164,14 +227,19 @@ export function PostmarkPile({
                 </linearGradient>
               ))}
             </defs>
-            {[...deepestFirst, ...(yours ? [yours] : [])].map(({ index, across, down }) => {
+            {[...deepestFirst, ...(yours ? [yours] : [])].map(({ index, across, down }, order) => {
               const record = byIndex.get(index)
               if (!record) return null
               const pastFoot = down + stamp * 0.72 > height
+              const mine = index === yours?.index
               return (
                 <g
                   key={index}
-                  className="mix-blend-multiply dark:mix-blend-screen"
+                  className={cn(
+                    'mix-blend-multiply dark:mix-blend-screen',
+                    mine ? 'animate-postmark-press' : 'animate-postmark-land',
+                  )}
+                  style={landStyle(mine ? yoursDelay : landDelay(order, deepestFirst.length))}
                   filter={pastFoot ? `url(#${id}-soft)` : undefined}
                 >
                   <Postmark
@@ -193,6 +261,8 @@ export function PostmarkPile({
                 height={yourSize.height}
                 rotation={pinned.print.rotation}
                 stamp={stamp}
+                // Once the visitor's own has landed.
+                writeFrom={startedAt === undefined ? undefined : startedAt + noteDelay}
               />
             )}
             {/* The darkening holds its depth on past the foot, under the stamps that run on. */}

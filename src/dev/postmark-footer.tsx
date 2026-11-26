@@ -54,7 +54,7 @@ export function PostmarkFooter() {
       <PostmarkPile
         records={madeUp}
         you={askedFor >= 0 && askedFor < count ? askedFor : count - 1}
-        className="mt-32 -mb-16"
+        className="mt-48 -mb-16"
       />
     )
 
@@ -71,7 +71,7 @@ export function PostmarkFooter() {
       count={fill + (pile?.total ?? 0)}
       visitors={pile?.total ?? 0}
       you={you?.index}
-      className="mt-32 -mb-16"
+      className="mt-48 -mb-16"
     />
   )
 }

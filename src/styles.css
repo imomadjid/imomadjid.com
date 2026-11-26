@@ -105,6 +105,47 @@
   }
 }
 
+/* The postmark footer's stamps land one by one as the pile comes into view, deepest first, each
+   pressed down onto the page: in from a touch larger, fading up (src/dev/postmark-pile.tsx).
+   The visitor's own lands last and harder, settling with a little give. The pile sets each
+   one's --land-delay and pauses them all (--land-state) until it starts. The hidden state lives
+   only in the keyframe, and reduced motion skips it, so the stamps show at once. */
+@utility animate-postmark-land {
+  transform-box: fill-box;
+  transform-origin: center;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: postmark-land 320ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: var(--land-delay, 0ms);
+    animation-play-state: var(--land-state, running);
+  }
+}
+
+@utility animate-postmark-press {
+  transform-box: fill-box;
+  transform-origin: center;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: postmark-press 520ms cubic-bezier(0.3, 1.35, 0.55, 1) backwards;
+    animation-delay: var(--land-delay, 0ms);
+    animation-play-state: var(--land-state, running);
+  }
+}
+
+@keyframes postmark-land {
+  from {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes postmark-press {
+  from {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html.theme-transitioning body {
     transition: background-color 180ms ease-in-out;

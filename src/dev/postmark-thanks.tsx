@@ -2,8 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 // "thanks for visiting!" written beside the visitor's own stamp at the top of the postmark
 // footer's pile, off its top right edge, in the hand and ink of the blind wand's note
-// (src/components/wand-hint.tsx). It writes itself in the first time the pile comes into view,
-// once its font has loaded, and stays. The hand's font is cut to lowercase (src/styles.css), so
+// (src/components/wand-hint.tsx). It writes itself in once the pile says to, after the stamps
+// have landed, and once its font has loaded, and stays. The hand's font is cut to lowercase (src/styles.css), so
 // the words are too.
 const TEXT = 'thanks for visiting!'
 // How far the words start past the stamp's right edge, and their baseline below its top, in CSS
@@ -26,7 +26,8 @@ export function thanksReach(stamp: number) {
 
 const TILT = -4
 
-const WRITE_DELAY = 300
+// How long a note that shows up late waits for its stamp to land.
+const LATE_WRITE = 300
 // About as fast as a pen writes.
 const WRITE_TEXT = TEXT.length * 55
 const FONT_TIMEOUT = 3000
@@ -38,6 +39,7 @@ export function ThanksNote({
   height,
   rotation,
   stamp,
+  writeFrom,
 }: {
   // The stamp's centre, and its size and turn.
   x: number
@@ -47,39 +49,40 @@ export function ThanksNote({
   rotation: number
   // How wide a round stamp shows in the pile, which the hand's size follows.
   stamp: number
+  // When it starts writing, in the page's clock (performance.now()): once the pile's stamps have
+  // landed. Until the pile is reached, undefined.
+  writeFrom: number | undefined
 }) {
   const ref = useRef<SVGGElement>(null)
-  const [writing, setWriting] = useState(false)
+  // When it does start writing, once its font is in.
+  const [writeAt, setWriteAt] = useState<number>()
 
-  // Waits for the pile to show and for the hand's font, so it never writes in a fallback face.
+  // Waits for the hand's font too, so it never writes in a fallback face. A note that shows up
+  // after its time, beside a stamp that lands late, waits for that stamp to land first.
   useEffect(() => {
-    const note = ref.current
-    if (!note) return undefined
+    if (writeFrom === undefined) return undefined
+    const at = Math.max(writeFrom, performance.now() + LATE_WRITE)
     let cancelled = false
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting) return
-      observer.disconnect()
-      const timeout = new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT))
-      void Promise.race([document.fonts.load('500 22px Caveat'), timeout])
-        .catch(() => {})
-        .then(() => {
-          if (!cancelled) setWriting(true)
-        })
-    })
-    observer.observe(note)
+    const timeout = new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT))
+    void Promise.race([document.fonts.load('500 22px Caveat'), timeout])
+      .catch(() => {})
+      .then(() => {
+        if (!cancelled) setWriteAt(at)
+      })
     return () => {
       cancelled = true
-      observer.disconnect()
     }
-  }, [])
+  }, [writeFrom])
+  const writing = writeAt !== undefined
 
   // Before paint, so the note never flashes fully written before it starts writing.
   useLayoutEffect(() => {
     const text = ref.current?.querySelector('text')
-    if (!text || !writing) return undefined
+    if (!text || writeAt === undefined) return undefined
+    const delay = Math.max(0, writeAt - performance.now())
     const animation = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       ? text.animate([{ opacity: 0 }, { opacity: 1 }], {
-          delay: WRITE_DELAY,
+          delay,
           duration: 300,
           fill: 'backwards',
         })
@@ -87,14 +90,14 @@ export function ThanksNote({
         text.animate(
           [{ clipPath: 'inset(-30% 100% -30% 0)' }, { clipPath: 'inset(-30% 0 -30% 0)' }],
           {
-            delay: WRITE_DELAY,
+            delay,
             duration: WRITE_TEXT,
             easing: 'cubic-bezier(0.3, 0.1, 0.6, 1)',
             fill: 'backwards',
           },
         )
     return () => animation.cancel()
-  }, [writing])
+  }, [writeAt])
 
   const left = width / 2 + GAP
   const letter = letterSize(stamp)
@@ -105,14 +108,6 @@ export function ThanksNote({
       transform={`translate(${x} ${y}) rotate(${rotation.toFixed(1)})`}
       className="pointer-events-none text-neutral-500 select-none dark:text-neutral-400"
     >
-      {/* What the pile watches for coming into view, before the words are there. */}
-      <rect
-        x={left}
-        y={baseline - letter}
-        width={thanksReach(stamp) - GAP}
-        height={letter * 1.3}
-        fill="none"
-      />
       {writing && (
         <text
           x={left}
