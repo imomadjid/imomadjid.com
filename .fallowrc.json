@@ -42,6 +42,7 @@
     "tools/glass-live/motion.ts",
     "tools/glass-live/lag.ts",
     "tools/og/shoot.ts",
+    "tools/postmarks/metrics.ts",
     "tools/postmarks/outlines.ts",
     "tools/stamps/fetch.ts",
     "tools/stamps/import.ts",

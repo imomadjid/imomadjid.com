@@ -89,8 +89,14 @@ const config = defineConfig({
       stylesheet: './src/styles.css',
       functions: ['clsx', 'cn', 'cva', 'twMerge'],
     },
-    // tools/glass-live/fit.py writes the live-glass tables; formatted, they run to 30k lines.
-    ignorePatterns: [...toolingIgnores, 'bun.lock', 'src/lib/live-glass-material.json'],
+    // Generated tables: tools/glass-live/fit.py writes the live-glass ones (formatted, they run
+    // to 30k lines), tools/postmarks/metrics.ts the postmark glyph metrics.
+    ignorePatterns: [
+      ...toolingIgnores,
+      'bun.lock',
+      'src/lib/live-glass-material.json',
+      'src/dev/postmark-metrics.json',
+    ],
   },
   lint: {
     options: {

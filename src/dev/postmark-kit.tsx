@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import metrics from './postmark-metrics.json'
 import { pictorials, pictorialStroke } from './postmark-pictorials'
 
 // What every postmark layout shares: the place, its seeded design and the visitor's print, the
@@ -83,6 +84,12 @@ const inks = [
   { name: 'rust', light: '#a4541b', dark: '#f0a464' },
   { name: 'tobiiro', light: '#8a3324', dark: '#e58a72' },
 ] as const
+export type InkName = (typeof inks)[number]['name']
+const inkNames = inks.map((ink) => ink.name)
+
+export function inkOf(name: InkName) {
+  return inks.find((ink) => ink.name === name) ?? inks[0]
+}
 
 const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
@@ -119,13 +126,11 @@ export function postmarkDesign(placeKey: string, salt: number) {
   const next = generator(hash(`${placeKey}:${salt}`))
   return {
     shape: pick(next, shapes),
-    ink: pick(next, inks),
     outlineStyle: pick(next, outlineStyles),
     layout: pick(next, layouts),
     label: pick(next, labels),
     innerRing: next() < 0.6,
     ticks: next() < 0.45,
-    stars: next() < 0.5,
     family: pick(next, families),
     // A family's own alternative: a ground chord, a solid banner, a square seal, a frame.
     variant: next() < 0.5,
@@ -135,6 +140,111 @@ export function postmarkDesign(placeKey: string, salt: number) {
 }
 
 export type Design = ReturnType<typeof postmarkDesign>
+
+// The style a place's stamp is assembled from at run time, chosen apart from its structure (the
+// family): its ink, how heavy and how widely spaced its lettering is, how it sets the date, its
+// ornaments and, for round frames, its border. Each family lists what it accepts
+// (familyAccepts); the layouts size every line from the choice, so any accepted combination
+// clears its borders.
+const letterWeights = {
+  regular: { heavy: 700, mid: 600, light: 500 },
+  bold: { heavy: 800, mid: 700, light: 600 },
+  black: { heavy: 900, mid: 800, light: 700 },
+} as const
+export type LetterWeight = keyof typeof letterWeights
+// A layout's three levels of lettering: the name and date, secondary lines, small print.
+export type Tier = keyof (typeof letterWeights)['bold']
+// Multiplies each line's own letter-spacing.
+const trackings = { tight: 0.5, normal: 1, wide: 1.6 } as const
+export type Tracking = keyof typeof trackings
+const ornaments = ['stars', 'dots', 'none'] as const
+export type Ornament = (typeof ornaments)[number]
+const borders = ['single', 'double', 'beaded'] as const
+export type Border = (typeof borders)[number]
+
+export type Style = {
+  ink: InkName
+  weight: LetterWeight
+  tracking: Tracking
+  date: DateStyle
+  ornament: Ornament
+  border: Border
+}
+export type Axis = keyof Style
+type Accepts = { [axis in Axis]: readonly Style[axis][] }
+
+const anyWeight: readonly LetterWeight[] = ['bold', 'regular', 'black']
+const anyTracking: readonly Tracking[] = ['normal', 'tight', 'wide']
+
+// What each family accepts on every axis, its own choice first. An axis a family doesn't draw
+// has the one entry.
+const familyAccepts = {
+  classic: { date: ['long', 'fullDots', 'us'], ornament: ['stars', 'none'], border: ['single'] },
+  fukeiin: {
+    date: ['dots', 'fullDots'],
+    ornament: ['dots', 'stars', 'none'],
+    border: ['single', 'double', 'beaded'],
+  },
+  eki: { date: ['long'], ornament: ['none'], border: ['single'] },
+  sonderstempel: {
+    date: ['fullDots', 'dots', 'long'],
+    ornament: ['stars', 'dots', 'none'],
+    border: ['single'],
+  },
+  bridge: {
+    date: ['long', 'short', 'us'],
+    ornament: ['stars', 'dots', 'none'],
+    border: ['single', 'double', 'beaded'],
+  },
+  duplex: { date: ['short', 'dots'], ornament: ['none'], border: ['single', 'double'] },
+  wavy: { date: ['short', 'dots'], ornament: ['none'], border: ['single', 'double', 'beaded'] },
+  slogan: { date: ['short', 'dots'], ornament: ['none'], border: ['single', 'double', 'beaded'] },
+  'first-day': { date: ['us', 'long'], ornament: ['none'], border: ['single'] },
+  passport: { date: ['long', 'fullDots'], ornament: ['none'], border: ['single'] },
+  shield: { date: ['fullDots', 'dots', 'long'], ornament: ['none'], border: ['single'] },
+  'long-hexagon': { date: ['dots', 'fullDots'], ornament: ['none'], border: ['single'] },
+  seal: { date: ['dots', 'short'], ornament: ['none'], border: ['single'] },
+  mute: { date: ['long'], ornament: ['none'], border: ['single'] },
+} as const satisfies Record<Family, Omit<Accepts, 'ink' | 'weight' | 'tracking'>>
+
+// Every value of every axis, for pickers.
+export const axisValues: Accepts = {
+  ink: inkNames,
+  weight: ['regular', 'bold', 'black'],
+  tracking: ['tight', 'normal', 'wide'],
+  date: ['long', 'short', 'dots', 'fullDots', 'us'],
+  ornament: ornaments,
+  border: borders,
+}
+
+export function accepts(family: Family): Accepts {
+  return { ink: inkNames, weight: anyWeight, tracking: anyTracking, ...familyAccepts[family] }
+}
+
+// The place's style for `family`, seeded from the place like its design, with any `choices` the
+// family accepts in place of the seeded ones.
+export function postmarkStyle(
+  placeKey: string,
+  salt: number,
+  family: Family,
+  choices: Partial<Style> = {},
+): Style {
+  const next = generator(hash(`${placeKey}:${salt}:${family}`))
+  const list = accepts(family)
+  const choose = <A extends Axis>(axis: A): Style[A] => {
+    const seeded = pick(next, list[axis])
+    const chosen = choices[axis]
+    return chosen !== undefined && list[axis].includes(chosen) ? chosen : seeded
+  }
+  return {
+    ink: choose('ink'),
+    weight: choose('weight'),
+    tracking: choose('tracking'),
+    date: choose('date'),
+    ornament: choose('ornament'),
+    border: choose('border'),
+  }
+}
 
 // A visitor's print: the same design, struck on their own day at their own angle.
 export function visitorPrint(placeKey: string, visitor: number) {
@@ -173,6 +283,8 @@ function two(value: number) {
   return String(value).padStart(2, '0')
 }
 
+export type DateStyle = keyof typeof dates
+
 export function monthName(print: Print) {
   return months[print.month] ?? ''
 }
@@ -183,32 +295,118 @@ export type Kit = {
   place: PostmarkPlace
   design: Design
   print: Print
+  style: Style
   // Draw the map outline even where the place has a pictorial.
   outline: boolean
 }
 
-// Allo's capitals, measured in Chromium at weights 600 to 800: caps stand 0.73 em tall, letters
-// average 0.67 em wide (M and W about 1 em), tabular figures 0.57 em, a space 0.19 em.
+// Allo's capitals stand 0.73 em tall (1490 of 2048 units); accents rise to about 0.94 em and
+// cedillas drop 0.26 em, which inkHeights accounts for.
 export const capHeight = 0.73
 // The room left between lettering and any rule, ring or border, in viewBox units.
 export const gap = 4
 
-export function textUnits(text: string, spacing: number) {
+// Advances and ink heights measured from Allo by tools/postmarks/metrics.ts, with tabular
+// figures and capital punctuation, as the lettering is set.
+const glyphs: {
+  opticalSize: number
+  weights: number[]
+  advances: Record<string, number[]>
+  heights: Record<string, number[]>
+} = metrics
+// A character Allo lacks falls back to another font: allow it an em and full heights.
+const unknown = { advance: 1, ascent: 1, descent: 0.3 }
+
+function glyphKey(char: string) {
+  if (Object.hasOwn(glyphs.advances, char)) return char
+  // An accented letter outside the table measures as its base letter, with an accent's height.
+  const base = char.normalize('NFD')[0] ?? ''
+  return base !== char && Object.hasOwn(glyphs.advances, base) ? base : undefined
+}
+
+function advance(char: string, weight: number) {
+  const key = glyphKey(char)
+  const row = key === undefined ? undefined : glyphs.advances[key]
+  if (!row) return unknown.advance
+  const first = glyphs.weights[0] ?? 400
+  const step = (glyphs.weights[1] ?? 500) - first
+  const at = Math.min(row.length - 1, Math.max(0, (weight - first) / step))
+  const index = Math.min(row.length - 2, Math.floor(at))
+  const a = row[index] ?? 0
+  const b = row[index + 1] ?? a
+  return a + (b - a) * (at - index)
+}
+
+// How wide `text` sets, in ems, with `spacing` em after every character as browsers add it.
+export function textUnits(text: string, spacing: number, weight = 800) {
   let units = 0
-  for (const char of text) {
-    if (char === ' ') units += 0.2
-    else if (char >= '0' && char <= '9') units += 0.57
-    else if (char === 'M' || char === 'W') units += 1
-    else if (char === '·' || char === '.' || char === ',') units += 0.3
-    else units += 0.68
-    units += spacing
-  }
+  for (const char of text) units += advance(char, weight) + spacing
   return units
 }
 
-// A font size that sets `text` within `length` units, at most `max`.
-export function fit(text: string, length: number, max: number, spacing: number) {
-  return Math.min(max, length / textUnits(text, spacing))
+// How far `text`'s ink rises above and drops below its baseline, in ems.
+export function inkHeights(text: string) {
+  let [ascent, descent] = [0, 0]
+  for (const char of text) {
+    if (char.trim() === '') continue
+    const key = glyphKey(char)
+    const [up, down] =
+      key === undefined
+        ? [unknown.ascent, unknown.descent]
+        : key === char
+          ? (glyphs.heights[key] ?? [])
+          : // Allo's tallest stacked accents reach about 1.1 em.
+            [
+              Math.max(
+                char.normalize('NFD').length > 2 ? 1.1 : 0.94,
+                glyphs.heights[key]?.[0] ?? 0,
+              ),
+              glyphs.heights[key]?.[1] ?? 0.1,
+            ]
+    ascent = Math.max(ascent, up ?? unknown.ascent)
+    descent = Math.max(descent, down ?? unknown.descent)
+  }
+  return { ascent, descent }
+}
+
+// A line of lettering, ready to spread onto Text or ArcText: its size, weight and spacing from
+// the kit's style, and how far its ink rises and drops at that size.
+export type Line = {
+  size: number
+  weight: number
+  spacing: number
+  ascent: number
+  descent: number
+}
+
+// Sets `text` at `tier` with the family's own `spacing` (scaled by the style's tracking), as large
+// as fits in `length`, at most `max`.
+export function line(
+  kit: Kit,
+  text: string,
+  tier: Tier,
+  spacing: number,
+  length: number,
+  max: number,
+): Line {
+  const weight = letterWeights[kit.style.weight][tier]
+  const tracked = spacing * trackings[kit.style.tracking]
+  return sized(text, Math.min(max, length / textUnits(text, tracked, weight)), weight, tracked)
+}
+
+function sized(text: string, size: number, weight: number, spacing: number): Line {
+  const { ascent, descent } = inkHeights(text)
+  return { size, weight, spacing, ascent: ascent * size, descent: descent * size }
+}
+
+// The baseline that centres a line's caps on `middle`.
+export function centred(set: Line, middle: number) {
+  return middle + (capHeight * set.size) / 2
+}
+
+// The kit's date, as its style sets it.
+export function dateOf(kit: Kit) {
+  return dates[kit.style.date](kit.print)
 }
 
 // Clearance specs: `e cx cy rx ry` is an ellipse, `r x y w h` a box, `p x y x y ...` a convex
@@ -261,38 +459,49 @@ export function insetPolygon(points: readonly Point[], distance: number) {
 }
 
 // Lettering on the two arcs of a round frame between its border's inner edge (`reach`) and a ring
-// or the content inside (`ring`). The name sits as far out as it can, its caps a gap inside the
-// border; the bottom line hangs its caps inward from a baseline a gap inside it. `span` is how much
-// of each arc the lettering may cover.
-export function rimLettering({
-  reach,
-  ring,
-  name,
-  bottom,
-  span,
-  nameMax = 22,
-  bottomMax = 13,
-}: {
-  reach: number
-  ring: number
-  name: string
-  bottom: string
-  span: number
-  nameMax?: number
-  bottomMax?: number
-}) {
-  const nameSize = Math.min(
-    nameMax,
-    (reach - ring - gap * 2) / capHeight,
-    (span * (ring + gap)) / textUnits(name, 0.08),
-  )
-  const bottomRadius = reach - gap
-  const bottomSize = Math.min(
+// or the content inside (`ring`). The name sits as far out as it can, its ink a gap inside the
+// border; the bottom line hangs inward from a baseline a gap inside it, its descenders toward the
+// border. `span` is how much of each arc the lettering may cover.
+export function rimLettering(
+  kit: Kit,
+  {
+    reach,
+    ring,
+    name,
+    bottom,
+    span,
+    nameMax = 22,
+    bottomMax = 13,
+  }: {
+    reach: number
+    ring: number
+    name: string
+    bottom: string
+    span: number
+    nameMax?: number
+    bottomMax?: number
+  },
+) {
+  const room = reach - ring - gap * 2
+  const top = inkHeights(name)
+  const nameSet = line(kit, name, 'heavy', 0.08, span * (ring + gap), nameMax)
+  const nameSize = Math.min(nameSet.size, room / (top.ascent + top.descent))
+  const under = inkHeights(bottom)
+  const bottomSet = line(
+    kit,
+    bottom,
+    'light',
+    0.16,
+    span * (reach - gap - (under.ascent + under.descent) * bottomMax),
     bottomMax,
-    (bottomRadius - ring - gap) / capHeight,
-    (span * (bottomRadius - capHeight * bottomMax)) / textUnits(bottom, 0.16),
   )
-  return { nameSize, topRadius: reach - gap - capHeight * nameSize, bottomSize, bottomRadius }
+  const bottomSize = Math.min(bottomSet.size, room / (under.ascent + under.descent))
+  return {
+    name: sized(name, nameSize, nameSet.weight, nameSet.spacing),
+    bottom: sized(bottom, bottomSize, bottomSet.weight, bottomSet.spacing),
+    topRadius: reach - gap - top.ascent * nameSize,
+    bottomRadius: reach - gap - under.descent * bottomSize,
+  }
 }
 
 // The arcs rim lettering runs along: over the top left to right, under the bottom left to right.
@@ -313,6 +522,15 @@ export function arcPaths(id: string, cx: number, cy: number, top: number, bottom
       />
     </>
   )
+}
+
+// Lettering that measures as set: tabular figures, capital punctuation (Allo's `case`), the
+// optical size the metrics were taken at, and centred on its ink, since browsers add
+// letter-spacing after the last character too.
+const letterStyle = {
+  fontVariantNumeric: 'tabular-nums',
+  fontFeatureSettings: "'case'",
+  fontVariationSettings: `'opsz' ${glyphs.opticalSize}`,
 }
 
 export function Text({
@@ -341,20 +559,22 @@ export function Text({
   hidden?: boolean
   children: ReactNode
 }) {
+  const trail = anchor === 'start' ? 0 : (spacing * size) / (anchor === 'middle' ? 2 : 1)
   return (
     <text
       x={x}
       y={y}
+      dx={trail ? trail.toFixed(2) : undefined}
       fontSize={size.toFixed(2)}
       fontWeight={weight}
-      letterSpacing={`${spacing}em`}
+      letterSpacing={`${spacing.toFixed(3)}em`}
       textAnchor={anchor}
       stroke="none"
       fill={fill}
       visibility={hidden ? 'hidden' : undefined}
       data-within={within}
       data-outside={outside}
-      style={{ fontVariantNumeric: 'tabular-nums' }}
+      style={letterStyle}
     >
       {children}
     </text>
@@ -384,15 +604,17 @@ export function ArcText({
 }) {
   return (
     <text
+      dx={((spacing * size) / 2).toFixed(2)}
       fontSize={size.toFixed(2)}
       fontWeight={weight}
-      letterSpacing={`${spacing}em`}
+      letterSpacing={`${spacing.toFixed(3)}em`}
       stroke="none"
       textAnchor="middle"
       fill={fill}
       visibility={hidden ? 'hidden' : undefined}
       data-within={within}
       data-outside={outside}
+      style={letterStyle}
     >
       <textPath href={`#${path}`} startOffset="50%">
         {children}
@@ -401,13 +623,64 @@ export function ArcText({
   )
 }
 
-export function Star({ x, y, r }: { x: number; y: number; r: number }) {
+// Ornaments mark themselves `data-keepout`, which every line in the postmark must clear.
+function Star({ x, y, r }: { x: number; y: number; r: number }) {
   const points = Array.from({ length: 10 }, (_, index) => {
     const radius = index % 2 === 0 ? r : r * 0.45
     const angle = -Math.PI / 2 + (index * Math.PI) / 5
     return `${(x + radius * Math.cos(angle)).toFixed(2)},${(y + radius * Math.sin(angle)).toFixed(2)}`
   })
-  return <polygon points={points.join(' ')} stroke="none" />
+  return <polygon points={points.join(' ')} stroke="none" data-keepout={ellipseSpec(x, y, r)} />
+}
+
+function Dot({ x, y, r }: { x: number; y: number; r: number }) {
+  return <circle cx={x} cy={y} r={r} stroke="none" data-keepout={ellipseSpec(x, y, r)} />
+}
+
+// The style's ornament at (x, y), `r` the star's reach.
+export function OrnamentMark({ kit, x, y, r }: { kit: Kit; x: number; y: number; r: number }) {
+  if (kit.style.ornament === 'stars') return <Star x={x} y={y} r={r} />
+  if (kit.style.ornament === 'dots') return <Dot x={x} y={y} r={r * 0.55} />
+  return null
+}
+
+// A round frame's border in the style's border, and how near it comes to the middle (its reach):
+// a single line, a heavy line with a thin one inside, or a ring of beads.
+export function circleBorder(kit: Kit, cx: number, cy: number, r: number, width: number) {
+  const { border } = kit.style
+  if (border === 'double') {
+    return {
+      reach: r - 5.5 - 0.6,
+      drawn: (
+        <>
+          <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth={width} />
+          <circle cx={cx} cy={cy} r={r - 5.5} fill="none" strokeWidth={1.2} />
+        </>
+      ),
+    }
+  }
+  if (border === 'beaded') {
+    // A whole number of beads, about 7 units apart.
+    const count = Math.round((Math.PI * 2 * r) / 7)
+    return {
+      reach: r - width * 0.75,
+      drawn: (
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          strokeWidth={width * 1.5}
+          strokeLinecap="round"
+          strokeDasharray={`0 ${((Math.PI * 2 * r) / count).toFixed(3)}`}
+        />
+      ),
+    }
+  }
+  return {
+    reach: r - width / 2,
+    drawn: <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth={width} />,
+  }
 }
 
 export function Ticks({

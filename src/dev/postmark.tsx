@@ -9,25 +9,28 @@ import {
   Art,
   artSpec,
   boxSpec,
-  capHeight,
+  centred,
+  dateOf,
   dates,
   ellipseSpec,
   familyNames,
-  fit,
   gap,
+  inkHeights,
+  inkOf,
+  line,
+  OrnamentMark,
   pathOf,
   polygonPoints,
   polygonSpec,
   postmarkDesign,
+  postmarkStyle,
   rimLettering,
-  Star,
   subjectOf,
   Text,
-  textUnits,
   Ticks,
   visitorPrint,
 } from './postmark-kit'
-import type { Family, Kit, PostmarkPlace, Shape } from './postmark-kit'
+import type { Family, Kit, PostmarkPlace, Shape, Style } from './postmark-kit'
 
 // A passport-style postmark for a visitor's place. The design (layout family, shape, ink, rings,
 // the picture) comes from the place, so every visitor from Depok gets Depok's stamp; the print
@@ -44,6 +47,7 @@ export function Postmark({
   salt = 0,
   size = 180,
   family: familyOverride,
+  choices,
   outline = false,
   className,
   style,
@@ -54,6 +58,8 @@ export function Postmark({
   size?: number
   // Show this family instead of the place's own.
   family?: Family
+  // Style choices in place of the place's own, where the family accepts them.
+  choices?: Partial<Style>
   // Draw the map outline even where the place has a pictorial.
   outline?: boolean
   className?: string
@@ -63,7 +69,9 @@ export function Postmark({
   const design = postmarkDesign(place.key, salt)
   const family = familyOverride ?? design.family
   const print = visitorPrint(place.key, visitor)
-  const kit: Kit = { id, place, design, print, outline }
+  const looks = postmarkStyle(place.key, salt, family, choices)
+  const ink = inkOf(looks.ink)
+  const kit: Kit = { id, place, design, print, style: looks, outline }
   const { width, height, body } = family === 'classic' ? classic(kit) : familyLayouts[family](kit)
   const scale = size / 220
   // Speckle about a pixel and a half across at any size: finer, it only greys the ink.
@@ -74,14 +82,14 @@ export function Postmark({
       viewBox={`0 0 ${width} ${height}`}
       width={width * scale}
       height={height * scale}
-      data-postmark={`${place.name} (${family === 'classic' ? design.shape : familyNames[family]})`}
+      data-postmark={`${place.name} (${family === 'classic' ? design.shape : familyNames[family]}; ${Object.values(looks).join(', ')})`}
       className={`overflow-visible text-[var(--ink)] data-clash:outline-2 data-clash:outline-offset-4 data-clash:outline-red-500 data-clash:outline-dashed dark:text-[var(--ink-dark)] ${className ?? ''}`}
       style={
         // SAFETY: CSSProperties has no index signature for custom properties; --ink and
         // --ink-dark are plain colour strings.
         {
-          '--ink': design.ink.light,
-          '--ink-dark': design.ink.dark,
+          '--ink': ink.light,
+          '--ink-dark': ink.dark,
           rotate: `${print.rotation.toFixed(1)}deg`,
           ...style,
         } as CSSProperties
@@ -191,14 +199,15 @@ function RoundLayout(kit: LayoutProps) {
   const { id, place, design, print } = kit
   const [cx, cy] = [110, 110]
   const border = roundBorder(design.shape, cx, cy)
+  const stars = kit.style.ornament === 'stars'
   const name = place.name.toUpperCase()
   const bottom = (place.country === place.name ? place.region : place.country).toUpperCase()
   // What the lettering must stay outside: the inner ring, its ticks, or the content they frame.
   const ring = design.innerRing ? 64.8 : design.ticks ? 66.7 : 62
   // How much of each arc the lettering may cover, leaving the sides for the stars.
-  const span = (design.stars ? 0.74 : 0.86) * Math.PI
+  const span = (stars ? 0.74 : 0.86) * Math.PI
 
-  const { nameSize, topRadius, bottomSize, bottomRadius } = rimLettering({
+  const rim = rimLettering(kit, {
     reach: border.reach,
     ring,
     name,
@@ -207,6 +216,11 @@ function RoundLayout(kit: LayoutProps) {
   })
   const ringSpec = ellipseSpec(cx, cy, ring + 0.5)
   const insideRing = ellipseSpec(cx, cy, design.innerRing ? 63.2 : 60)
+  const date = dateOf(kit)
+  const label = design.label.toUpperCase()
+  const bandLabel = `${label} · NO.${print.serial}`
+  const bandDate = line(kit, date, 'heavy', 0.06, 112, 15)
+  const stackDate = line(kit, date, 'heavy', 0.06, 96, 13)
 
   return (
     <>
@@ -221,44 +235,31 @@ function RoundLayout(kit: LayoutProps) {
       {design.innerRing && <circle cx={cx} cy={cy} r={64} fill="none" strokeWidth={1.6} />}
       {design.ticks && <Ticks cx={cx} cy={cy} radius={design.innerRing ? 64 : 66} count={48} />}
 
-      {arcPaths(id, cx, cy, topRadius, bottomRadius)}
-      <ArcText
-        path={`${id}-top`}
-        size={nameSize}
-        weight={800}
-        spacing={0.08}
-        within={border.inner}
-        outside={ringSpec}
-      >
+      {arcPaths(id, cx, cy, rim.topRadius, rim.bottomRadius)}
+      <ArcText path={`${id}-top`} {...rim.name} within={border.inner} outside={ringSpec}>
         {name}
       </ArcText>
-      <ArcText
-        path={`${id}-bottom`}
-        size={bottomSize}
-        weight={600}
-        spacing={0.16}
-        within={border.inner}
-        outside={ringSpec}
-      >
+      <ArcText path={`${id}-bottom`} {...rim.bottom} within={border.inner} outside={ringSpec}>
         {bottom}
       </ArcText>
-      {design.stars && (
-        <>
-          <Star x={cx - 82} y={cy + 4} r={5.5} />
-          <Star x={cx + 82} y={cy + 4} r={5.5} />
-        </>
-      )}
+      <OrnamentMark kit={kit} x={cx - 82} y={cy + 4} r={5.5} />
+      <OrnamentMark kit={kit} x={cx + 82} y={cy + 4} r={5.5} />
 
       {design.layout === 'band' ? (
         <>
           <Art kit={kit} x={cx - 19} y={cy - 54} size={38} />
           <line x1={cx - 58} x2={cx + 58} y1={cy - 10} y2={cy - 10} strokeWidth={1.6} />
           <line x1={cx - 58} x2={cx + 58} y1={cy + 14} y2={cy + 14} strokeWidth={1.6} />
-          <Text x={cx} y={cy + 8.5} size={15} weight={800} within={insideRing}>
-            {dates.long(print)}
+          <Text x={cx} y={centred(bandDate, cy + 2)} {...bandDate} within={insideRing}>
+            {date}
           </Text>
-          <Text x={cx} y={cy + 27} size={7} weight={600} spacing={0.18} within={insideRing}>
-            {design.label.toUpperCase()} · NO.{print.serial}
+          <Text
+            x={cx}
+            y={cy + 27}
+            {...line(kit, bandLabel, 'light', 0.18, 96, 7)}
+            within={insideRing}
+          >
+            {bandLabel}
           </Text>
         </>
       ) : (
@@ -267,15 +268,14 @@ function RoundLayout(kit: LayoutProps) {
           <Text
             x={cx}
             y={cy + 26}
-            size={13}
-            weight={800}
+            {...stackDate}
             within={insideRing}
             outside={artSpec(kit, cx - 28, cy - 48, 56)}
           >
-            {dates.long(print)}
+            {date}
           </Text>
-          <Text x={cx} y={cy + 42} size={8} weight={600} spacing={0.2} within={insideRing}>
-            {design.label.toUpperCase()}
+          <Text x={cx} y={cy + 42} {...line(kit, label, 'light', 0.2, 72, 8)} within={insideRing}>
+            {label}
           </Text>
         </>
       )}
@@ -293,10 +293,29 @@ function OvalLayout(kit: LayoutProps) {
   const [kx, ky] = design.innerRing ? [rx - 29.3, ry - 29.3] : [rx - 30, ry - 30]
   // Roughly half the ellipse's perimeter at the lettering, three quarters of it usable.
   const room = 0.75 * Math.PI * Math.sqrt(((ix - 10) ** 2 + (iy - 10) ** 2) / 2)
-  const nameSize = Math.min(20, (iy - ky - gap * 2) / capHeight, room / textUnits(name, 0.08))
-  const [tx, ty] = [ix - gap - capHeight * nameSize, iy - gap - capHeight * nameSize]
-  const [bx, by] = [ix - gap, iy - gap]
-  const bottomSize = Math.min(12, (by - ky - gap) / capHeight, room / textUnits(bottom, 0.16))
+  const band = iy - ky - gap * 2
+  const top = inkHeights(name)
+  const under = inkHeights(bottom)
+  const nameSet = line(
+    kit,
+    name,
+    'heavy',
+    0.08,
+    room,
+    Math.min(20, band / (top.ascent + top.descent)),
+  )
+  const bottomSet = line(
+    kit,
+    bottom,
+    'light',
+    0.16,
+    room,
+    Math.min(12, band / (under.ascent + under.descent)),
+  )
+  const [tx, ty] = [ix - gap - nameSet.ascent, iy - gap - nameSet.ascent]
+  const [bx, by] = [ix - gap - bottomSet.descent, iy - gap - bottomSet.descent]
+  const date = dateOf(kit)
+  const label = `${design.label.toUpperCase()} · NO.${print.serial}`
   const within = ellipseSpec(cx, cy, ix, iy)
   const ringSpec = ellipseSpec(cx, cy, kx + 0.5, ky + 0.5)
   const insideRing = ellipseSpec(cx, cy, kx - 1.5, ky - 1.5)
@@ -319,40 +338,30 @@ function OvalLayout(kit: LayoutProps) {
         fill="none"
         stroke="none"
       />
-      <ArcText
-        path={`${id}-top`}
-        size={nameSize}
-        weight={800}
-        spacing={0.08}
-        within={within}
-        outside={ringSpec}
-      >
+      <ArcText path={`${id}-top`} {...nameSet} within={within} outside={ringSpec}>
         {name}
       </ArcText>
-      <ArcText
-        path={`${id}-bottom`}
-        size={bottomSize}
-        weight={600}
-        spacing={0.16}
-        within={within}
-        outside={ringSpec}
-      >
+      <ArcText path={`${id}-bottom`} {...bottomSet} within={within} outside={ringSpec}>
         {bottom}
       </ArcText>
       <Art kit={kit} x={cx - 80} y={cy - 18} size={36} />
-      <Text x={cx + 20} y={cy + 4} size={13} weight={800} within={insideRing} outside={outline}>
-        {dates.long(print)}
+      <Text
+        x={cx + 20}
+        y={cy + 4}
+        {...line(kit, date, 'heavy', 0.06, 104, 13)}
+        within={insideRing}
+        outside={outline}
+      >
+        {date}
       </Text>
       <Text
         x={cx + 20}
         y={cy + 17}
-        size={7}
-        weight={600}
-        spacing={0.2}
+        {...line(kit, label, 'light', 0.2, 100, 7)}
         within={insideRing}
         outside={outline}
       >
-        {design.label.toUpperCase()} · NO.{print.serial}
+        {label}
       </Text>
     </>
   )
@@ -391,8 +400,15 @@ function RectLayout(kit: LayoutProps & { width: number; height: number }) {
   const left = outline.x + outline.box + gap * 2
   const right = width - edge - gap
   const column = { x: (left + right) / 2, room: right - left }
+  // The bottom line sits where a notched frame's corner cuts in: it centres on the column within
+  // the edge's reach at its lowest ink (about 152), a gap clear of it.
+  const cut = notch - (edge - inset) * (2 - Math.SQRT2)
+  const cornerAt = (y: number) => width - edge - Math.max(0, y - (height - edge - cut))
+  const bottomRoom = notched
+    ? Math.min(column.room, 2 * (cornerAt(152) - gap - column.x))
+    : column.room
   const avoid = artSpec(kit, outline.x, outline.y, outline.box)
-  const line = (text: string, max: number, spacing: number) => fit(text, column.room, max, spacing)
+  const date = dateOf(kit)
   const region = place.region.toUpperCase()
   const country = place.country.toUpperCase()
   const label = `${design.label.toUpperCase()} · NO.${print.serial}`
@@ -428,9 +444,7 @@ function RectLayout(kit: LayoutProps & { width: number; height: number }) {
       <Text
         x={width / 2}
         y={46}
-        size={fit(name, width - 60, 26, 0.08)}
-        weight={800}
-        spacing={0.08}
+        {...line(kit, name, 'heavy', 0.08, width - 60, 26)}
         within={within}
       >
         {name}
@@ -447,19 +461,16 @@ function RectLayout(kit: LayoutProps & { width: number; height: number }) {
       <Text
         x={column.x}
         y={96}
-        size={line(dates.long(print), 18, 0.06)}
-        weight={800}
+        {...line(kit, date, 'heavy', 0.06, column.room, 18)}
         within={within}
         outside={avoid}
       >
-        {dates.long(print)}
+        {date}
       </Text>
       <Text
         x={column.x}
         y={114}
-        size={line(region, 10, 0.14)}
-        weight={600}
-        spacing={0.14}
+        {...line(kit, region, 'light', 0.14, column.room, 10)}
         within={within}
         outside={avoid}
       >
@@ -468,9 +479,7 @@ function RectLayout(kit: LayoutProps & { width: number; height: number }) {
       <Text
         x={column.x}
         y={128}
-        size={line(country, 10, 0.14)}
-        weight={600}
-        spacing={0.14}
+        {...line(kit, country, 'light', 0.14, column.room, 10)}
         within={within}
         outside={avoid}
       >
@@ -479,9 +488,7 @@ function RectLayout(kit: LayoutProps & { width: number; height: number }) {
       <Text
         x={column.x}
         y={150}
-        size={line(label, 8, 0.22)}
-        weight={600}
-        spacing={0.22}
+        {...line(kit, label, 'light', 0.22, bottomRoom, 8)}
         within={within}
         outside={avoid}
       >

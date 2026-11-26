@@ -8,24 +8,33 @@ import {
   artSpec,
   boxSpec,
   capHeight,
-  dates,
+  centred,
+  circleBorder,
+  dateOf,
   ellipseSpec,
-  fit,
+  gap,
+  inkHeights,
   insetPolygon,
+  line,
   monthName,
+  OrnamentMark,
   pathOf,
   polygonSpec,
   rimLettering,
-  Star,
   Text,
   textUnits,
 } from './postmark-kit'
-import type { Family, Kit, Point } from './postmark-kit'
+import type { Family, Kit, Line, Point } from './postmark-kit'
 
 // Postmark layout families after real postmarks, as the design research describes them (sizes
 // from Japan Post's scenic postmarks, Deutsche Post's special-handstamp rules, USPS pictorial
 // postmarks and Schengen passport stamps, thickened for a screen). Each returns its viewBox and
 // what it draws; round ones use a 220 box centred on (110, 110), as the classic stamps do.
+//
+// A family is a structure: it places the frame, the picture and the slots for its lines. What
+// fills the slots comes from the kit's style (lettering weight and tracking, date format,
+// ornaments, border), and every line is sized from that choice by `line`, so each combination
+// the family accepts (familyAccepts in postmark-kit.tsx) fits its slots.
 
 export type Drawn = { width: number; height: number; body: ReactNode }
 
@@ -46,33 +55,50 @@ function greeting(kit: Kit) {
   return kit.place.countryCode === 'ID' ? 'SALAM DARI' : 'GREETINGS FROM'
 }
 
+const two = (value: number) => String(value).padStart(2, '0')
+
+// How wide a set line's ink is, in viewBox units.
+function inkWidth(text: string, set: Line) {
+  return (textUnits(text, set.spacing, set.weight) - set.spacing) * set.size
+}
+
 // Japan's scenic postmark: the picture is the stamp, with the date in a pill and the office's
 // name along the bottom.
 function fukeiin(kit: Kit): Drawn {
-  const { id, design, print, place } = kit
+  const { id, design, place } = kit
   const [cx, cy] = [110, 110]
-  const reach = 100 - 1.3
+  const border = circleBorder(kit, cx, cy, 100, 2.6)
   const name = upper(place.name)
-  const date = dates.dots(print)
-  const radius = 94
-  const size = Math.min(13, (Math.PI * 0.8 * (radius - capHeight * 13)) / textUnits(name, 0.22))
-  // The dots stand just past each end of the name.
-  const half = (textUnits(name, 0.22) * size) / (radius - capHeight * size) / 2 + 0.16
-  const dot = (side: number): Point => [
-    cx + side * Math.sin(half) * (radius - 4),
-    cy + Math.cos(half) * (radius - 4),
-  ]
+  const date = dateOf(kit)
+  const heights = inkHeights(name)
+  const nameSet = line(
+    kit,
+    name,
+    'mid',
+    0.22,
+    Math.PI * 0.8 * (border.reach - gap - (heights.ascent + heights.descent) * 13),
+    13,
+  )
+  // The name hangs under the bottom, its descenders a gap in from the border.
+  const radius = border.reach - gap - Math.max(0.7, nameSet.descent)
+  // The ornaments stand just past each end of the name, in the middle of its caps.
+  const half = inkWidth(name, nameSet) / (radius - nameSet.ascent) / 2 + 0.16
+  const mark = (side: number): Point => {
+    const middle = radius - (capHeight * nameSet.size) / 2
+    return [cx + side * Math.sin(half) * middle, cy + Math.cos(half) * middle]
+  }
   const pill = { x: 72, y: 148, w: 76, h: 20 }
   const art = { x: 52, y: 20, size: 116 }
-  const dateSize = fit(date, pill.w - 18, 13, 0.06)
+  const dateSet = line(kit, date, 'heavy', 0.06, pill.w - 18, 13)
+  const ground = Math.sqrt(border.reach ** 2 - (141 - cy) ** 2) - 1
   return {
     width: 220,
     height: 220,
     body: (
       <>
-        <circle cx={cx} cy={cy} r={100} fill="none" strokeWidth={2.6} />
+        {border.drawn}
         {design.variant && (
-          <line x1={cx - 93.5} x2={cx + 93.5} y1={141} y2={141} strokeWidth={2.2} />
+          <line x1={cx - ground} x2={cx + ground} y1={141} y2={141} strokeWidth={2.2} />
         )}
         <Art kit={kit} {...art} />
         <rect
@@ -86,9 +112,8 @@ function fukeiin(kit: Kit): Drawn {
         />
         <Text
           x={cx}
-          y={pill.y + pill.h / 2 + (capHeight * dateSize) / 2}
-          size={dateSize}
-          weight={800}
+          y={centred(dateSet, pill.y + pill.h / 2)}
+          {...dateSet}
           within={boxSpec(pill.x, pill.y, pill.w, pill.h)}
         >
           {date}
@@ -96,17 +121,15 @@ function fukeiin(kit: Kit): Drawn {
         {arcPaths(id, cx, cy, radius, radius)}
         <ArcText
           path={`${id}-bottom`}
-          size={size}
-          weight={700}
-          spacing={0.22}
-          within={ellipseSpec(cx, cy, reach)}
+          {...nameSet}
+          within={ellipseSpec(cx, cy, border.reach)}
           outside={`${boxSpec(pill.x, pill.y, pill.w, pill.h)};${artSpec(kit, art.x, art.y, art.size)}`}
         >
           {name}
         </ArcText>
         {[-1, 1].map((side) => {
-          const [x, y] = dot(side)
-          return <circle key={side} cx={x} cy={y} r={2.6} stroke="none" />
+          const [x, y] = mark(side)
+          return <OrnamentMark key={side} kit={kit} x={x} y={y} r={4.7} />
         })}
       </>
     ),
@@ -120,11 +143,16 @@ function eki(kit: Kit): Drawn {
   const name = upper(place.name)
   const sub = regionLine(kit)
   const banner = { x: 14, y: 156, w: 192, h: 50 }
-  const nameSize = fit(name, banner.w - 16, 22, 0.06)
-  const subSize = fit(sub, banner.w - 24, 8, 0.2)
+  const nameSet = line(kit, name, 'heavy', 0.06, banner.w - 16, 22)
+  const subSet = line(kit, sub, 'light', 0.2, banner.w - 24, 8)
   const seal = { cx: 34, cy: 34, r: 18 }
+  const day = two(print.day)
+  const month = monthName(print)
+  const daySet = line(kit, day, 'heavy', 0.06, 24, 13)
+  const monthSet = line(kit, month, 'mid', 0.12, 22, 6.5)
   const art = { x: 56, y: 24, size: 118 }
   const within = boxSpec(banner.x, banner.y, banner.w, banner.h)
+  const inSeal = ellipseSpec(seal.cx, seal.cy, seal.r - 1)
   return {
     width: 220,
     height: 220,
@@ -135,29 +163,16 @@ function eki(kit: Kit): Drawn {
         {design.variant && <line x1={8} x2={212} y1={155} y2={155} strokeWidth={1.4} />}
         <Art kit={kit} {...art} />
         <circle cx={seal.cx} cy={seal.cy} r={seal.r} fill="none" strokeWidth={1.8} />
-        <Text
-          x={seal.cx}
-          y={seal.cy + 2}
-          size={13}
-          weight={800}
-          within={ellipseSpec(seal.cx, seal.cy, seal.r - 1)}
-        >
-          {String(print.day).padStart(2, '0')}
+        <Text x={seal.cx} y={seal.cy + 2} {...daySet} within={inSeal}>
+          {day}
         </Text>
-        <Text
-          x={seal.cx}
-          y={seal.cy + 11}
-          size={6.5}
-          weight={700}
-          spacing={0.12}
-          within={ellipseSpec(seal.cx, seal.cy, seal.r - 1)}
-        >
-          {monthName(print)}
+        <Text x={seal.cx} y={seal.cy + 11} {...monthSet} within={inSeal}>
+          {month}
         </Text>
-        <Text x={110} y={186} size={nameSize} weight={800} within={within}>
+        <Text x={110} y={186} {...nameSet} within={within}>
           {name}
         </Text>
-        <Text x={110} y={200} size={subSize} weight={600} spacing={0.2} within={within}>
+        <Text x={110} y={200} {...subSet} within={within}>
           {sub}
         </Text>
       </>
@@ -168,19 +183,27 @@ function eki(kit: Kit): Drawn {
 // Deutsche Post's special handstamp: the name replaces the top of the border, the region the
 // bottom; the picture sits above a ruled date field.
 function sonderstempel(kit: Kit): Drawn {
-  const { id, design, print, place } = kit
+  const { id, print, place } = kit
   const [cx, cy] = [110, 110]
   const name = upper(place.name)
   const sub = regionLine(kit)
-  // The name's band straddles the border's circle.
-  const nameSize = Math.min(16, (Math.PI * 0.72 * 94) / textUnits(name, 0.1))
-  const baseline = 100 - (capHeight * nameSize) / 2
-  const nameHalf = (textUnits(name, 0.1) * nameSize) / baseline / 2
-  // The border breaks a word space past each end of the name, where a star stands.
+  // The name's ink straddles the border's circle, reaching at most 8 units either side of it.
+  const heights = inkHeights(name)
+  const nameSet = line(
+    kit,
+    name,
+    'heavy',
+    0.1,
+    Math.PI * 0.72 * 94,
+    Math.min(16, 16 / (heights.ascent + heights.descent)),
+  )
+  const baseline = 100 - (nameSet.ascent - nameSet.descent) / 2
+  const nameHalf = inkWidth(name, nameSet) / baseline / 2
+  // The border breaks a word space past each end of the name, where an ornament stands.
   const breakAngle = nameHalf + 0.17
-  const starAngle = nameHalf + 0.09
-  const subSize = fit(sub, 84, 12, 0.1)
-  const bottomHalf = Math.asin(Math.min(0.95, (textUnits(sub, 0.1) * subSize) / 2 / 100 + 0.12))
+  const markAngle = nameHalf + 0.09
+  const subSet = line(kit, sub, 'mid', 0.1, 84, 12)
+  const bottomHalf = Math.asin(Math.min(0.95, inkWidth(sub, subSet) / 2 / 100 + 0.12))
   const top = -Math.PI / 2
   const bottomMid = Math.PI / 2
   const arc = (from: number, to: number) => {
@@ -189,7 +212,10 @@ function sonderstempel(kit: Kit): Drawn {
     return `M${x1.toFixed(2)} ${y1.toFixed(2)} A100 100 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`
   }
   const field = { x: 62, y: 130, w: 96, h: 30 }
-  const date = dates.fullDots(print)
+  const date = dateOf(kit)
+  const dateSet = line(kit, date, 'heavy', 0.02, field.w - 10, 14)
+  const serial = `NO.${print.serial}`
+  const serialSet = line(kit, serial, 'light', 0.2, 70, 7.5)
   const art = { x: 68, y: 34, size: 84 }
   const outer = ellipseSpec(cx, cy, 108)
   return {
@@ -206,31 +232,23 @@ function sonderstempel(kit: Kit): Drawn {
         {arcPaths(id, cx, cy, baseline, 0)}
         <ArcText
           path={`${id}-top`}
-          size={nameSize}
-          weight={800}
-          spacing={0.1}
-          within={outer}
+          {...nameSet}
+          within={ellipseSpec(cx, cy, 110)}
           outside={artSpec(kit, art.x, art.y, art.size)}
         >
           {name}
         </ArcText>
-        {[-1, 1].map((side) => {
-          // Where the posthorns stand on a German stamp: stars, or plain dots.
-          const [x, y] = [cx + side * Math.sin(starAngle) * 100, cy - Math.cos(starAngle) * 100]
-          return design.variant ? (
-            <circle key={side} cx={x} cy={y} r={3} stroke="none" />
-          ) : (
-            <Star key={side} x={x} y={y} r={4.5} />
-          )
-        })}
-        <Text
-          x={cx}
-          y={196 + (capHeight * subSize) / 2}
-          size={subSize}
-          weight={700}
-          spacing={0.1}
-          within={outer}
-        >
+        {/* Where the posthorns stand on a German stamp. */}
+        {[-1, 1].map((side) => (
+          <OrnamentMark
+            key={side}
+            kit={kit}
+            x={cx + side * Math.sin(markAngle) * 100}
+            y={cy - Math.cos(markAngle) * 100}
+            r={4.5}
+          />
+        ))}
+        <Text x={cx} y={centred(subSet, 196)} {...subSet} within={outer}>
           {sub}
         </Text>
         <Art kit={kit} {...art} />
@@ -244,16 +262,14 @@ function sonderstempel(kit: Kit): Drawn {
         />
         <Text
           x={cx}
-          y={field.y + 20}
-          size={fit(date, field.w - 10, 14, 0.02)}
-          weight={800}
-          spacing={0.02}
+          y={centred(dateSet, field.y + field.h / 2)}
+          {...dateSet}
           within={boxSpec(field.x, field.y, field.w, field.h)}
         >
           {date}
         </Text>
-        <Text x={cx} y={176} size={7.5} weight={600} spacing={0.2} within={ellipseSpec(cx, cy, 98)}>
-          {`NO.${print.serial}`}
+        <Text x={cx} y={176} {...serialSet} within={ellipseSpec(cx, cy, 98)}>
+          {serial}
         </Text>
       </>
     ),
@@ -265,58 +281,51 @@ function sonderstempel(kit: Kit): Drawn {
 function bridge(kit: Kit): Drawn {
   const { id, print, place } = kit
   const [cx, cy] = [110, 110]
+  const border = circleBorder(kit, cx, cy, 100, 3)
   const name = upper(place.name)
   const bottom = countryLine(kit)
-  const rim = rimLettering({ reach: 98.5, ring: 62.8, name, bottom, span: 0.62 * Math.PI })
-  const date = dates.long(print)
-  const chord = (y: number) => Math.sqrt(100 ** 2 - (y - cy) ** 2) - 1.5
+  const rim = rimLettering(kit, {
+    reach: border.reach,
+    ring: 62.8,
+    name,
+    bottom,
+    span: 0.62 * Math.PI,
+  })
+  const date = dateOf(kit)
+  const dateSet = line(kit, date, 'heavy', 0.06, 112, 15)
+  const serial = `NO.${print.serial}`
+  const serialSet = line(kit, serial, 'light', 0.2, 60, 8)
+  const chord = (y: number) => Math.sqrt(border.reach ** 2 - (y - cy) ** 2)
   const ring = ellipseSpec(cx, cy, 63.5)
+  const rim2 = ellipseSpec(cx, cy, border.reach)
+  // The ornaments stand either side, midway between the rings.
+  const side = (border.reach + 62.8) / 2
   const art = { x: 86, y: 47, size: 48 }
   return {
     width: 220,
     height: 220,
     body: (
       <>
-        <circle cx={cx} cy={cy} r={100} fill="none" strokeWidth={3} />
+        {border.drawn}
         <circle cx={cx} cy={cy} r={62} fill="none" strokeWidth={1.6} />
         {[98, 124].map((y) => (
           <line key={y} x1={cx - chord(y)} x2={cx + chord(y)} y1={y} y2={y} strokeWidth={1.8} />
         ))}
-        <Text
-          x={cx}
-          y={117}
-          size={fit(date, 112, 15, 0.06)}
-          weight={800}
-          within={boxSpec(50, 99, 120, 24)}
-        >
+        <Text x={cx} y={centred(dateSet, 111)} {...dateSet} within={boxSpec(50, 99, 120, 24)}>
           {date}
         </Text>
         {arcPaths(id, cx, cy, rim.topRadius, rim.bottomRadius)}
-        <ArcText
-          path={`${id}-top`}
-          size={rim.nameSize}
-          weight={800}
-          spacing={0.08}
-          within={ellipseSpec(cx, cy, 98.5)}
-          outside={ring}
-        >
+        <ArcText path={`${id}-top`} {...rim.name} within={rim2} outside={ring}>
           {name}
         </ArcText>
-        <ArcText
-          path={`${id}-bottom`}
-          size={rim.bottomSize}
-          weight={600}
-          spacing={0.16}
-          within={ellipseSpec(cx, cy, 98.5)}
-          outside={ring}
-        >
+        <ArcText path={`${id}-bottom`} {...rim.bottom} within={rim2} outside={ring}>
           {bottom}
         </ArcText>
-        <Star x={26} y={111} r={5} />
-        <Star x={194} y={111} r={5} />
+        <OrnamentMark kit={kit} x={cx - side} y={111} r={5} />
+        <OrnamentMark kit={kit} x={cx + side} y={111} r={5} />
         <Art kit={kit} {...art} />
-        <Text x={cx} y={146} size={8} weight={600} spacing={0.2} within={ellipseSpec(cx, cy, 60)}>
-          {`NO.${print.serial}`}
+        <Text x={cx} y={146} {...serialSet} within={ellipseSpec(cx, cy, 60)}>
+          {serial}
         </Text>
       </>
     ),
@@ -325,12 +334,13 @@ function bridge(kit: Kit): Drawn {
 
 // A date stamp beside a barred oval, the obliterator, here with a window for the picture.
 function duplex(kit: Kit): Drawn {
-  const { id, print, place } = kit
+  const { id, place } = kit
   const [cx, cy] = [85, 85]
+  const border = circleBorder(kit, cx, cy, 72, 2.6)
   const name = upper(place.name)
   const bottom = countryLine(kit)
-  const rim = rimLettering({
-    reach: 70.7,
+  const rim = rimLettering(kit, {
+    reach: border.reach,
     ring: 40.8,
     name,
     bottom,
@@ -338,7 +348,8 @@ function duplex(kit: Kit): Drawn {
     nameMax: 15,
     bottomMax: 10,
   })
-  const date = dates.short(print)
+  const date = dateOf(kit)
+  const dateSet = line(kit, date, 'heavy', 0.06, 60, 14)
   const half = (y: number) => Math.sqrt(40 ** 2 - (y - cy) ** 2) - 1
   const killer = { cx: 250, cy: 85, rx: 78, ry: 76 }
   const window = 50
@@ -349,44 +360,31 @@ function duplex(kit: Kit): Drawn {
     const open = Math.abs(k) <= 2
     return { y, width, open }
   })
+  const within = ellipseSpec(cx, cy, border.reach)
+  const ring = ellipseSpec(cx, cy, 41.5)
   return {
     width: 330,
     height: 170,
     body: (
       <>
-        <circle cx={cx} cy={cy} r={72} fill="none" strokeWidth={2.6} />
+        {border.drawn}
         <circle cx={cx} cy={cy} r={40} fill="none" strokeWidth={1.6} />
         {[72, 98].map((y) => (
           <line key={y} x1={cx - half(y)} x2={cx + half(y)} y1={y} y2={y} strokeWidth={1.6} />
         ))}
         <Text
           x={cx}
-          y={90}
-          size={fit(date, 60, 14, 0.06)}
-          weight={800}
+          y={centred(dateSet, 85)}
+          {...dateSet}
           within={boxSpec(cx - half(72), 72.8, half(72) * 2, 24.4)}
         >
           {date}
         </Text>
         {arcPaths(id, cx, cy, rim.topRadius, rim.bottomRadius)}
-        <ArcText
-          path={`${id}-top`}
-          size={rim.nameSize}
-          weight={800}
-          spacing={0.08}
-          within={ellipseSpec(cx, cy, 70.7)}
-          outside={ellipseSpec(cx, cy, 41.5)}
-        >
+        <ArcText path={`${id}-top`} {...rim.name} within={within} outside={ring}>
           {name}
         </ArcText>
-        <ArcText
-          path={`${id}-bottom`}
-          size={rim.bottomSize}
-          weight={600}
-          spacing={0.16}
-          within={ellipseSpec(cx, cy, 70.7)}
-          outside={ellipseSpec(cx, cy, 41.5)}
-        >
+        <ArcText path={`${id}-bottom`} {...rim.bottom} within={within} outside={ring}>
           {bottom}
         </ArcText>
         <g strokeWidth={7.5} strokeLinecap="round">
@@ -409,13 +407,14 @@ function duplex(kit: Kit): Drawn {
 
 // The small date circle every machine cancel and slogan box starts from.
 function dateCircle(kit: Kit, cx: number, cy: number) {
-  const { id, print, place } = kit
+  const { id, place } = kit
+  const border = circleBorder(kit, cx, cy, 58, 2.6)
   const name = upper(place.name)
   const bottom = countryLine(kit)
-  const date = dates.short(print)
-  const dateSize = fit(date, 56, 12, 0.06)
-  const rim = rimLettering({
-    reach: 56.7,
+  const date = dateOf(kit)
+  const dateSet = line(kit, date, 'heavy', 0.06, 56, 12)
+  const rim = rimLettering(kit, {
+    reach: border.reach,
     ring: 36,
     name,
     bottom,
@@ -424,31 +423,18 @@ function dateCircle(kit: Kit, cx: number, cy: number) {
     bottomMax: 9,
   })
   const inner = ellipseSpec(cx, cy, 36)
+  const within = ellipseSpec(cx, cy, border.reach)
   return (
     <>
-      <circle cx={cx} cy={cy} r={58} fill="none" strokeWidth={2.6} />
-      <Text x={cx} y={cy + (capHeight * dateSize) / 2} size={dateSize} weight={800} within={inner}>
+      {border.drawn}
+      <Text x={cx} y={centred(dateSet, cy)} {...dateSet} within={inner}>
         {date}
       </Text>
       {arcPaths(id, cx, cy, rim.topRadius, rim.bottomRadius)}
-      <ArcText
-        path={`${id}-top`}
-        size={rim.nameSize}
-        weight={800}
-        spacing={0.08}
-        within={ellipseSpec(cx, cy, 56.7)}
-        outside={inner}
-      >
+      <ArcText path={`${id}-top`} {...rim.name} within={within} outside={inner}>
         {name}
       </ArcText>
-      <ArcText
-        path={`${id}-bottom`}
-        size={rim.bottomSize}
-        weight={600}
-        spacing={0.16}
-        within={ellipseSpec(cx, cy, 56.7)}
-        outside={inner}
-      >
+      <ArcText path={`${id}-bottom`} {...rim.bottom} within={within} outside={inner}>
         {bottom}
       </ArcText>
     </>
@@ -523,9 +509,7 @@ function slogan(kit: Kit): Drawn {
         <Text
           x={column.cx}
           y={58}
-          size={fit(hello, column.w, 9, 0.2)}
-          weight={700}
-          spacing={0.2}
+          {...line(kit, hello, 'mid', 0.2, column.w, 9)}
           within={within}
           outside={outside}
         >
@@ -534,9 +518,7 @@ function slogan(kit: Kit): Drawn {
         <Text
           x={column.cx}
           y={84}
-          size={fit(name, column.w, 20, 0.04)}
-          weight={800}
-          spacing={0.04}
+          {...line(kit, name, 'heavy', 0.04, column.w, 20)}
           within={within}
           outside={outside}
         >
@@ -546,9 +528,7 @@ function slogan(kit: Kit): Drawn {
         <Text
           x={column.cx}
           y={112}
-          size={fit(label, column.w, 7.5, 0.16)}
-          weight={600}
-          spacing={0.16}
+          {...line(kit, label, 'light', 0.16, column.w, 7.5)}
           within={within}
           outside={outside}
         >
@@ -561,16 +541,15 @@ function slogan(kit: Kit): Drawn {
 
 // A first-day cancel: frameless, the picture large, the date and place beside it.
 function firstDay(kit: Kit): Drawn {
-  const { design, print, place } = kit
+  const { design, place } = kit
   const art = { x: 10, y: 20, size: 110 }
   const column = { cx: 201, w: 128 }
   const label = upper(design.label)
-  const date = dates.us(print)
+  const date = dateOf(kit)
   const where = `${upper(place.name)}, ${regionLine(kit)}`
   const country = upper(place.country)
   const within = design.variant ? boxSpec(6, 6, 268, 138) : boxSpec(2, 2, 276, 146)
   const outside = artSpec(kit, art.x, art.y, art.size)
-  const dateSize = fit(date, column.w, 22, 0.04)
   return {
     width: 280,
     height: 150,
@@ -583,9 +562,7 @@ function firstDay(kit: Kit): Drawn {
         <Text
           x={column.cx}
           y={46}
-          size={fit(label, column.w, 9, 0.24)}
-          weight={700}
-          spacing={0.24}
+          {...line(kit, label, 'mid', 0.24, column.w, 9)}
           within={within}
           outside={outside}
         >
@@ -595,9 +572,7 @@ function firstDay(kit: Kit): Drawn {
         <Text
           x={column.cx}
           y={84}
-          size={dateSize}
-          weight={800}
-          spacing={0.04}
+          {...line(kit, date, 'heavy', 0.04, column.w, 22)}
           within={within}
           outside={outside}
         >
@@ -608,8 +583,7 @@ function firstDay(kit: Kit): Drawn {
         <Text
           x={column.cx}
           y={116}
-          size={fit(where, column.w, 11, 0.06)}
-          weight={700}
+          {...line(kit, where, 'mid', 0.06, column.w, 11)}
           within={within}
           outside={outside}
         >
@@ -618,9 +592,7 @@ function firstDay(kit: Kit): Drawn {
         <Text
           x={column.cx}
           y={132}
-          size={fit(country, column.w, 9, 0.16)}
-          weight={600}
-          spacing={0.16}
+          {...line(kit, country, 'light', 0.16, column.w, 9)}
           within={within}
           outside={outside}
         >
@@ -639,8 +611,11 @@ function passport(kit: Kit): Drawn {
   const art = { x: 188, y: 12, size: 38 }
   const within = boxSpec(9, 9, 222, 132)
   const outside = artSpec(kit, art.x, art.y, art.size)
-  const date = dates.long(print)
+  const date = dateOf(kit)
   const label = `${departure ? 'DEPARTED' : 'ARRIVED'} · ${upper(place.name)}`
+  const serial = `NO.${print.serial}`
+  const codeSet = line(kit, place.countryCode, 'heavy', 0.06, 36, 18)
+  const dateSet = line(kit, date, 'heavy', 0.04, 200, 26)
   // An arrow points in for an arrival and out for a departure.
   const arrow = departure ? 'M84 22 L74 30 L84 38 Z' : 'M74 22 L84 30 L74 38 Z'
   return {
@@ -658,39 +633,25 @@ function passport(kit: Kit): Drawn {
           strokeWidth={3}
         />
         <rect x={18} y={16} width={46} height={28} fill="none" strokeWidth={2} />
-        <Text
-          x={41}
-          y={30 + (capHeight * 18) / 2}
-          size={18}
-          weight={800}
-          within={boxSpec(18, 16, 46, 28)}
-        >
+        <Text x={41} y={centred(codeSet, 30)} {...codeSet} within={boxSpec(18, 16, 46, 28)}>
           {place.countryCode}
         </Text>
         <path d={arrow} stroke="none" />
-        <Text x={134} y={34} size={9} weight={600} spacing={0.16} within={within} outside={outside}>
-          {`NO.${print.serial}`}
+        <Text
+          x={134}
+          y={34}
+          {...line(kit, serial, 'light', 0.16, 44, 9)}
+          within={within}
+          outside={outside}
+        >
+          {serial}
         </Text>
         <Art kit={kit} {...art} />
         <line x1={6} x2={234} y1={56} y2={56} strokeWidth={1.6} />
-        <Text
-          x={120}
-          y={98 + (capHeight * 24) / 2 - 4}
-          size={fit(date, 200, 26, 0.04)}
-          weight={800}
-          spacing={0.04}
-          within={within}
-        >
+        <Text x={120} y={centred(dateSet, 94)} {...dateSet} within={within}>
           {date}
         </Text>
-        <Text
-          x={120}
-          y={128}
-          size={fit(label, 196, 12, 0.16)}
-          weight={700}
-          spacing={0.16}
-          within={within}
-        >
+        <Text x={120} y={128} {...line(kit, label, 'mid', 0.16, 196, 12)} within={within}>
           {label}
         </Text>
       </>
@@ -700,10 +661,10 @@ function passport(kit: Kit): Drawn {
 
 // A shield, one of Deutsche Post's special-handstamp outlines.
 function shield(kit: Kit): Drawn {
-  const { print, place } = kit
+  const { place } = kit
   const name = upper(place.name)
   const art = { x: 58, y: 50, size: 82 }
-  const date = dates.fullDots(print)
+  const date = dateOf(kit)
   return {
     width: 200,
     height: 176,
@@ -718,9 +679,7 @@ function shield(kit: Kit): Drawn {
         <Text
           x={100}
           y={34}
-          size={fit(name, 160, 16, 0.08)}
-          weight={800}
-          spacing={0.08}
+          {...line(kit, name, 'heavy', 0.08, 160, 16)}
           within={boxSpec(14, 14, 172, 26)}
         >
           {name}
@@ -730,9 +689,7 @@ function shield(kit: Kit): Drawn {
         <Text
           x={100}
           y={148}
-          size={fit(date, 80, 12, 0.04)}
-          weight={800}
-          spacing={0.04}
+          {...line(kit, date, 'heavy', 0.04, 80, 12)}
           within={polygonSpec([
             [30, 134],
             [170, 134],
@@ -751,7 +708,7 @@ function shield(kit: Kit): Drawn {
 // Deutsche Post's long hexagon: the name along the top, the region along the bottom, the picture
 // at the left and the date in a ruled field at the right.
 function longHexagon(kit: Kit): Drawn {
-  const { design, print, place } = kit
+  const { design, place } = kit
   const points: Point[] = [
     [8, 100],
     [60, 10],
@@ -765,7 +722,9 @@ function longHexagon(kit: Kit): Drawn {
   const sub = regionLine(kit)
   const art = { x: 40, y: 56, size: 88 }
   const field = { x: 142, y: 80, w: 88, h: 44 }
-  const date = dates.dots(print)
+  const date = dateOf(kit)
+  const label = upper(design.label)
+  const inField = boxSpec(field.x, field.y, field.w, field.h)
   const outside = artSpec(kit, art.x, art.y, art.size)
   return {
     width: 260,
@@ -781,14 +740,7 @@ function longHexagon(kit: Kit): Drawn {
             strokeLinejoin="round"
           />
         )}
-        <Text
-          x={130}
-          y={40}
-          size={fit(name, 136, 17, 0.08)}
-          weight={800}
-          spacing={0.08}
-          within={within}
-        >
+        <Text x={130} y={40} {...line(kit, name, 'heavy', 0.08, 136, 17)} within={within}>
           {name}
         </Text>
         <Art kit={kit} {...art} />
@@ -803,10 +755,8 @@ function longHexagon(kit: Kit): Drawn {
         <Text
           x={field.x + field.w / 2}
           y={field.y + 21}
-          size={fit(date, field.w - 10, 16, 0.04)}
-          weight={800}
-          spacing={0.04}
-          within={boxSpec(field.x, field.y, field.w, field.h)}
+          {...line(kit, date, 'heavy', 0.04, field.w - 10, 16)}
+          within={inField}
           outside={outside}
         >
           {date}
@@ -814,20 +764,16 @@ function longHexagon(kit: Kit): Drawn {
         <Text
           x={field.x + field.w / 2}
           y={field.y + 36}
-          size={7.5}
-          weight={600}
-          spacing={0.2}
-          within={boxSpec(field.x, field.y, field.w, field.h)}
+          {...line(kit, label, 'light', 0.2, field.w - 10, 7.5)}
+          within={inField}
           outside={outside}
         >
-          {upper(design.label)}
+          {label}
         </Text>
         <Text
           x={130}
           y={172}
-          size={fit(sub, 120, 11, 0.14)}
-          weight={700}
-          spacing={0.14}
+          {...line(kit, sub, 'mid', 0.14, 120, 11)}
           within={within}
           outside={outside}
         >
@@ -841,27 +787,32 @@ function longHexagon(kit: Kit): Drawn {
 // A seal cut in reverse: a solid disc (or square) of ink with the picture, the name and a ring
 // knocked out of it, and the date in ink in a knocked-out pill.
 function seal(kit: Kit): Drawn {
-  const { id, design, print, place } = kit
+  const { id, design, place } = kit
   const [cx, cy] = [110, 110]
   const square = design.variant
   const name = upper(place.name)
-  const radius = 84
-  const nameSize = Math.min(
-    15,
-    (Math.PI * 0.62 * (radius - capHeight * 15)) / textUnits(name, 0.16),
+  const heights = inkHeights(name)
+  // Its ink reaches in no nearer the middle than 70, clear of the date pill's corners.
+  const nameSet = line(
+    kit,
+    name,
+    'heavy',
+    0.16,
+    Math.PI * 0.62 * (80 - (heights.ascent + heights.descent) * 15),
+    Math.min(15, 14 / heights.ascent),
   )
+  // The name hangs under the bottom; a descender moves it in, clear of the knocked-out ring.
+  const radius = 84 - Math.max(0, nameSet.descent - 1.5)
   const pill = { x: 74, y: 146, w: 72, h: 20 }
   const art = { x: 54, y: 26, size: 112 }
-  const date = dates.dots(print)
-  const dateSize = fit(date, pill.w - 12, 12, 0.06)
+  const date = dateOf(kit)
+  const dateSet = line(kit, date, 'heavy', 0.06, pill.w - 12, 12)
   const within = square ? boxSpec(22, 22, 176, 176) : ellipseSpec(cx, cy, 89)
   const outside = `${boxSpec(pill.x, pill.y, pill.w, pill.h)};${artSpec(kit, art.x, art.y, art.size)}`
   const nameText = (hidden: boolean) => (
     <ArcText
       path={`${id}-bottom`}
-      size={nameSize}
-      weight={800}
-      spacing={0.16}
+      {...nameSet}
       fill={hidden ? undefined : '#000'}
       hidden={hidden}
       within={hidden ? within : undefined}
@@ -906,9 +857,8 @@ function seal(kit: Kit): Drawn {
         {nameText(true)}
         <Text
           x={cx}
-          y={pill.y + pill.h / 2 + (capHeight * dateSize) / 2}
-          size={dateSize}
-          weight={800}
+          y={centred(dateSet, pill.y + pill.h / 2)}
+          {...dateSet}
           within={boxSpec(pill.x, pill.y, pill.w, pill.h)}
         >
           {date}
@@ -923,6 +873,8 @@ function mute(kit: Kit): Drawn {
   const { print } = kit
   const stamp = { cx: 178, cy: 182, r: 30 }
   const within = ellipseSpec(stamp.cx, stamp.cy, stamp.r - 1.5)
+  const day = two(print.day)
+  const month = monthName(print)
   return {
     width: 220,
     height: 220,
@@ -930,11 +882,21 @@ function mute(kit: Kit): Drawn {
       <>
         <Art kit={kit} x={30} y={14} size={152} />
         <circle cx={stamp.cx} cy={stamp.cy} r={stamp.r} fill="none" strokeWidth={2} />
-        <Text x={stamp.cx} y={stamp.cy + 3} size={15} weight={800} within={within}>
-          {String(print.day).padStart(2, '0')}
+        <Text
+          x={stamp.cx}
+          y={stamp.cy + 3}
+          {...line(kit, day, 'heavy', 0.06, 40, 15)}
+          within={within}
+        >
+          {day}
         </Text>
-        <Text x={stamp.cx} y={stamp.cy + 15} size={8} weight={700} spacing={0.14} within={within}>
-          {monthName(print)}
+        <Text
+          x={stamp.cx}
+          y={stamp.cy + 15}
+          {...line(kit, month, 'mid', 0.14, 34, 8)}
+          within={within}
+        >
+          {month}
         </Text>
       </>
     ),
