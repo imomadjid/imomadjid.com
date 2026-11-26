@@ -10,36 +10,56 @@ import type { Arrival } from './guestbook-wall'
 
 // The Guestbook's pile (guestbook-pile.tsx) with made-up visitors, at any count: the newest
 // stamps lie on top where every name shows, the older ones pack tighter as they sink, and the
-// foot of the pile darkens and blurs into the footer. Stamp adds a visitor on top, and every
-// stamp below sinks a little.
+// foot of the pile darkens and blurs into the footer. The visitor's own stamp lies at the top in
+// the middle, marked "you!": at first the newest, or the one Stamp adds. Others visit adds eight
+// visitors after them, as a visitor coming back later finds the pile: theirs still on top, the
+// rest fresh.
 
 const counts = [12, 60, 300, 1500] as const
 
+/** `arrivals` numbered again among their places' visitors, a visitor every six hours. */
+function inOrder(arrivals: readonly Arrival[]): Arrival[] {
+  const seen = new Map<string, number>()
+  const start = Date.UTC(2026, 0, 1)
+  return arrivals.map((arrival, index) => {
+    const ordinal = seen.get(arrival.place.key) ?? 0
+    seen.set(arrival.place.key, ordinal + 1)
+    const day = new Date(start + index * 6 * 3_600_000)
+    return {
+      place: arrival.place,
+      ordinal,
+      date: { day: day.getUTCDate(), month: day.getUTCMonth(), year: day.getUTCFullYear() },
+    }
+  })
+}
+
 export function GuestbookFixture() {
   const [count, setCount] = useState<(typeof counts)[number]>(60)
-  const [stamped, setStamped] = useState<Arrival[]>([])
+  const [later, setLater] = useState<Arrival[]>([])
+  // The visitor's own stamp, by its place in the Guestbook; until they stamp, the newest.
+  const [you, setYou] = useState<number>()
   const [placeKey, setPlaceKey] = useState(wallPlaces[0]?.place.key ?? '')
 
-  const arrivals = useMemo(() => [...fakeArrivals(count, wallPlaces), ...stamped], [count, stamped])
-  const records = useMemo(() => stampRecords(arrivals), [arrivals])
-  const yours = useMemo(
-    () => new Set(records.slice(records.length - stamped.length).map((record) => record.index)),
-    [records, stamped.length],
+  const arrivals = useMemo(
+    () => inOrder([...fakeArrivals(count, wallPlaces), ...later]),
+    [count, later],
   )
+  const records = useMemo(() => stampRecords(arrivals), [arrivals])
+  const yours = you ?? records.length - 1
 
   function stampVisitor() {
     const chosen = wallPlaces.find(({ place }) => place.key === placeKey)
     if (!chosen) return
-    const ordinal = arrivals.filter((arrival) => arrival.place.key === chosen.place.key).length
-    const today = new Date(Date.UTC(2026, 0, 1) + arrivals.length * 6 * 3_600_000)
-    setStamped((current) => [
+    setYou(arrivals.length)
+    setLater((current) => [
       ...current,
-      {
-        place: chosen.place,
-        ordinal,
-        date: { day: today.getUTCDate(), month: today.getUTCMonth(), year: today.getUTCFullYear() },
-      },
+      { place: chosen.place, ordinal: 0, date: { day: 1, month: 0, year: 2026 } },
     ])
+  }
+
+  function othersVisit() {
+    setYou(yours)
+    setLater((current) => [...current, ...fakeArrivals(8, wallPlaces, `later:${current.length}`)])
   }
 
   return (
@@ -51,7 +71,10 @@ export function GuestbookFixture() {
           as it was dealt the day they arrived. The newest lie on top, spread out enough that every
           name shows; older ones pack tighter as they sink, and the pile&apos;s foot darkens and
           blurs into the footer. A stamp keeps its place across the page for good and only sinks.
-          The homepage shows it too, with 60 visitors or <code>?guestbook=</code> as many.
+          Your own stamp lies at the top in the middle, marked &ldquo;you!&rdquo;, however long ago
+          you first came: Others visit adds eight visitors after you, as coming back later would.
+          The homepage shows it too, with 60 visitors or <code>?guestbook=</code> as many, and
+          <code>?you=</code> pins an older stamp as yours.
         </p>
       </header>
 
@@ -66,7 +89,8 @@ export function GuestbookFixture() {
               aria-pressed={option === count}
               onClick={() => {
                 setCount(option)
-                setStamped([])
+                setLater([])
+                setYou(undefined)
               }}
             >
               {`${option.toLocaleString('en')} visitors`}
@@ -90,12 +114,15 @@ export function GuestbookFixture() {
         <Button size="compact" onClick={stampVisitor}>
           Stamp
         </Button>
+        <Button size="compact" variant="secondary" onClick={othersVisit}>
+          Others visit
+        </Button>
       </div>
 
       <GuestbookPile
         records={records}
 
-        yours={yours}
+        you={yours}
         bleed={false}
         className="mt-16"
       >

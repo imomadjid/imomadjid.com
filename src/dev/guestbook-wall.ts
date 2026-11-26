@@ -97,6 +97,8 @@ type PileSpot = {
   // down in px from the pile's top.
   across: number
   down: number
+  // The visitor's own stamp, pinned at the top in the middle.
+  you?: true
 }
 
 /**
@@ -105,12 +107,16 @@ type PileSpot = {
  * good, so as visitors arrive it only sinks, and the deeper it lies the more tightly the stamps
  * around it pack. Once the pile fills its room, the oldest run on past its foot, `runOut` stamps
  * further, where the page ends.
+ *
+ * The visitor's own stamp, `you`, lies at the top in the middle whenever they come, however long
+ * ago they first did, and the rest of the pile is the newest stamps without it.
  */
 export function pileLayout(
   count: number,
   width: number,
   stamp: number,
   room: number,
+  you?: number,
   settings: PileSettings = pileSettings,
 ) {
   const { topDensity: top, deepDensity: deep, dropoff, settle, bleed, runOut } = settings
@@ -122,11 +128,16 @@ export function pileLayout(
   const shown = Math.min(count, deepest)
   // The last stamps lie past the foot, where the page ends.
   const end = room + stamp * runOut
-  const spots: PileSpot[] = []
   // A little over half a stamp, so a turned stamp's corners clear the top edge.
   let down = stamp * 0.6
+  const pinned = you !== undefined && you >= 0 && you < count ? you : undefined
+  const spots: PileSpot[] =
+    pinned === undefined ? [] : [{ index: pinned, across: 0.5, down, you: true }]
+  let index = count
   for (let depth = 0; depth < shown && down <= end; depth += 1) {
-    const index = count - 1 - depth
+    index -= 1
+    if (index === pinned) index -= 1
+    if (index < 0) break
     const next = generator(hash(`pile:${index}`))
     const spread = (index * golden + next() * 0.08) % 1
     spots.push({

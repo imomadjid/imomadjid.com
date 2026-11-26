@@ -8,7 +8,7 @@
 @source not './dev';
 /* The Guestbook's pile renders under the homepage's footer with the dev tools, so its classes
    are the site's own; it costs production a few unused rules until it ships. */
-@source './dev/{guestbook-footer,guestbook-pile,postmark}.tsx';
+@source './dev/{guestbook-footer,guestbook-pile,guestbook-you,postmark}.tsx';
 @source not './hooks';
 @source not './components/fluid-hover-highlight.tsx';
 @source not './components/ui/{badge,button,checkbox,field,input,radio-group,scroll-area,sidebar,sidebar-core,sidebar-menu,slider,switch,textarea,tooltip}.tsx';

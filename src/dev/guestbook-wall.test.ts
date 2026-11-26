@@ -66,3 +66,19 @@ void test('the top of the pile spreads its stamps across the width', () => {
   const thirds = new Set(top.map((across) => Math.min(2, Math.floor(across * 3))))
   assert.equal(thirds.size, 3, 'the newest eight reach every third of the width')
 })
+
+void test("the visitor's own stamp lies at the top in the middle, and only there", () => {
+  const { spots } = pileLayout(300, 1200, 124, 600, 40)
+  const yours = spots.filter((spot) => spot.index === 40)
+  assert.equal(yours.length, 1)
+  assert.equal(yours[0]?.you, true)
+  assert.equal(yours[0]?.across, 0.5)
+  // Others only jitter a twentieth of a stamp off their row.
+  assert.ok(
+    spots.every((spot) => spot.down >= (yours[0]?.down ?? 0) - 124 * 0.05),
+    'none lies above it',
+  )
+  // The rest are the newest, as without it.
+  const others = spots.filter((spot) => !spot.you).map((spot) => spot.index)
+  assert.equal(others[0], 299)
+})

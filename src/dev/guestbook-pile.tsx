@@ -5,6 +5,7 @@ import { cn } from '#/lib/utils'
 
 import { pileLayout, pileSettings } from './guestbook-wall'
 import type { StampRecord } from './guestbook-wall'
+import { YouNote } from './guestbook-you'
 import { Postmark } from './postmark'
 
 // The Guestbook's pile at the foot of the page (guestbook-wall.ts): the newest stamps on top,
@@ -68,15 +69,16 @@ function useFrame() {
 
 export function GuestbookPile({
   records,
-  yours,
+  you,
   bleed = true,
   className,
   children,
 }: {
   // Every stamp so far, oldest first.
   records: readonly StampRecord[]
-  // Stamps to mark, as the visitor's own.
-  yours?: ReadonlySet<number>
+  // The visitor's own stamp, by its place in the Guestbook: it lies at the top in the middle,
+  // with "you!" written beside it, however long ago they first came.
+  you?: number
   // Span the viewport's width from inside the page's column, as the homepage's footer does.
   bleed?: boolean
   className?: string
@@ -86,13 +88,14 @@ export function GuestbookPile({
   const [element, width, room] = useFrame()
   const stamp = stampSize(width)
   const { spots, height } = useMemo(
-    () => pileLayout(records.length, width, stamp, room),
-    [records.length, width, stamp, room],
+    () => pileLayout(records.length, width, stamp, room, you),
+    [records.length, width, stamp, room, you],
   )
   // The darkening covers the blur's fade, and at least the footer's row.
   const fade = Math.max(120, height * fadeShare)
-  // Deepest first, so the newest lie on top.
-  const deepestFirst = [...spots].reverse()
+  // Deepest first, so the newest lie on top, and the visitor's own over them all.
+  const deepestFirst = spots.filter((spot) => !spot.you).reverse()
+  const yours = spots.find((spot) => spot.you)
   const recent = records.slice(-5).reverse()
 
   return (
@@ -137,7 +140,7 @@ export function GuestbookPile({
                 </linearGradient>
               ))}
             </defs>
-            {deepestFirst.map(({ index, across, down }) => {
+            {[...deepestFirst, ...(yours ? [yours] : [])].map(({ index, across, down }) => {
               const record = records[index]
               if (!record) return null
               const pastFoot = down + stamp * 0.72 > height
@@ -155,20 +158,10 @@ export function GuestbookPile({
                     size={stamp}
                     at={{ x: across * width, y: down }}
                   />
-                  {yours?.has(index) && (
-                    <circle
-                      cx={across * width}
-                      cy={down}
-                      r={stamp * 0.62}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeDasharray="4 4"
-                      className="text-foreground/50"
-                    />
-                  )}
                 </g>
               )
             })}
+            {yours && <YouNote x={yours.across * width} y={yours.down - stamp / 2} />}
             {/* The darkening holds its depth on past the foot, under the stamps that run on. */}
             {(['light', 'dark'] as const).map((scheme) => (
               <rect
