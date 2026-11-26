@@ -74,8 +74,12 @@ export const pileSettings = {
   dropoff: 1.8,
   // The most stamps down the pile it takes to pack fully, however tall it is.
   settle: 140,
-  // How far a stamp may hang off the sides and the foot, as a share of its width.
+  // How far a stamp may hang off the sides, as a share of its width.
   bleed: 0.4,
+  // How far past the pile's foot stamps keep lying, in stamps' widths. They're drawn without
+  // taking up room (guestbook-pile.tsx), so a scroll that bounces past the page's end still finds
+  // the pile there.
+  runOut: 1,
   // The deepest stamp drawn.
   depth: 200,
 }
@@ -99,7 +103,8 @@ type PileSpot = {
  * Where each of the newest stamps lies in a pile `width` px wide and at most `room` px tall, with
  * stamps `stamp` px across: the newest first, at the top. A stamp's place across is its own for
  * good, so as visitors arrive it only sinks, and the deeper it lies the more tightly the stamps
- * around it pack. Once the pile fills its room, the oldest run on past its foot, cut off there.
+ * around it pack. Once the pile fills its room, the oldest run on past its foot, `runOut` stamps
+ * further, where the page ends.
  */
 export function pileLayout(
   count: number,
@@ -108,14 +113,15 @@ export function pileLayout(
   room: number,
   settings: PileSettings = pileSettings,
 ) {
-  const { topDensity: top, deepDensity: deep, dropoff, settle, bleed, depth: deepest } = settings
+  const { topDensity: top, deepDensity: deep, dropoff, settle, bleed, runOut } = settings
+  const deepest = settings.depth
   // Centres run from half a stamp in from each side to `bleed` of a stamp past that.
   const from = stamp * (0.5 - bleed)
   const span = Math.max(0, width - 2 * from)
   const across = Math.max(1, span / stamp)
   const shown = Math.min(count, deepest)
-  // The last stamps lie partly past the foot, as far as a stamp may hang off a side.
-  const end = room + stamp * (bleed - 0.5)
+  // The last stamps lie past the foot, where the page ends.
+  const end = room + stamp * runOut
   const spots: PileSpot[] = []
   // A little over half a stamp, so a turned stamp's corners clear the top edge.
   let down = stamp * 0.6

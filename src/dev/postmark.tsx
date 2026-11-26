@@ -26,6 +26,7 @@ export function Postmark({
   outline = false,
   deal: stored,
   print: printed,
+  at,
   className,
   style,
 }: {
@@ -44,6 +45,10 @@ export function Postmark({
   // later don't change it.
   deal?: Deal
   print?: Print
+  // Draw it inside an SVG, centred on this point and turned there, rather than as an HTML
+  // element: what an SVG draws past its own box is painted without taking up room, so stamps can
+  // hang off the end of the page without lengthening it.
+  at?: { x: number; y: number }
   className?: string
   style?: CSSProperties
 }) {
@@ -59,23 +64,22 @@ export function Postmark({
   // Speckle about a pixel and a half across at any size: finer, it only greys the ink.
   const speckle = Math.min(0.85, 0.55 * scale * 2)
 
-  return (
+  const inkClass = `text-[var(--ink)] data-clash:outline-2 data-clash:outline-offset-4 data-clash:outline-red-500 data-clash:outline-dashed dark:text-[var(--ink-dark)] ${className ?? ''}`
+  const inkStyle =
+    // SAFETY: CSSProperties has no index signature for custom properties; --ink and --ink-dark
+    // are plain colour strings.
+    { '--ink': ink.light, '--ink-dark': ink.dark, ...style } as CSSProperties
+
+  const stamp = (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       width={width * scale}
       height={height * scale}
+      x={at ? (-width * scale) / 2 : undefined}
+      y={at ? (-height * scale) / 2 : undefined}
       data-postmark={`${place.name} (${family === 'classic' ? design.shape : familyNames[family]}; ${Object.values(looks).join(', ')})`}
-      className={`overflow-visible text-[var(--ink)] data-clash:outline-2 data-clash:outline-offset-4 data-clash:outline-red-500 data-clash:outline-dashed dark:text-[var(--ink-dark)] ${className ?? ''}`}
-      style={
-        // SAFETY: CSSProperties has no index signature for custom properties; --ink and
-        // --ink-dark are plain colour strings.
-        {
-          '--ink': ink.light,
-          '--ink-dark': ink.dark,
-          rotate: `${print.rotation.toFixed(1)}deg`,
-          ...style,
-        } as CSSProperties
-      }
+      className={at ? 'overflow-visible' : `overflow-visible ${inkClass}`}
+      style={at ? undefined : { ...inkStyle, rotate: `${print.rotation.toFixed(1)}deg` }}
     >
       <title>{`Postmark: ${place.name}, ${place.country}, ${dates.long(print)}, with ${subjectOf(kit)}`}</title>
       <defs>
@@ -144,5 +148,15 @@ export function Postmark({
         {body}
       </g>
     </svg>
+  )
+  if (!at) return stamp
+  return (
+    <g
+      transform={`translate(${at.x} ${at.y}) rotate(${print.rotation.toFixed(1)})`}
+      className={inkClass}
+      style={inkStyle}
+    >
+      {stamp}
+    </g>
   )
 }

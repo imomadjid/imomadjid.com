@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { cn } from '#/lib/utils'
 
-import { pileLayout } from './guestbook-wall'
+import { pileLayout, pileSettings } from './guestbook-wall'
 import type { StampRecord } from './guestbook-wall'
 import { Postmark } from './postmark'
 
@@ -82,6 +82,7 @@ export function GuestbookPile({
   className?: string
   children?: ReactNode
 }) {
+  const id = useId().replace(/[^\w-]/g, '')
   const [element, width, room] = useFrame()
   const stamp = stampSize(width)
   const { spots, height } = useMemo(
@@ -108,31 +109,80 @@ export function GuestbookPile({
       <div
         ref={element}
         aria-hidden="true"
-        // Stamps run off the sides and the foot: clipped there, and kept out of the page's size.
-        className="relative w-full overflow-clip"
+        // Cut at the sides. The stamps run on past the foot, drawn as SVG past its box, which is
+        // painted without taking up room, as the blind wand reaches past the top of the page:
+        // the page ends at the pile's foot, and a scroll that bounces past it still finds stamps.
+        className="relative w-full overflow-x-clip"
         style={{ height: width > 0 ? height : 0 }}
       >
-        {width > 0 &&
-          deepestFirst.map(({ index, across, down }) => {
-            const record = records[index]
-            if (!record) return null
-            return (
-              <Postmark
-                key={index}
-                place={record.place}
-                visitor={record.ordinal}
-                deal={record.deal}
-                print={record.print}
-                size={stamp}
-                className={`absolute mix-blend-multiply dark:mix-blend-screen ${
-                  yours?.has(index)
-                    ? 'outline-2 outline-offset-4 outline-foreground/50 outline-dashed'
-                    : ''
-                }`}
-                style={{ left: `${across * 100}%`, top: down, translate: '-50% -50%' }}
+        {width > 0 && (
+          <svg width={width} height={height} className="absolute inset-0 overflow-visible">
+            <defs>
+              {/* Past the foot, out of the backdrop blur's reach, a stamp softens on its own. */}
+              <filter id={`${id}-soft`}>
+                <feGaussianBlur stdDeviation={footBlur} />
+              </filter>
+              {(['light', 'dark'] as const).map((scheme) => (
+                <linearGradient
+                  key={scheme}
+                  id={`${id}-${scheme}`}
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  y1={height - fade}
+                  x2="0"
+                  y2={height}
+                >
+                  <stop offset="0" stopColor="#000" stopOpacity="0" />
+                  <stop offset="1" stopColor="#000" stopOpacity={darken[scheme]} />
+                </linearGradient>
+              ))}
+            </defs>
+            {deepestFirst.map(({ index, across, down }) => {
+              const record = records[index]
+              if (!record) return null
+              const pastFoot = down + stamp * 0.72 > height
+              return (
+                <g
+                  key={index}
+                  className="mix-blend-multiply dark:mix-blend-screen"
+                  filter={pastFoot ? `url(#${id}-soft)` : undefined}
+                >
+                  <Postmark
+                    place={record.place}
+                    visitor={record.ordinal}
+                    deal={record.deal}
+                    print={record.print}
+                    size={stamp}
+                    at={{ x: across * width, y: down }}
+                  />
+                  {yours?.has(index) && (
+                    <circle
+                      cx={across * width}
+                      cy={down}
+                      r={stamp * 0.62}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeDasharray="4 4"
+                      className="text-foreground/50"
+                    />
+                  )}
+                </g>
+              )
+            })}
+            {/* The darkening holds its depth on past the foot, under the stamps that run on. */}
+            {(['light', 'dark'] as const).map((scheme) => (
+              <rect
+                key={scheme}
+                x={0}
+                y={height - fade}
+                width={width}
+                height={fade + stamp * (pileSettings.runOut + 1)}
+                fill={`url(#${id}-${scheme})`}
+                className={scheme === 'light' ? 'dark:hidden' : 'hidden dark:block'}
               />
-            )
-          })}
+            ))}
+          </svg>
+        )}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0"
           style={{
@@ -142,21 +192,6 @@ export function GuestbookPile({
             maskImage: blurMask,
           }}
         />
-        {(['light', 'dark'] as const).map((scheme) => (
-          <div
-            key={scheme}
-            className={cn(
-              'pointer-events-none absolute inset-x-0 bottom-0',
-              scheme === 'light' ? 'dark:hidden' : 'hidden dark:block',
-            )}
-            style={{
-              height: fade,
-              backgroundImage: `linear-gradient(to bottom, transparent, rgb(0 0 0 / ${
-                darken[scheme]
-              }))`,
-            }}
-          />
-        ))}
       </div>
       {children && (
         <div className="absolute inset-x-0 bottom-0 flex justify-center px-6">
