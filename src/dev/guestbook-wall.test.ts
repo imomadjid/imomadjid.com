@@ -36,7 +36,7 @@ void test('a short guestbook makes a short pile, its stamps whole', () => {
 
 void test('stamps pack tighter the deeper they lie, and hang off the edges no further than bleed', () => {
   const { spots, height } = pileLayout(1500, 1200, 124, 600)
-  assert.ok(spots.length <= pileSettings.extent.depth)
+  assert.ok(spots.length <= pileSettings.depth)
   assert.equal(height, 600, 'a full pile fills its room')
   assert.ok((spots.at(-1)?.down ?? 0) > 600 - 62, 'the oldest run on past its foot')
   const gap = (depth: number) => (spots[depth + 1]?.down ?? 0) - (spots[depth]?.down ?? 0)
@@ -47,10 +47,10 @@ void test('stamps pack tighter the deeper they lie, and hang off the edges no fu
   }
   const deep = spots.length - 20
   assert.ok(
-    average(deep, deep + 18) < average(0, 18) / 2,
-    'the deep layer packs at least twice as tight',
+    average(deep, deep + 18) < average(0, 18) / 1.5,
+    'the deep layer packs at least half again as tight',
   )
-  const inset = (124 * (0.5 - pileSettings.extent.bleed)) / 1200
+  const inset = (124 * (0.5 - pileSettings.bleed)) / 1200
   for (const spot of spots) {
     assert.ok(spot.across >= inset - 1e-9 && spot.across <= 1 - inset + 1e-9, `stamp ${spot.index}`)
   }

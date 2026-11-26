@@ -1,4 +1,3 @@
-import { useDialKit } from 'dialkit'
 import { useMemo, useState } from 'react'
 
 import { SiteFooter } from '#/components/site-footer'
@@ -6,7 +5,7 @@ import { Button } from '#/components/ui/button'
 
 import { GuestbookPile } from './guestbook-pile'
 import { wallPlaces } from './guestbook-places'
-import { fakeArrivals, pileControls, stampRecords } from './guestbook-wall'
+import { fakeArrivals, stampRecords } from './guestbook-wall'
 import type { Arrival } from './guestbook-wall'
 
 // The Guestbook's pile (guestbook-pile.tsx) with made-up visitors, at any count: the newest
@@ -20,7 +19,6 @@ export function GuestbookFixture() {
   const [count, setCount] = useState<(typeof counts)[number]>(60)
   const [stamped, setStamped] = useState<Arrival[]>([])
   const [placeKey, setPlaceKey] = useState(wallPlaces[0]?.place.key ?? '')
-  const settings = useDialKit('Guestbook', pileControls)
 
   const arrivals = useMemo(() => [...fakeArrivals(count, wallPlaces), ...stamped], [count, stamped])
   const records = useMemo(() => stampRecords(arrivals), [arrivals])
@@ -53,8 +51,7 @@ export function GuestbookFixture() {
           as it was dealt the day they arrived. The newest lie on top, spread out enough that every
           name shows; older ones pack tighter as they sink, and the pile&apos;s foot darkens and
           blurs into the footer. A stamp keeps its place across the page for good and only sinks.
-          The homepage shows it too, with 60 visitors or <code>?guestbook=</code> as many, and
-          DialKit&apos;s Guestbook panel tunes it on either page.
+          The homepage shows it too, with 60 visitors or <code>?guestbook=</code> as many.
         </p>
       </header>
 
@@ -97,7 +94,7 @@ export function GuestbookFixture() {
 
       <GuestbookPile
         records={records}
-        settings={settings}
+
         yours={yours}
         bleed={false}
         className="mt-16"

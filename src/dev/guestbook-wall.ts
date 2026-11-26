@@ -1,5 +1,3 @@
-import type { DialConfig, ResolvedValues } from 'dialkit'
-
 import { dealPostmark } from './postmark-deal'
 import type { Deal } from './postmark-deal'
 import { generator, hash, visitorPrint } from './postmark-kit'
@@ -65,87 +63,24 @@ export function fakeArrivals(
   })
 }
 
-export const pileControls = {
-  /** How tightly the stamps pack, from the newest at the top to the oldest at the foot. */
-  density: {
-    /**
-     * Stamps across the top of the pile per stamp's height of it: under 1, they overlap a little
-     * and every name shows.
-     */
-    top: [0.7, 0.3, 2, 0.05],
-    /** How tightly the oldest stamps pack, on the same measure. */
-    deep: [2.6, 0.8, 6, 0.1],
-    /**
-     * How the pile thins going up: 1 thins evenly from the foot to the top, higher keeps the
-     * dense layer low and the rest of the pile open.
-     */
-    dropoff: [1.8, 0.5, 5, 0.1],
-    /** The most stamps down the pile it takes to pack fully, however tall it is. */
-    settle: [140, 20, 400, 10],
-  },
-  extent: {
-    /** px between the bottom of the contents and the pile's top, once the pile fills its room. */
-    gap: [24, -200, 200, 4],
-    /** The pile's room where the contents don't show, as a share of the viewport's height. */
-    room: [0.5, 0.2, 0.9, 0.01],
-    /** How far a stamp may hang off the sides and the foot, as a share of its width. */
-    bleed: [0.4, 0, 0.5, 0.01],
-    /** The deepest stamp drawn. */
-    depth: [200, 40, 600, 10],
-  },
-  /** How wide a round postmark shows, in px. */
-  stamp: {
-    desktop: [124, 64, 200, 2],
-    /** Under 640 px wide. */
-    phone: [84, 48, 160, 2],
-  },
-  /** The foot of the pile, darkening a little and going out of focus under the footer. */
-  foot: {
-    /** How much of the pile the fade covers, from its foot up. */
-    fade: [0.6, 0.1, 1, 0.01],
-    /** The blur at the foot, in px. Each layer of it costs the compositor a pass every frame. */
-    blur: [8, 0, 24, 0.5],
-    /**
-     * How many blur layers build it up: 1 fades a single blur in, as skiper41 does; more start
-     * lower and blur harder, so the blur itself grows toward the foot, at a pass each.
-     */
-    layers: [1, 1, 4, 1],
-    /** How much of the fade, from the foot up, is at the full blur. */
-    solid: [0.5, 0, 0.9, 0.01],
-    /** How dark the foot gets, light and dark. */
-    darken: [0.15, 0, 0.6, 0.01],
-    darkenDark: [0.45, 0, 0.9, 0.01],
-  },
-} satisfies DialConfig
-
-export type PileSettings = ResolvedValues<typeof pileControls>
-
-const { density, extent, stamp, foot } = pileControls
-
-// The values without DialKit's Guestbook panel.
-export const pileSettings: PileSettings = {
-  density: {
-    top: density.top[0],
-    deep: density.deep[0],
-    dropoff: density.dropoff[0],
-    settle: density.settle[0],
-  },
-  extent: {
-    gap: extent.gap[0],
-    room: extent.room[0],
-    bleed: extent.bleed[0],
-    depth: extent.depth[0],
-  },
-  stamp: { desktop: stamp.desktop[0], phone: stamp.phone[0] },
-  foot: {
-    fade: foot.fade[0],
-    blur: foot.blur[0],
-    layers: foot.layers[0],
-    solid: foot.solid[0],
-    darken: foot.darken[0],
-    darkenDark: foot.darkenDark[0],
-  },
+export const pileSettings = {
+  // How many stamps lie across the top of the pile per stamp's height of it: under 1, they
+  // overlap a little and every name shows.
+  topDensity: 0.55,
+  // How tightly the oldest stamps pack, on the same measure.
+  deepDensity: 1.5,
+  // How the pile thins going up: 1 thins evenly from the foot to the top, higher keeps the dense
+  // layer low and the rest of the pile open.
+  dropoff: 1.8,
+  // The most stamps down the pile it takes to pack fully, however tall it is.
+  settle: 140,
+  // How far a stamp may hang off the sides and the foot, as a share of its width.
+  bleed: 0.4,
+  // The deepest stamp drawn.
+  depth: 200,
 }
+
+export type PileSettings = typeof pileSettings
 
 // The golden ratio's fraction: stepping by it spreads consecutive stamps across the width as
 // evenly as any sequence can, and a stamp keeps its spot however many arrive after it.
@@ -173,8 +108,7 @@ export function pileLayout(
   room: number,
   settings: PileSettings = pileSettings,
 ) {
-  const { top, deep, dropoff, settle } = settings.density
-  const { bleed, depth: deepest } = settings.extent
+  const { topDensity: top, deepDensity: deep, dropoff, settle, bleed, depth: deepest } = settings
   // Centres run from half a stamp in from each side to `bleed` of a stamp past that.
   const from = stamp * (0.5 - bleed)
   const span = Math.max(0, width - 2 * from)
