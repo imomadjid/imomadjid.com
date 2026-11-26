@@ -33,7 +33,18 @@ async function ask(method: 'GET' | 'POST') {
   })
   if (!response.ok) return undefined
   // SAFETY: the ledger's API answers a Pile (src/lib/postmark-api.ts).
-  return (await response.json()) as Pile
+  return withOutlines((await response.json()) as Pile)
+}
+
+/** The pile with each newest stamp's place outline back in it, from the pile's `outlines`. */
+export function withOutlines(pile: Pile): Pile {
+  return {
+    ...pile,
+    newest: pile.newest.map((record) => {
+      const outline = pile.outlines[record.place.key]
+      return outline ? { ...record, place: { ...record.place, outline } } : record
+    }),
+  }
 }
 
 function checkIn() {

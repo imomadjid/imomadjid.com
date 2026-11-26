@@ -1,11 +1,13 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 
+import { textLinkClass } from '#/lib/text-link'
 import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
 
 import { Postmark, postmarkSize } from './postmark'
 import { ThanksNote, thanksReach } from './postmark-thanks'
+import { placeholderOutline } from './postmark-visitor-places'
 import { pileLayout, pileSettings } from './postmark-visits'
 import type { StampRecord } from './postmark-visits'
 
@@ -36,9 +38,18 @@ const darkenClass = tw('[stop-opacity:0.15] dark:[stop-opacity:0.45]')
 // The stamps land one by one once the pile is reached and has stayed in view for `wait`
 // (src/styles.css): the deepest first and the newest last, over `spread`. Their delays follow a cube of their place
 // in the pile, so the buried ones come in a rush and the top ones land singly. The visitor's
-// own lands `yours` after the last of them, and the note starts writing `note` after that.
-// The pile starts once its top is `reached` of the way up the viewport.
-const landing = { wait: 400, spread: 1600, curve: 3, yours: 260, note: 420, reached: 0.25 }
+// own lands `yours` after the last of them, pressing down for `press` (animate-postmark-press),
+// and the note starts writing `note` after that. The pile starts once its top is `reached` of the
+// way up the viewport.
+const landing = {
+  wait: 400,
+  spread: 1600,
+  curve: 3,
+  yours: 260,
+  press: 520,
+  note: 420,
+  reached: 0.25,
+}
 
 /** When the stamp `order` places from the bottom lands, of `count`, in ms from the start. */
 function landDelay(order: number, count: number) {
@@ -68,7 +79,12 @@ function useLanding(element: HTMLElement | null) {
           observer.disconnect()
           setPhase('landing')
           setStartedAt(performance.now())
-          done = setTimeout(() => setPhase('landed'), landing.spread + landing.yours + landing.note)
+          // Landed once the visitor's own has finished pressing down and the note has started:
+          // ending its delay any sooner would cut its press short.
+          done = setTimeout(
+            () => setPhase('landed'),
+            landing.spread + landing.yours + Math.max(landing.press, landing.note),
+          )
         }, landing.wait)
       },
       { rootMargin: `0px 0px -${landing.reached * 100}% 0px` },
@@ -100,12 +116,17 @@ function useFrame() {
       if (entry) setWidth(entry.contentRect.width)
     })
     observer.observe(target)
-    // The contents are fixed to the viewport, so their foot moves only as the viewport resizes.
+    // The room is measured in the small viewport, the one with a phone's toolbars shown, so it
+    // holds still as they collapse on the way down to the pile. The contents are fixed to the
+    // viewport's middle, so their foot is taken from it the same way.
     const measure = () => {
+      const small = smallViewportHeight()
       const contents = document.querySelector('[data-table-of-contents]')
       const box = contents?.getBoundingClientRect()
-      setContentsFoot(box && box.height > 0 ? box.bottom : undefined)
-      setViewport(window.innerHeight)
+      setContentsFoot(
+        box && box.height > 0 ? box.bottom - window.innerHeight / 2 + small / 2 : undefined,
+      )
+      setViewport(small)
     }
     measure()
     window.addEventListener('resize', measure)
@@ -117,6 +138,16 @@ function useFrame() {
   const room =
     contentsFoot === undefined ? viewport * roomShare : viewport - contentsFoot - contentsGap
   return [element, setElement, width, Math.max(1, room)] as const
+}
+
+/** The small viewport's height (100svh): the viewport with a phone's toolbars shown. */
+function smallViewportHeight() {
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:fixed;top:0;height:100svh;visibility:hidden;pointer-events:none'
+  document.body.append(probe)
+  const height = probe.getBoundingClientRect().height
+  probe.remove()
+  return height || window.innerHeight
 }
 
 export function PostmarkPile({
@@ -187,6 +218,16 @@ export function PostmarkPile({
   const recent = [...byIndex.values()]
     .filter((record) => record.index >= count - Math.min(5, visitors))
     .sort((a, b) => b.index - a.index)
+  // A stamp without a pictorial draws its place's OpenStreetMap outline, whose licence asks for
+  // a credit wherever one shows.
+  const mapped = spots.some((spot) => {
+    const record = byIndex.get(spot.index)
+    return (
+      record?.deal.pictorial === undefined &&
+      !!record?.place.outline &&
+      record.place.outline !== placeholderOutline
+    )
+  })
 
   return (
     <section
@@ -287,6 +328,15 @@ export function PostmarkPile({
           }}
         />
       </div>
+      {mapped && (
+        <p className="absolute bottom-3 left-4 text-xs text-neutral-500 dark:text-neutral-400">
+          Map outlines ©{' '}
+          <a href="https://www.openstreetmap.org/copyright" className={textLinkClass}>
+            OpenStreetMap
+          </a>{' '}
+          contributors
+        </p>
+      )}
     </section>
   )
 }

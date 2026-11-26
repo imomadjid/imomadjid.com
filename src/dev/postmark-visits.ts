@@ -32,8 +32,24 @@ export function stampFor({ place, ordinal, date }: Arrival): Pick<StampRecord, '
   }
 }
 
-/** The day a timestamp falls on, as a postmark dates it (UTC). */
-export function postmarkDate(time: number): Arrival['date'] {
+/**
+ * The day a timestamp falls on where the visitor is, as their post office would date it: in
+ * `timeZone` (an IANA name, such as Cloudflare reads off the address), else in UTC.
+ */
+export function postmarkDate(time: number, timeZone?: string): Arrival['date'] {
+  if (timeZone)
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+      }).formatToParts(time)
+      const part = (type: string) => Number(parts.find((each) => each.type === type)?.value)
+      return { day: part('day'), month: part('month') - 1, year: part('year') }
+    } catch {
+      // An unknown zone dates in UTC.
+    }
   const date = new Date(time)
   return { day: date.getUTCDate(), month: date.getUTCMonth(), year: date.getUTCFullYear() }
 }

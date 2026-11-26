@@ -62,7 +62,7 @@ function visitOf(request: Request): Visit {
     address: request.headers.get('CF-Connecting-IP') ?? '',
     userAgent: request.headers.get('User-Agent') ?? '',
     language: request.headers.get('Accept-Language') ?? '',
-    geo: { city: cf?.city, region: cf?.region, countryCode: cf?.country },
+    geo: { city: cf?.city, region: cf?.region, countryCode: cf?.country, timeZone: cf?.timezone },
   }
 }
 

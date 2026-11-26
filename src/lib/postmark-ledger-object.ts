@@ -11,9 +11,10 @@ import type { Visit } from './postmark-ledger'
  */
 export class PostmarkLedger extends DurableObject {
   // Fields start after the base constructor has set `ctx`. New places' map outlines are drawn in
-  // an alarm, after their visitors have their answer; the runtime retries an alarm that fails.
+  // an alarm, after their visitors have their answer, and one that failed to load in a later one.
   readonly #ledger = new Ledger(this.ctx.storage.sql, {
     queued: () => void this.ctx.storage.setAlarm(Date.now()),
+    retry: (after) => void this.ctx.storage.setAlarm(Date.now() + after),
   })
 
   // Called over RPC, which Fallow can't follow.

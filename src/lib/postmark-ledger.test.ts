@@ -108,25 +108,59 @@ void test('bots, unknown countries and busy addresses get no stamp', async () =>
   assert.equal(bot.visitor, undefined)
   const nowhere = await book.stamp(visit({ geo: { countryCode: 'XX' } }))
   assert.equal(nowhere.visitor, undefined)
-  for (const language of ['en', 'id', 'ja']) await book.stamp(visit({ language }))
-  const fourth = await book.stamp(visit({ language: 'de' }))
-  assert.equal(fourth.visitor, undefined, 'three new stamps an address a day')
-  assert.equal(fourth.pile.total, 3)
+  const languages = ['en', 'id', 'ja', 'de', 'fr', 'es', 'it', 'nl', 'pt', 'ko']
+  for (const language of languages) assert.ok((await book.stamp(visit({ language }))).visitor)
+  const eleventh = await book.stamp(visit({ language: 'sv' }))
+  assert.equal(eleventh.visitor, undefined, 'ten new stamps an address a day')
+  assert.equal(eleventh.pile.total, 10)
   clock.now += 86_400_000
-  const tomorrow = await book.stamp(visit({ language: 'de' }))
+  const tomorrow = await book.stamp(visit({ language: 'sv' }))
   assert.ok(tomorrow.visitor)
 })
 
-void test("an IPv6 connection counts as its /64 toward the day's new stamps", async () => {
+void test("an IPv6 connection counts as its /64, and its /48, toward the day's new stamps", async () => {
   const { book } = ledger()
-  for (const host of ['1', '2', '3']) {
+  for (let host = 1; host <= 10; host += 1) {
     const { visitor } = await book.stamp(visit({ address: `2001:db8:5:7::${host}` }))
     assert.ok(visitor)
   }
   const sameNetwork = await book.stamp(visit({ address: '2001:db8:5:7:abcd:1:2:3' }))
   assert.equal(sameNetwork.visitor, undefined, 'another address in the same /64')
-  const otherNetwork = await book.stamp(visit({ address: '2001:db8:5:8::1' }))
-  assert.ok(otherNetwork.visitor)
+  // 20 more from other /64s in the same /48 make 30, its limit.
+  for (let subnet = 8; subnet < 28; subnet += 1) {
+    const { visitor } = await book.stamp(visit({ address: `2001:db8:5:${subnet}::1` }))
+    assert.ok(visitor, `2001:db8:5:${subnet}::1`)
+  }
+  const sameSite = await book.stamp(visit({ address: '2001:db8:5:99::1' }))
+  assert.equal(sameSite.visitor, undefined, 'another /64 in the same /48')
+  const elsewhere = await book.stamp(visit({ address: '2001:db8:6:1::1' }))
+  assert.ok(elsewhere.visitor)
+})
+
+void test('the whole site adds at most 500 new stamps a day', async () => {
+  const { book, clock } = ledger()
+  for (let n = 0; n < 500; n += 1)
+    await book.stamp(visit({ address: `10.${n >> 16}.${(n >> 8) & 255}.${n & 255}` }))
+  const over = await book.stamp(visit({ address: '192.0.2.200' }))
+  assert.equal(over.visitor, undefined)
+  assert.equal(over.pile.total, 500)
+  clock.now += 86_400_000
+  assert.ok((await book.stamp(visit({ address: '192.0.2.200' }))).visitor)
+})
+
+void test("a stamp is dated in the visitor's own time zone", async () => {
+  // 23:30 UTC on 26 November is already the 27th in Jakarta.
+  const { book } = ledger(Date.UTC(2026, 10, 26, 23, 30))
+  const jakarta = await book.stamp(
+    visit({
+      geo: { city: 'Depok', region: 'West Java', countryCode: 'ID', timeZone: 'Asia/Jakarta' },
+    }),
+  )
+  assert.deepEqual(jakarta.pile.you?.date, { day: 27, month: 10, year: 2026 })
+  const unknown = await book.stamp(
+    visit({ address: '198.51.100.9', geo: { ...visit().geo, timeZone: 'Nowhere/Else' } }),
+  )
+  assert.deepEqual(unknown.pile.you?.date, { day: 26, month: 10, year: 2026 }, 'else UTC')
 })
 
 void test('addressGroup keeps IPv4 whole and cuts IPv6 to its /64', () => {
@@ -148,6 +182,11 @@ void test("a place nobody has drawn gets its map outline once, after the answer;
   assert.deepEqual(outlines, ['nz-wellington-region-wellington'], 'fetched once')
   const { pile } = await book.look(visit({ visitor: first.visitor }))
   assert.equal(pile.you?.place.outline, 'M0 0L100 0L100 100Z', 'every stamp from there')
+  assert.ok(
+    pile.newest.every((record) => record.place.outline === ''),
+    "the newest carry no outlines; they're sent once a place",
+  )
+  assert.deepEqual(pile.outlines, { 'nz-wellington-region-wellington': 'M0 0L100 0L100 100Z' })
   const calls = queue.calls
   await book.stamp(visit({ address: '198.51.100.11' }))
   assert.equal(queue.calls, calls, 'a drawn place queues nothing')
@@ -161,10 +200,10 @@ void test("a place nobody has drawn gets its map outline once, after the answer;
   assert.equal(outlines.length, 1, 'Depok has its drawings')
 })
 
-void test('an outline that fails to load shows the placeholder and is tried again', async () => {
+void test('a place Nominatim has no boundary for shows the placeholder, and the next visitor tries again', async () => {
   let fails = true
   const book = new Ledger(memory(), {
-    outline: () => (fails ? Promise.reject(new Error('offline')) : Promise.resolve('M1 1Z')),
+    outline: () => Promise.resolve(fails ? undefined : 'M1 1Z'),
   })
   const first = await book.stamp(visit())
   await book.drawOutlines()
@@ -232,4 +271,35 @@ void test('isBot knows crawlers from browsers', () => {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9150 Chrome/124.0.0.0 Electron/30.0.0 Safari/537.36',
   ])
     assert.equal(isBot(person), false, person)
+})
+
+void test('a place drawn with a pictorial sends no outline at all', async () => {
+  const { book } = ledger()
+  await book.stamp(visit({ geo: { city: 'Depok', region: 'West Java', countryCode: 'ID' } }))
+  const { pile } = await book.look(visit({ address: '198.51.100.9' }))
+  assert.equal(pile.newest.length, 1)
+  assert.notEqual(pile.newest[0]?.deal.pictorial, undefined)
+  assert.deepEqual(pile.outlines, {})
+})
+
+void test('an outline that fails to load is tried again later, not settled coarser', async () => {
+  let failures = 2
+  const retries: number[] = []
+  const book = new Ledger(memory(), {
+    outline: () => {
+      if (failures > 0) {
+        failures -= 1
+        return Promise.reject(new Error('Nominatim answered 503'))
+      }
+      return Promise.resolve('M2 2Z')
+    },
+    retry: (after) => retries.push(after),
+  })
+  const { visitor } = await book.stamp(visit())
+  await book.drawOutlines()
+  await book.drawOutlines()
+  assert.deepEqual(retries, [60_000, 120_000], 'waits longer each time')
+  await book.drawOutlines()
+  const { pile } = await book.look(visit({ visitor }))
+  assert.equal(pile.you?.place.outline, 'M2 2Z')
 })
