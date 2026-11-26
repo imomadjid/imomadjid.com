@@ -5,7 +5,6 @@
 // Usage: bun tools/postmarks/outlines.ts
 import { writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 
 import { nominatimOutline } from '../../src/lib/osm-outline'
@@ -85,8 +84,6 @@ for (const place of places) {
   const { query: _query, ...rest } = place
   out.push({ ...rest, outline })
   console.log(place.name)
-  // Nominatim's usage policy allows one request a second.
-  await sleep(1100)
 }
 
 const file = join(

@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 
+import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
 
 import { Postmark, postmarkSize } from './postmark'
@@ -29,7 +30,8 @@ const roomShare = 0.5
 const fadeShare = 0.6
 const footBlur = 2
 const blurMask = 'linear-gradient(to top, black 50%, transparent)'
-const darken = { light: 0.15, dark: 0.45 }
+// How dark the foot gets, by scheme: the end stop's opacity.
+const darkenClass = tw('[stop-opacity:0.15] dark:[stop-opacity:0.45]')
 
 // The stamps land one by one once the pile is reached and has stayed in view for `wait`
 // (src/styles.css): the deepest first and the newest last, over `spread`. Their delays follow a cube of their place
@@ -100,7 +102,7 @@ function useFrame() {
     observer.observe(target)
     // The contents are fixed to the viewport, so their foot moves only as the viewport resizes.
     const measure = () => {
-      const contents = document.querySelector('nav[aria-label="On this page"]')
+      const contents = document.querySelector('[data-table-of-contents]')
       const box = contents?.getBoundingClientRect()
       setContentsFoot(box && box.height > 0 ? box.bottom : undefined)
       setViewport(window.innerHeight)
@@ -154,13 +156,15 @@ export function PostmarkPile({
   const keep = yourSize && yourSize.width / 2 + stamp * 0.45
   const { spots, height } = useMemo(
     () =>
-      pinned && keep !== undefined
-        ? pileLayout(count, width, stamp, room, {
-            index: pinned.index,
-            left: keep,
-            right: keep + thanksReach(stamp),
-          })
-        : pileLayout(count, width, stamp, room),
+      pileLayout(
+        count,
+        width,
+        stamp,
+        room,
+        pinned && keep !== undefined
+          ? { index: pinned.index, left: keep, right: keep + thanksReach(stamp) }
+          : undefined,
+      ),
     [count, width, stamp, room, pinned, keep],
   )
   // The darkening covers the blur's fade, at least the bottom 120 px.
@@ -179,7 +183,8 @@ export function PostmarkPile({
       '--land-delay': `${phase === 'landed' ? 0 : delay}ms`,
       '--land-state': phase === 'waiting' ? 'paused' : 'running',
     }) as CSSProperties
-  const recent = records
+  // By index, so the visitor's own, if it is also among the newest, is named once.
+  const recent = [...byIndex.values()]
     .filter((record) => record.index >= count - Math.min(5, visitors))
     .sort((a, b) => b.index - a.index)
 
@@ -212,20 +217,17 @@ export function PostmarkPile({
               <filter id={`${id}-soft`}>
                 <feGaussianBlur stdDeviation={footBlur} />
               </filter>
-              {(['light', 'dark'] as const).map((scheme) => (
-                <linearGradient
-                  key={scheme}
-                  id={`${id}-${scheme}`}
-                  gradientUnits="userSpaceOnUse"
-                  x1="0"
-                  y1={height - fade}
-                  x2="0"
-                  y2={height}
-                >
-                  <stop offset="0" stopColor="#000" stopOpacity="0" />
-                  <stop offset="1" stopColor="#000" stopOpacity={darken[scheme]} />
-                </linearGradient>
-              ))}
+              <linearGradient
+                id={`${id}-darken`}
+                gradientUnits="userSpaceOnUse"
+                x1="0"
+                y1={height - fade}
+                x2="0"
+                y2={height}
+              >
+                <stop offset="0" stopColor="#000" stopOpacity="0" />
+                <stop offset="1" stopColor="#000" className={darkenClass} />
+              </linearGradient>
             </defs>
             {[...deepestFirst, ...(yours ? [yours] : [])].map(({ index, across, down }, order) => {
               const record = byIndex.get(index)
@@ -266,17 +268,13 @@ export function PostmarkPile({
               />
             )}
             {/* The darkening holds its depth on past the foot, under the stamps that run on. */}
-            {(['light', 'dark'] as const).map((scheme) => (
-              <rect
-                key={scheme}
-                x={0}
-                y={height - fade}
-                width={width}
-                height={fade + stamp * (pileSettings.runOut + 1)}
-                fill={`url(#${id}-${scheme})`}
-                className={scheme === 'light' ? 'dark:hidden' : 'hidden dark:block'}
-              />
-            ))}
+            <rect
+              x={0}
+              y={height - fade}
+              width={width}
+              height={fade + stamp * (pileSettings.runOut + 1)}
+              fill={`url(#${id}-darken)`}
+            />
           </svg>
         )}
         <div

@@ -1,7 +1,9 @@
-import { dealPostmark, pictorialPool } from '#/dev/postmark-deal'
-import { visitorPrint } from '#/dev/postmark-kit'
+import type { DurableObjectState } from 'cloudflare:workers'
+
+import { pictorialPool } from '#/dev/postmark-deal'
 import type { PostmarkPlace } from '#/dev/postmark-kit'
 import { placeholderOutline, visitorPlaces } from '#/dev/postmark-visitor-places'
+import { pileSettings, postmarkDate, stampFor } from '#/dev/postmark-visits'
 import type { StampRecord } from '#/dev/postmark-visits'
 
 import { nominatimOutline } from './osm-outline'
@@ -15,11 +17,9 @@ import { nominatimOutline } from './osm-outline'
 // stamp; the hash is salted with a secret only the ledger holds, and no address is stored. Bots
 // that say so get no stamp, and one address can add only a few new stamps a day.
 
-/** The rows a SQL statement answers: Durable Objects' `ctx.storage.sql` has this shape. */
-export type Sql = {
-  exec: (query: string, ...bindings: (string | number | null)[]) => { toArray: () => Row[] }
-}
-type Row = Record<string, string | number | null>
+/** A Durable Object's SQL storage (`ctx.storage.sql`), or Bun's in tests. */
+export type Sql = DurableObjectState['storage']['sql']
+type Row = ReturnType<ReturnType<Sql['exec']>['toArray']>[number]
 
 /** Where a request came from, as Cloudflare reads it off the address (`request.cf`). */
 export type Geo = { city?: string; region?: string; countryCode?: string }
@@ -52,8 +52,8 @@ export type LedgerStats = {
   online: number
 }
 
-// The pile draws at most this many stamps (pileSettings.depth).
-const newestShown = 200
+// The pile draws at most this many stamps.
+const newestShown = pileSettings.depth
 // How long a fingerprint finds its visitor again without their cookie.
 const fingerprintDays = 30
 // New stamps one address may add in a day: a household or an office, not a script.
@@ -74,6 +74,9 @@ export function isBot(userAgent: string) {
     )
   )
 }
+
+const hex = (bytes: Uint8Array) =>
+  Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
 // Places the prototype knows by name, with their keys, which their drawings are scoped to.
@@ -131,8 +134,6 @@ async function placeOutline(place: PostmarkPlace, signal?: AbortSignal) {
   for (const [query, detail] of searches) {
     const outline = await nominatimOutline(query, { detail, signal })
     if (outline) return outline
-    // Nominatim's usage policy allows one request a second.
-    await new Promise((resolve) => setTimeout(resolve, 1100))
   }
   return undefined
 }
@@ -188,8 +189,6 @@ export class Ledger {
   readonly #salt: string
   // When each visitor's tab last checked in, while it's open.
   readonly #present = new Map<string, number>()
-  // Nominatim's requests, one at a time.
-  #outlines: Promise<unknown> = Promise.resolve()
 
   constructor(
     sql: Sql,
@@ -208,16 +207,19 @@ export class Ledger {
     const saved = sql.exec("SELECT value FROM meta WHERE key = 'salt'").toArray()[0]
     if (saved) this.#salt = text(saved.value)
     else {
-      const bytes = crypto.getRandomValues(new Uint8Array(16))
-      this.#salt = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+      this.#salt = hex(crypto.getRandomValues(new Uint8Array(16)))
       sql.exec("INSERT INTO meta (key, value) VALUES ('salt', ?)", this.#salt)
     }
   }
 
   async #hash(...parts: string[]) {
     const data = new TextEncoder().encode([this.#salt, ...parts].join('\u0000'))
-    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', data))
-    return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('')
+    return hex(new Uint8Array(await crypto.subtle.digest('SHA-256', data)))
+  }
+
+  /** The number a query answers in its `n` column. */
+  #scalar(query: string, ...bindings: (string | number)[]) {
+    return number(this.#sql.exec(query, ...bindings).toArray()[0]?.n)
   }
 
   #fingerprint(visit: Visit) {
@@ -256,7 +258,7 @@ export class Ledger {
       )
       .toArray()
       .reverse()
-    const total = number(this.#sql.exec('SELECT COUNT(*) AS n FROM visitors').toArray()[0]?.n)
+    const total = this.#scalar('SELECT COUNT(*) AS n FROM visitors')
     return { you: you ? toRecord(you) : null, newest: newest.map(toRecord), total }
   }
 
@@ -273,9 +275,12 @@ export class Ledger {
    */
   async stamp(visit: Visit) {
     const now = this.#now()
-    const fingerprint = await this.#fingerprint(visit)
     const today = Math.floor(now / day)
-    const address = await this.#hash('address', visit.address, String(today))
+    // Both before the lookup: from it to the inserts nothing may wait.
+    const [fingerprint, address] = await Promise.all([
+      this.#fingerprint(visit),
+      this.#hash('address', visit.address, String(today)),
+    ])
     const found = this.#identify(visit, fingerprint)
     if (found) {
       this.#sql.exec(
@@ -289,13 +294,13 @@ export class Ledger {
       return { visitor: found, pile: this.#pile(found) }
     }
     const place = isBot(visit.userAgent) ? undefined : placeFor(visit.geo)
-    const stamped = number(
-      this.#sql.exec('SELECT stamps FROM stamped WHERE hash = ?', address).toArray()[0]?.stamps,
+    if (
+      !place ||
+      this.#scalar('SELECT stamps AS n FROM stamped WHERE hash = ?', address) >= stampsPerAddress
     )
-    if (!place || stamped >= stampsPerAddress)
       return { visitor: undefined, pile: this.#pile(undefined) }
 
-    // From here to the inserts nothing waits, so two visitors can't take the same number.
+    // Nothing waits until the inserts, so two visitors can't take the same number.
     const id = crypto.randomUUID()
     const saved = this.#sql
       .exec('SELECT visitors FROM places WHERE key = ?', place.key)
@@ -313,14 +318,9 @@ export class Ledger {
         place.countryCode,
         place.outline,
       )
-    const index = number(this.#sql.exec('SELECT COUNT(*) AS n FROM visitors').toArray()[0]?.n)
-    const date = new Date(now)
-    const print = {
-      ...visitorPrint(place.key, ordinal),
-      day: date.getUTCDate(),
-      month: date.getUTCMonth(),
-      year: date.getUTCFullYear(),
-    }
+    // Stamps are numbered from 0 and never removed.
+    const index = this.#scalar('SELECT COALESCE(MAX(idx) + 1, 0) AS n FROM visitors')
+    const { deal, print } = stampFor({ place, ordinal, date: postmarkDate(now) })
     this.#sql.exec(
       `INSERT INTO visitors (id, idx, place, ordinal, day, month, year, deal, print,
         first_seen, last_seen, visits) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
@@ -331,7 +331,7 @@ export class Ledger {
       print.day,
       print.month,
       print.year,
-      JSON.stringify(dealPostmark(place, ordinal, 0)),
+      JSON.stringify(deal),
       JSON.stringify(print),
       now,
       now,
@@ -367,35 +367,43 @@ export class Ledger {
   async #drawOutline(place: PostmarkPlace) {
     const row = this.#sql.exec('SELECT outline FROM places WHERE key = ?', place.key).toArray()[0]
     if (text(row?.outline) || pictorialPool(place).length > 0) return
-    const found = this.#outlines.then(() => this.#outline(place).catch(() => undefined))
-    this.#outlines = found
-    const outline = await found
+    const outline = await this.#outline(place).catch(() => undefined)
     if (outline) this.#sql.exec('UPDATE places SET outline = ? WHERE key = ?', outline, place.key)
   }
 
   /** A visitor's open tab checking in, for the count of who's online. */
   here(visitor: string | undefined) {
-    if (!visitor || !this.#known(visitor)) return
-    this.#present.set(visitor, this.#now())
+    const now = this.#now()
+    for (const [present, seen] of this.#present)
+      if (seen < now - onlineWindow) this.#present.delete(present)
+    // Visitors are never removed, so one already here needs no lookup.
+    if (!visitor || (!this.#present.has(visitor) && !this.#known(visitor))) return
+    this.#present.set(visitor, now)
   }
 
   stats(): LedgerStats {
     const now = this.#now()
-    for (const [visitor, seen] of this.#present)
-      if (seen < now - onlineWindow) this.#present.delete(visitor)
-    const count = (query: string, ...bindings: (string | number)[]) =>
-      number(this.#sql.exec(query, ...bindings).toArray()[0]?.n)
-    return {
-      visitors: count('SELECT COUNT(*) AS n FROM visitors'),
-      visits: count('SELECT COALESCE(SUM(visits), 0) AS n FROM visitors'),
-      returning: count('SELECT COUNT(*) AS n FROM visitors WHERE visits > 1'),
-      places: count('SELECT COUNT(*) AS n FROM places'),
-      countries: count('SELECT COUNT(DISTINCT country_code) AS n FROM places'),
-      newToday: count(
-        'SELECT COUNT(*) AS n FROM visitors WHERE first_seen >= ?',
+    const visitors = this.#sql
+      .exec(
+        `SELECT COUNT(*) AS visitors, COALESCE(SUM(visits), 0) AS visits,
+          COALESCE(SUM(visits > 1), 0) AS returned, COALESCE(SUM(first_seen >= ?), 0) AS new_today
+          FROM visitors`,
         now - (now % day),
-      ),
-      online: this.#present.size,
+      )
+      .toArray()[0]
+    const places = this.#sql
+      .exec('SELECT COUNT(*) AS places, COUNT(DISTINCT country_code) AS countries FROM places')
+      .toArray()[0]
+    let online = 0
+    for (const seen of this.#present.values()) if (seen >= now - onlineWindow) online += 1
+    return {
+      visitors: number(visitors?.visitors),
+      visits: number(visitors?.visits),
+      returning: number(visitors?.returned),
+      places: number(places?.places),
+      countries: number(places?.countries),
+      newToday: number(visitors?.new_today),
+      online,
     }
   }
 }

@@ -86,6 +86,8 @@ export function TableOfContents({ sections }: { sections: readonly PageSection[]
   return (
     <nav
       aria-label="On this page"
+      // The postmark footer's pile measures the contents' foot to stop under it.
+      data-table-of-contents
       className="fixed top-1/2 left-8 z-10 hidden -translate-y-1/2 lg:block"
     >
       <ol className="animate-enter text-sm">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
+import { handFontReady } from '#/lib/hand-font'
 import type { Scheme } from '#/lib/theme'
 
 // A handwritten note with a drawn arrow pointing at the blind wand. It writes itself in after
@@ -30,7 +31,6 @@ const ERASE = 900
 
 export type HintPhase = 'writing' | 'erasing'
 const STORAGE_KEY = 'imomadjid:wand-hint'
-const FONT_TIMEOUT = 3000
 
 /**
  * Whether to show the note: once per visitor, until they first grab or turn the wand.
@@ -46,12 +46,9 @@ export function useWandHint() {
   useEffect(() => {
     if (readDismissed()) return
     let cancelled = false
-    const timeout = new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT))
-    void Promise.race([document.fonts.load('500 22px Caveat'), timeout])
-      .catch(() => {})
-      .then(() => {
-        if (!cancelled && !dismissed.current) setPhase('writing')
-      })
+    void handFontReady().then(() => {
+      if (!cancelled && !dismissed.current) setPhase('writing')
+    })
     return () => {
       cancelled = true
     }

@@ -5,7 +5,7 @@ import { currentStats, subscribeStats } from '#/lib/postmark-client'
 
 import { PostmarkPile } from './postmark-pile'
 import { visitorPlaces } from './postmark-visitor-places'
-import { fakeArrivals, stampRecords } from './postmark-visits'
+import { fakeArrivals, postmarkDate, stampRecords } from './postmark-visits'
 import type { Arrival } from './postmark-visits'
 
 // The postmark footer's pile (postmark-pile.tsx) with made-up visitors, at any count: the newest
@@ -28,12 +28,7 @@ function inOrder(arrivals: readonly Arrival[]): Arrival[] {
   return arrivals.map((arrival, index) => {
     const ordinal = seen.get(arrival.place.key) ?? 0
     seen.set(arrival.place.key, ordinal + 1)
-    const day = new Date(start + index * 6 * 3_600_000)
-    return {
-      place: arrival.place,
-      ordinal,
-      date: { day: day.getUTCDate(), month: day.getUTCMonth(), year: day.getUTCFullYear() },
-    }
+    return { place: arrival.place, ordinal, date: postmarkDate(start + index * 6 * 3_600_000) }
   })
 }
 

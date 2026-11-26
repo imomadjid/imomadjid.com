@@ -11,6 +11,16 @@ type Geometry =
 
 // Nominatim's usage policy asks for an identifying User-Agent and at most a request a second.
 const nominatimAgent = 'imomadjid.com postmarks (https://imomadjid.com)'
+const requestGap = 1100
+let nextRequest = 0
+
+/** Waits for this caller's turn, so requests start at least `requestGap` apart. */
+async function turn() {
+  const now = Date.now()
+  const at = Math.max(now, nextRequest)
+  nextRequest = at + requestGap
+  if (at > now) await new Promise((resolve) => setTimeout(resolve, at - now))
+}
 
 // A stamp's outline needs no more points than this to read.
 const mostPoints = 400
@@ -34,9 +44,14 @@ function mainRing(geometry: Geometry): Ring | undefined {
       : geometry.type === 'MultiPolygon'
         ? (geometry.coordinates as Ring[][]).map((polygon) => polygon[0])
         : []
-  return rings
-    .filter((ring): ring is Ring => Array.isArray(ring) && ring.length >= 4)
-    .sort((a, b) => area(b) - area(a))[0]
+  let largest: Ring | undefined
+  let largestArea = -1
+  for (const ring of rings) {
+    if (!Array.isArray(ring) || ring.length < 4) continue
+    const size = area(ring)
+    if (size > largestArea) [largest, largestArea] = [ring, size]
+  }
+  return largest
 }
 
 /** Equirectangular, scaled by the cosine of the latitude, fitted into 100 x 100 and centred. */
@@ -70,7 +85,7 @@ function toPath(ring: Ring) {
  * The outline of the first boundary Nominatim finds for `search` (free text as `{ q }`, or a
  * structured search such as `{ city, state, country }`), or undefined where it has none, as for
  * a place it only knows as a point. `detail` is how far apart, in degrees, the points it returns
- * may lie.
+ * may lie. Requests from one process start at least a second apart, as Nominatim asks.
  */
 export async function nominatimOutline(
   search: Record<string, string>,
@@ -83,6 +98,7 @@ export async function nominatimOutline(
     polygon_threshold: String(detail),
     limit: '1',
   })}`
+  await turn()
   const response = await fetch(url, { headers: { 'User-Agent': nominatimAgent }, signal })
   if (!response.ok) throw new Error(`Nominatim answered ${response.status}`)
   // SAFETY: Nominatim's jsonv2 search answers a list of places, each with its GeoJSON boundary.

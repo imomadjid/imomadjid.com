@@ -1,5 +1,5 @@
 import { placeFor } from './postmark-ledger'
-import type { LedgerStats, Pile, Visit } from './postmark-ledger'
+import type { Ledger, LedgerStats, Pile, Visit } from './postmark-ledger'
 
 // The postmark footer's API, which src/server.ts routes to:
 //
@@ -13,12 +13,11 @@ import type { LedgerStats, Pile, Visit } from './postmark-ledger'
 //
 // The visitor's id lives in an HttpOnly cookie; the ledger finds them by it.
 
-/** The ledger's methods as the Worker calls them over RPC. */
+/** The ledger's methods as the Worker calls them over RPC, where every answer is a promise. */
 export type LedgerStub = {
-  look: (visit: Visit) => Promise<{ visitor: string | undefined; pile: Pile }>
-  stamp: (visit: Visit) => Promise<{ visitor: string | undefined; pile: Pile }>
-  here: (visitor: string | undefined) => Promise<void>
-  stats: () => Promise<LedgerStats>
+  [Method in 'look' | 'stamp' | 'here' | 'stats']: (
+    ...args: Parameters<Ledger[Method]>
+  ) => Promise<Awaited<ReturnType<Ledger[Method]>>>
 }
 
 export const postmarkPath = '/api/postmarks'
@@ -66,11 +65,8 @@ function visitOf(request: Request): Visit {
   }
 }
 
-function json(body: Pile | LedgerStats, init: ResponseInit = {}) {
-  const headers = new Headers(init.headers)
-  headers.set('Content-Type', 'application/json')
-  headers.set('Cache-Control', 'no-store')
-  return new Response(JSON.stringify(body), { ...init, headers })
+function json(body: Pile | LedgerStats) {
+  return Response.json(body, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 function withVisitor(response: Response, visitor: string | undefined) {
@@ -91,7 +87,7 @@ const escapeHtml = (value: string) =>
  */
 function wherePage(request: Request) {
   const cf = geoOf(request)
-  const place = placeFor({ city: cf?.city, region: cf?.region, countryCode: cf?.country })
+  const place = placeFor(visitOf(request).geo)
   const point = cf?.latitude && cf.longitude ? `${cf.latitude}, ${cf.longitude}` : undefined
   const map = point
     ? `https://www.openstreetmap.org/?mlat=${cf?.latitude}&mlon=${cf?.longitude}#map=11/${cf?.latitude}/${cf?.longitude}`

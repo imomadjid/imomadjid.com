@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
+import { handFontReady } from '#/lib/hand-font'
+
 // "thanks for visiting!" written beside the visitor's own stamp at the top of the postmark
 // footer's pile, off its top right edge, in the hand and ink of the blind wand's note
 // (src/components/wand-hint.tsx). It writes itself in once the pile says to, after the stamps
@@ -18,7 +20,7 @@ function letterSize(stamp: number) {
 
 /**
  * How far past the stamp's edge the words reach, beside a stamp `stamp` px across: the pile keeps
- * other stamps out of it (postmark-visits.ts). The words run about 6.5 times the hand's size.
+ * other stamps out of it (postmark-visits.ts). The words run about 7.5 times the hand's size.
  */
 export function thanksReach(stamp: number) {
   return GAP + letterSize(stamp) * 7.5
@@ -30,7 +32,6 @@ const TILT = -4
 const LATE_WRITE = 300
 // About as fast as a pen writes.
 const WRITE_TEXT = TEXT.length * 55
-const FONT_TIMEOUT = 3000
 
 export function ThanksNote({
   x,
@@ -53,7 +54,7 @@ export function ThanksNote({
   // landed. Until the pile is reached, undefined.
   writeFrom: number | undefined
 }) {
-  const ref = useRef<SVGGElement>(null)
+  const textRef = useRef<SVGTextElement>(null)
   // When it does start writing, once its font is in.
   const [writeAt, setWriteAt] = useState<number>()
 
@@ -63,12 +64,9 @@ export function ThanksNote({
     if (writeFrom === undefined) return undefined
     const at = Math.max(writeFrom, performance.now() + LATE_WRITE)
     let cancelled = false
-    const timeout = new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT))
-    void Promise.race([document.fonts.load('500 22px Caveat'), timeout])
-      .catch(() => {})
-      .then(() => {
-        if (!cancelled) setWriteAt(at)
-      })
+    void handFontReady().then(() => {
+      if (!cancelled) setWriteAt(at)
+    })
     return () => {
       cancelled = true
     }
@@ -77,7 +75,7 @@ export function ThanksNote({
 
   // Before paint, so the note never flashes fully written before it starts writing.
   useLayoutEffect(() => {
-    const text = ref.current?.querySelector('text')
+    const text = textRef.current
     if (!text || writeAt === undefined) return undefined
     const delay = Math.max(0, writeAt - performance.now())
     const animation = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -104,12 +102,12 @@ export function ThanksNote({
   const baseline = -height / 2 + height * BASELINE
   return (
     <g
-      ref={ref}
       transform={`translate(${x} ${y}) rotate(${rotation.toFixed(1)})`}
       className="pointer-events-none text-neutral-500 select-none dark:text-neutral-400"
     >
       {writing && (
         <text
+          ref={textRef}
           x={left}
           y={baseline}
           fill="currentColor"

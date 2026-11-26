@@ -16,7 +16,7 @@ type ObjectId = { toString: () => string }
 
 type Env = {
   ASSETS: { fetch: (request: Request) => Promise<Response> }
-  POSTMARKS?: { idFromName: (name: string) => ObjectId; get: (id: ObjectId) => LedgerStub }
+  POSTMARKS: { idFromName: (name: string) => ObjectId; get: (id: ObjectId) => LedgerStub }
 }
 
 // Start's own entry, as @tanstack/react-start/server-entry builds it.
@@ -30,7 +30,7 @@ const rangedMedia = /^\/assets\/[^/]+\.(?:webm|mp4)$/
 export default {
   async fetch(request: Request, env: Env) {
     const { pathname } = new URL(request.url)
-    if (env.POSTMARKS && pathname.startsWith(postmarkPath))
+    if (pathname.startsWith(postmarkPath))
       return postmarkApi(request, env.POSTMARKS.get(env.POSTMARKS.idFromName('ledger')))
     if (!rangedMedia.test(pathname)) return start.fetch(request)
     const response = await withByteRange(request, await env.ASSETS.fetch(request))

@@ -24,14 +24,23 @@ export type StampRecord = Arrival & {
   print: Print
 }
 
-/** Each arrival's stamp, dealt and printed as it was on the day they came. */
-export function stampRecords(arrivals: readonly Arrival[], salt = 0): StampRecord[] {
-  return arrivals.map((arrival, index) => ({
-    ...arrival,
-    index,
-    deal: dealPostmark(arrival.place, arrival.ordinal, salt),
-    print: { ...visitorPrint(arrival.place.key, arrival.ordinal), ...arrival.date },
-  }))
+/** An arrival's stamp, dealt and printed as it was on the day they came. */
+export function stampFor({ place, ordinal, date }: Arrival): Pick<StampRecord, 'deal' | 'print'> {
+  return {
+    deal: dealPostmark(place, ordinal, 0),
+    print: { ...visitorPrint(place.key, ordinal), ...date },
+  }
+}
+
+/** The day a timestamp falls on, as a postmark dates it (UTC). */
+export function postmarkDate(time: number): Arrival['date'] {
+  const date = new Date(time)
+  return { day: date.getUTCDate(), month: date.getUTCMonth(), year: date.getUTCFullYear() }
+}
+
+/** Each arrival's stamp, in the order they came. */
+export function stampRecords(arrivals: readonly Arrival[]): StampRecord[] {
+  return arrivals.map((arrival, index) => ({ ...arrival, index, ...stampFor(arrival) }))
 }
 
 /**
@@ -54,12 +63,7 @@ export function fakeArrivals(
     if (!chosen) throw new Error('fakeArrivals needs places')
     const ordinal = seen.get(chosen.place.key) ?? 0
     seen.set(chosen.place.key, ordinal + 1)
-    const day = new Date(start + index * 6 * 3_600_000)
-    return {
-      place: chosen.place,
-      ordinal,
-      date: { day: day.getUTCDate(), month: day.getUTCMonth(), year: day.getUTCFullYear() },
-    }
+    return { place: chosen.place, ordinal, date: postmarkDate(start + index * 6 * 3_600_000) }
   })
 }
 
@@ -83,8 +87,6 @@ export const pileSettings = {
   // The deepest stamp drawn.
   depth: 200,
 }
-
-export type PileSettings = typeof pileSettings
 
 // How far down, in stamps, a stamp kept off the visitor's own lies under its centre.
 const clearance = 0.95
@@ -122,10 +124,16 @@ export function pileLayout(
   stamp: number,
   room: number,
   you?: { index: number; left: number; right: number },
-  settings: PileSettings = pileSettings,
 ) {
-  const { topDensity: top, deepDensity: deep, dropoff, settle, bleed, runOut } = settings
-  const deepest = settings.depth
+  const {
+    topDensity: top,
+    deepDensity: deep,
+    dropoff,
+    settle,
+    bleed,
+    runOut,
+    depth: deepest,
+  } = pileSettings
   // Centres run from half a stamp in from each side to `bleed` of a stamp past that.
   const from = stamp * (0.5 - bleed)
   const span = Math.max(0, width - 2 * from)
