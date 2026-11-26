@@ -23,7 +23,7 @@ import { cn } from '#/lib/utils'
 const siteUrl = 'https://imomadjid.com/'
 const title = 'Imo’s Portfolio'
 const description =
-  'I’m Imo, a design engineer and product designer based in Jakarta. I design and build interfaces, from early prototypes to shipped products.'
+  'I’m Imo, a software engineer and design engineer in Jakarta who loves design, engineering, and product.'
 const ogImage = {
   url: `${siteUrl}og.jpg`,
   alt: 'The imo logo on a wall in dappled sunlight, through blinds and leaves',
@@ -47,7 +47,7 @@ const structuredData = {
       alternateName: 'Imo',
       url: siteUrl,
       image: `${siteUrl}images/imo-avatar.webp`,
-      jobTitle: 'Design engineer and product designer',
+      jobTitle: 'Software engineer and design engineer',
       worksFor: { '@type': 'Organization', name: 'DocDraft', url: 'https://docdraft.ai' },
       homeLocation: { '@type': 'Place', name: 'Jakarta, Indonesia' },
       sameAs: ['https://github.com/imomadjid', 'https://www.linkedin.com/in/imomadjid/'],
@@ -251,8 +251,10 @@ function Home() {
 
           <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
             <p className="animate-enter text-neutral-900 transition-colors duration-300 [--enter-index:1] motion-reduce:transition-none dark:text-neutral-100">
-              I’m Imo, a design engineer and product designer based in Jakarta. I design and build
-              interfaces, from early prototypes to shipped products.
+              Hey, I’m Imo. I’m a software engineer, but in the fast-paced, messy world of tech
+              we’re in, I like to think my love for design, engineering, and product makes me worthy
+              of being called a design engineer, though honestly, I’m still in the shadows of some
+              inspiring giants in this field.
             </p>
 
             <p className="animate-enter [--enter-index:2]">
@@ -260,21 +262,17 @@ function Home() {
               <LinkButton href="https://docdraft.ai" logoSrc="/images/companies/docdraft.svg">
                 DocDraft
               </LinkButton>
-              , working on document drafting and consultation tools. Before that, I was a UX
-              engineer at{' '}
+              , building experiences that help Americans through high-stress, anxious legal
+              situations. Before that, I was a UX engineer at{' '}
               <LinkButton href="https://meeting.ai" logoSrc="/images/companies/meeting-ai.png">
                 Meeting.ai
               </LinkButton>
-              , where I designed and built experiences across web and mobile.
+              , designing and engineering web and mobile apps that use AI before, during, and after
+              meetings.
             </p>
 
             <p className="animate-enter [--enter-index:3]">
-              I work across user research, design systems, and frontend engineering. I like working
-              through interaction details in code, trying them out and refining how they feel.
-            </p>
-
-            <p className="animate-enter [--enter-index:4]">
-              I’ve also built native apps at the{' '}
+              I also had the privilege of being selected for the{' '}
               <LinkButton
                 href="https://developer.apple.com/academies/"
                 logoSrc="/images/companies/apple.svg"
@@ -282,8 +280,15 @@ function Home() {
               >
                 Apple Developer Academy
               </LinkButton>
-              . I’m happy to talk about design, a product you’re building, or an idea you’d like to
-              explore.
+              , where I learned to build native experiences for the Apple ecosystem alongside
+              world-class developers and mentors, in an environment even Steve Jobs would love.
+            </p>
+
+            <p className="animate-enter [--enter-index:4]">
+              I want you to guess my taste in design and engineering just by playing around with
+              this portfolio. I’m the type of guy who cares less about what I’m building and more
+              about making a lasting impact, something that inspires people and genuinely makes them
+              look up and say “wow.”
             </p>
           </div>
 
