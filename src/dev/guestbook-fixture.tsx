@@ -1,3 +1,4 @@
+import { useDialKit } from 'dialkit'
 import { useMemo, useState } from 'react'
 
 import { SiteFooter } from '#/components/site-footer'
@@ -5,7 +6,7 @@ import { Button } from '#/components/ui/button'
 
 import { GuestbookPile } from './guestbook-pile'
 import { wallPlaces } from './guestbook-places'
-import { fakeArrivals, pileSettings, stampRecords } from './guestbook-wall'
+import { fakeArrivals, pileControls, stampRecords } from './guestbook-wall'
 import type { Arrival } from './guestbook-wall'
 
 // The Guestbook's pile (guestbook-pile.tsx) with made-up visitors, at any count: the newest
@@ -15,33 +16,11 @@ import type { Arrival } from './guestbook-wall'
 
 const counts = [12, 60, 300, 1500] as const
 
-const settingNames = {
-  topDensity: 'Top density',
-  deepDensity: 'Deep density',
-  settle: 'Settles over',
-  depth: 'Stamps drawn',
-  reach: 'Tallest, in stamps',
-  blur: 'Blur at the foot, px',
-} as const satisfies Record<keyof typeof pileSettings, string>
-
-const settingRanges = {
-  topDensity: [0.4, 2, 0.05],
-  deepDensity: [0.8, 5, 0.1],
-  settle: [20, 400, 10],
-  depth: [40, 400, 10],
-  reach: [3, 20, 1],
-  blur: [0, 24, 1],
-} as const satisfies Record<keyof typeof pileSettings, readonly [number, number, number]>
-
-const settingKeys = Object.keys(settingNames).filter(
-  (key): key is keyof typeof pileSettings => key in pileSettings,
-)
-
 export function GuestbookFixture() {
   const [count, setCount] = useState<(typeof counts)[number]>(60)
   const [stamped, setStamped] = useState<Arrival[]>([])
   const [placeKey, setPlaceKey] = useState(wallPlaces[0]?.place.key ?? '')
-  const [settings, setSettings] = useState(pileSettings)
+  const settings = useDialKit('Guestbook', pileControls)
 
   const arrivals = useMemo(() => [...fakeArrivals(count, wallPlaces), ...stamped], [count, stamped])
   const records = useMemo(() => stampRecords(arrivals), [arrivals])
@@ -74,7 +53,8 @@ export function GuestbookFixture() {
           as it was dealt the day they arrived. The newest lie on top, spread out enough that every
           name shows; older ones pack tighter as they sink, and the pile&apos;s foot darkens and
           blurs into the footer. A stamp keeps its place across the page for good and only sinks.
-          The homepage shows it too, with 60 visitors or <code>?guestbook=</code> as many.
+          The homepage shows it too, with 60 visitors or <code>?guestbook=</code> as many, and
+          DialKit&apos;s Guestbook panel tunes it on either page.
         </p>
       </header>
 
@@ -113,28 +93,6 @@ export function GuestbookFixture() {
         <Button size="compact" onClick={stampVisitor}>
           Stamp
         </Button>
-      </div>
-
-      <div className="flex flex-wrap gap-6">
-        {settingKeys.map((key) => {
-          const [min, max, step] = settingRanges[key]
-          return (
-            <label key={key} className="flex flex-col gap-1 text-caption text-muted-foreground">
-              {`${settingNames[key]}: ${settings[key]}`}
-              <input
-                type="range"
-                min={min}
-                max={max}
-                step={step}
-                value={settings[key]}
-                className="w-40 accent-foreground"
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, [key]: Number(event.target.value) }))
-                }
-              />
-            </label>
-          )
-        })}
       </div>
 
       <GuestbookPile

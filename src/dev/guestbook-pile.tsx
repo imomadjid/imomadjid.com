@@ -8,14 +8,9 @@ import type { PileSettings, StampRecord } from './guestbook-wall'
 import { Postmark } from './postmark'
 
 // The Guestbook's pile at the foot of the page (guestbook-wall.ts): the newest stamps on top,
-// spread out enough that every name shows, the older ones packed tighter as they sink, and the
-// bottom of the pile darkening a little and blurring softly into the footer, which `children`
-// lays over it.
-
-// How wide a round postmark shows: a phone's pile is narrower, so its stamps are a little smaller.
-function stampSize(width: number) {
-  return width < 640 ? 84 : 124
-}
+// spread out enough that every name shows, the older ones packed tighter as they sink, running
+// off the sides and the foot, which darkens a little and goes out of focus under the footer that
+// `children` lays over it. Once full, the pile reaches up to just under the page's contents.
 
 // The foot of the pile blurs by blurring each stamp, by how far into the fade its centre lies,
 // rather than with backdrop-filter. The stamps don't move, so a stamp's filter is painted once
@@ -23,22 +18,21 @@ function stampSize(width: number) {
 // backdrop-filter is the compositor's to run, every frame the light changes, across the whole
 // width of the fade; it suits a backdrop that moves, which this one doesn't. Stamps lie at every
 // depth, so the blur still deepens smoothly down the pile.
-function stampBlur(
-  down: number,
-  height: number,
-  fade: number,
-  settings: PileSettings,
-  stamp: number,
-) {
-  const into = Math.min(1, Math.max(0, (down - (height - fade)) / fade))
-  // Eased in, so the top of the fade stays nearly sharp and the foot goes soft.
-  const radius = settings.blur * (stamp / 124) * into * into
+function stampBlur(into: number, settings: PileSettings, stamp: number) {
+  const radius = settings.foot.blur * (stamp / 124) * into ** settings.foot.blurCurve
   return radius < 0.25 ? undefined : `blur(${radius.toFixed(2)}px)`
 }
 
-function useWidth() {
+/**
+ * The pile's width, and its room: from just under the contents to the viewport's foot, which
+ * the page's foot meets once it's scrolled to the end. Without the contents (a narrow
+ * viewport), a share of the viewport's height.
+ */
+function useFrame(settings: PileSettings) {
   const element = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
+  const [contentsFoot, setContentsFoot] = useState<number>()
+  const [viewport, setViewport] = useState(0)
   useEffect(() => {
     const target = element.current
     if (!target) return undefined
@@ -46,9 +40,25 @@ function useWidth() {
       if (entry) setWidth(entry.contentRect.width)
     })
     observer.observe(target)
-    return () => observer.disconnect()
+    // The contents are fixed to the viewport, so their foot moves only as the viewport resizes.
+    const measure = () => {
+      const contents = document.querySelector('nav[aria-label="On this page"]')
+      const box = contents?.getBoundingClientRect()
+      setContentsFoot(box && box.height > 0 ? box.bottom : undefined)
+      setViewport(window.innerHeight)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
   }, [])
-  return [element, width] as const
+  const room =
+    contentsFoot === undefined
+      ? viewport * settings.extent.room
+      : viewport - contentsFoot - settings.extent.gap
+  return [element, width, Math.max(1, room)] as const
 }
 
 export function GuestbookPile({
@@ -69,14 +79,14 @@ export function GuestbookPile({
   className?: string
   children?: ReactNode
 }) {
-  const [element, width] = useWidth()
-  const stamp = stampSize(width)
+  const [element, width, room] = useFrame(settings)
+  const stamp = width < 640 ? settings.stamp.phone : settings.stamp.desktop
   const { spots, height } = useMemo(
-    () => pileLayout(records.length, width, stamp, settings),
-    [records.length, width, stamp, settings],
+    () => pileLayout(records.length, width, stamp, room, settings),
+    [records.length, width, stamp, room, settings],
   )
   // The darkening and blur cover the pile's lower part, and at least the footer's row.
-  const fade = Math.max(160, Math.min(height * 0.55, 380))
+  const fade = Math.max(120, height * settings.foot.fade)
   const recent = records.slice(-5).reverse()
 
   return (
@@ -93,13 +103,15 @@ export function GuestbookPile({
       <div
         ref={element}
         aria-hidden="true"
-        className="relative w-full [clip-path:inset(-50vh_0_0_0)]"
+        // Stamps run off the sides and the foot: clipped there, and kept out of the page's size.
+        className="relative w-full overflow-clip"
         style={{ height: width > 0 ? height : 0 }}
       >
         {width > 0 &&
           [...spots].reverse().map(({ index, across, down }) => {
             const record = records[index]
             if (!record) return null
+            const into = Math.min(1, Math.max(0, (down - (height - fade)) / fade))
             return (
               <Postmark
                 key={index}
@@ -117,15 +129,26 @@ export function GuestbookPile({
                   left: `${across * 100}%`,
                   top: down,
                   translate: '-50% -50%',
-                  filter: stampBlur(down, height, fade, settings, stamp),
+                  filter: stampBlur(into, settings, stamp),
                 }}
               />
             )
           })}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-b from-transparent to-black/15 dark:to-black/45"
-          style={{ height: fade }}
-        />
+        {(['light', 'dark'] as const).map((scheme) => (
+          <div
+            key={scheme}
+            className={cn(
+              'pointer-events-none absolute inset-x-0 bottom-0',
+              scheme === 'light' ? 'dark:hidden' : 'hidden dark:block',
+            )}
+            style={{
+              height: fade,
+              backgroundImage: `linear-gradient(to bottom, transparent, rgb(0 0 0 / ${
+                scheme === 'light' ? settings.foot.darken : settings.foot.darkenDark
+              }))`,
+            }}
+          />
+        ))}
       </div>
       {children && (
         <div className="absolute inset-x-0 bottom-0 flex justify-center px-6">
