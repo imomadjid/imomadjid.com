@@ -274,7 +274,7 @@ function Home() {
             </p>
 
             <p className="animate-enter [--enter-index:3]">
-              I also had the privilege of being selected for the{' '}
+              I was lucky enough to get selected for the{' '}
               <LinkButton
                 href="https://developer.apple.com/academies/"
                 logoSrc="/images/companies/apple.svg"
