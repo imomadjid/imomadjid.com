@@ -98,16 +98,20 @@ export type HouseStyle = { ink: InkName; families: Family[] }
 
 /**
  * A city's house style: its ink, and three or four frame families, chosen from those that letter
- * its name readably. A name too long for most frames keeps the three that set it largest.
+ * its name readably. A name too long for most frames keeps the three that set it largest. Families
+ * without the name never make a house.
  */
 export function houseStyle(place: PostmarkPlace, salt: number): HouseStyle {
   const next = generator(hash(`${place.key}:${salt}:house`))
   const ink = pick(next, axisValues.ink)
-  const legible = families.filter((family) => smallestName(family, place) >= readableName)
+  // A guestbook stamp says where its visitor came from, so a family that letters no name (mute)
+  // stays out of every house.
+  const naming = families.filter((family) => Number.isFinite(smallestName(family, place)))
+  const legible = naming.filter((family) => smallestName(family, place) >= readableName)
   const pool =
     legible.length >= 3
       ? legible
-      : [...families].sort((a, b) => smallestName(b, place) - smallestName(a, place)).slice(0, 3)
+      : naming.sort((a, b) => smallestName(b, place) - smallestName(a, place)).slice(0, 3)
   const count = Math.min(pool.length, next() < 0.5 ? 3 : 4)
   return { ink, families: shuffled(pool, next).slice(0, count) }
 }

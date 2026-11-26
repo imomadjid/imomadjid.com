@@ -52,6 +52,7 @@ void test('a house style is seeded, and letters its name readably in three or fo
       assert.ok(axisValues.ink.includes(house.ink))
       assert.ok(house.families.length >= 3 && house.families.length <= 4, place.key)
       assert.equal(new Set(house.families).size, house.families.length, place.key)
+      assert.ok(!house.families.includes('mute'), `${place.key} letters its name`)
       const legible = house.families.filter((family) => smallestName(family, place) >= readableName)
       // A name too long for most frames keeps its three roomiest, which may still be small.
       if (place.key !== 'saint-remy-de-provence' && place.key !== 'llanfairpwllgwyngyll') {
