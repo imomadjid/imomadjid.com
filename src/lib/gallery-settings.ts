@@ -1,20 +1,22 @@
-import type { DialConfig, ResolvedValues } from 'dialkit'
+import { easing, spring } from '#/lib/transition'
 
-export const galleryControls = {
+// The Gallery's motion: its tiles' zoom, a photo's flight out and back, the readout under it,
+// stepping between photos, and the page receding behind them.
+export const galleryTuning = {
   /** The See more tile's zoom out to the whole grid. */
   seeMore: {
-    motion: { type: 'easing', duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+    motion: easing(0.5, [0.22, 1, 0.36, 1]),
     /** Seconds the corners start after the middle. */
-    lead: [0.15, 0, 0.6, 0.01],
+    lead: 0.15,
     /** Extra magnification of the middle halfway through a move. */
-    bulge: [0, 0, 0.5, 0.01],
+    bulge: 0,
   },
   /** A featured photo's zoom inside its tile on hover. */
   photo: {
-    motion: { type: 'easing', duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-    lead: [0.12, 0, 0.5, 0.01],
+    motion: easing(0.6, [0.22, 1, 0.36, 1]),
+    lead: 0.12,
     /** How far the photo zooms in: 0.06 is 6%. */
-    zoom: [0.06, 0, 0.2, 0.005],
+    zoom: 0.06,
   },
   /**
    * A photo flying out of its tile, or the See more grid into the overlay, and back: a spring per
@@ -22,16 +24,16 @@ export const galleryControls = {
    * one and a half responses.
    */
   expand: {
-    open: { type: 'spring', visualDuration: 0.55, bounce: 0 },
+    open: spring(0.55),
     /** Back into the tile: quicker than the open. */
-    close: { type: 'spring', visualDuration: 0.38, bounce: 0 },
+    close: spring(0.38),
     /**
      * How far the corners' responses spread either side of it on the most lopsided move: 0.5 is
      * half, as Apple spreads the rows of its app open.
      */
-    spread: [0.5, 0, 0.9, 0.01],
+    spread: 0.5,
     /** Seconds a closed photo takes to fade into its tile, bringing the Sunlit light back in. */
-    relight: [0.3, 0, 1, 0.05],
+    relight: 0.3,
   },
   /** The exposure readout under an open photo. */
   readout: {
@@ -39,11 +41,11 @@ export const galleryControls = {
      * How far into the photo's open it starts coming up, in the open's responses: before the
      * photo lands, so the two overlap rather than run one after the other.
      */
-    start: [0.6, 0, 1.5, 0.05],
+    start: 0.6,
     /** Each readout's rise, crossfade and unblur, on a spring without bounce as Apple's are. */
-    motion: { type: 'spring', visualDuration: 0.45, bounce: 0 },
+    motion: spring(0.45),
     /** Seconds each readout starts after the one before it. */
-    stagger: [0.04, 0, 0.1, 0.005],
+    stagger: 0.04,
   },
   /**
    * Stepping to the next or previous photo while one is open: the new photo fades up over the
@@ -52,21 +54,21 @@ export const galleryControls = {
    */
   navigate: {
     /** The photos' slide and zoom, and the new one's fade where the outline narrows to it. */
-    motion: { type: 'spring', visualDuration: 0.5, bounce: 0 },
+    motion: spring(0.5),
     /**
      * The outline's move between a portrait and a landscape photo, the blur, and the readout
      * following the photo's bottom. No bounce: an outline that overshoots reads as a zoom.
      */
-    frame: { type: 'spring', visualDuration: 0.45, bounce: 0 },
+    frame: spring(0.45),
     /** The new photo's fade where the outline widens to it, so its sides arrive nearly opaque. */
-    reveal: { type: 'spring', visualDuration: 0.3, bounce: 0 },
+    reveal: spring(0.3),
     /**
      * How far the photos slide, in px, the same for both, under photos 800 px wide or wider;
      * narrower sets (a phone) slide and blur in proportion.
      */
-    shift: [14, 0, 48, 1],
+    shift: 14,
     /** How blurred a photo is at the far end of its crossfade, in px, scaled as `shift` is. */
-    blur: [10, 0, 40, 1],
+    blur: 10,
   },
   /**
    * The page shrinking behind an open photo or the See more overlay, on Apple's Home Screen
@@ -74,33 +76,10 @@ export const galleryControls = {
    */
   recede: {
     /** How small the page gets: 0.94 is 94%. */
-    scale: [0.94, 0.8, 1, 0.005],
-    open: { type: 'spring', visualDuration: 0.7, bounce: 0.12 },
-    close: { type: 'spring', visualDuration: 0.45, bounce: 0 },
+    scale: 0.94,
+    open: spring(0.7, 0.12),
+    close: spring(0.45),
   },
-} satisfies DialConfig
-
-export type GalleryTuning = ResolvedValues<typeof galleryControls>
-
-const { seeMore, photo, expand, readout, navigate, recede } = galleryControls
-
-// Production values; DialKit's Gallery panel tunes these in development.
-export const defaultGalleryTuning: GalleryTuning = {
-  seeMore: { motion: seeMore.motion, lead: seeMore.lead[0], bulge: seeMore.bulge[0] },
-  photo: { motion: photo.motion, lead: photo.lead[0], zoom: photo.zoom[0] },
-  expand: {
-    open: expand.open,
-    close: expand.close,
-    spread: expand.spread[0],
-    relight: expand.relight[0],
-  },
-  readout: { start: readout.start[0], motion: readout.motion, stagger: readout.stagger[0] },
-  navigate: {
-    motion: navigate.motion,
-    frame: navigate.frame,
-    reveal: navigate.reveal,
-    shift: navigate.shift[0],
-    blur: navigate.blur[0],
-  },
-  recede: { scale: recede.scale[0], open: recede.open, close: recede.close },
 }
+
+export type GalleryTuning = typeof galleryTuning

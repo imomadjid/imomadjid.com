@@ -1,4 +1,3 @@
-import type { TransitionConfig } from 'dialkit'
 import { effect } from 'vgpu'
 
 import { springOf, stepSprings } from '#/lib/flight-springs'
@@ -15,6 +14,7 @@ import {
   rendererLife,
   watchCanvasPixels,
 } from '#/lib/gallery-gpu'
+import type { TransitionConfig } from '#/lib/transition'
 import cellsFlightSource from '#/shaders/gallery-cells-flight.wgsl'
 import flightSource from '#/shaders/gallery-flight.wgsl'
 

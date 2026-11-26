@@ -1,7 +1,6 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { DialRoot } from 'dialkit'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
@@ -10,11 +9,10 @@ import { ShapeProvider } from '#/lib/shape-context'
 import { SOUND_SCRIPT, startSounds } from '#/lib/sound'
 import { SurfaceProvider } from '#/lib/surface-context'
 import { textLinkClass } from '#/lib/text-link'
-import { THEME_SCRIPT, useTheme } from '#/lib/theme'
+import { THEME_SCRIPT } from '#/lib/theme'
 import { cn } from '#/lib/utils'
 
 import appCss from '#/styles.css?url'
-import dialkitCss from 'dialkit/styles.css?url'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -28,7 +26,6 @@ export const Route = createRootRoute({
       ...(import.meta.env.DEV_TOOLS ? [{ name: 'robots', content: 'noindex' }] : []),
     ],
     links: [
-      ...(import.meta.env.DEV_TOOLS ? [{ rel: 'stylesheet', href: dialkitCss }] : []),
       { rel: 'stylesheet', href: appCss },
       {
         rel: 'preload',
@@ -57,12 +54,6 @@ function NotFound() {
   )
 }
 
-// DialRoot renders nothing in production builds unless told otherwise. dev.imomadjid.com is one,
-// and DEV_TOOLS already keeps this out of the real production site.
-function ThemedDialKit() {
-  return <DialRoot theme={useTheme()} defaultOpen={false} productionEnabled />
-}
-
 function RootDocument({ children }: { children: ReactNode }) {
   useEffect(startSounds, [])
   return (
@@ -82,7 +73,6 @@ function RootDocument({ children }: { children: ReactNode }) {
         <ShapeProvider defaultShape="pill">
           <SurfaceProvider value={1}>{children}</SurfaceProvider>
         </ShapeProvider>
-        {import.meta.env.DEV_TOOLS && <ThemedDialKit />}
         <TanStackDevtools
           config={{ position: 'bottom-right' }}
           plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}

@@ -1,7 +1,6 @@
-import type { TransitionConfig } from 'dialkit'
-
 import { cssSpring } from '#/lib/flight-springs'
 import type { Rect } from '#/lib/gallery-flight-geometry'
+import type { TransitionConfig } from '#/lib/transition'
 import { tw } from '#/lib/tw'
 
 export type RecedeTuning = {

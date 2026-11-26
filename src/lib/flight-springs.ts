@@ -1,10 +1,10 @@
-import type { TransitionConfig } from 'dialkit'
+import type { TransitionConfig } from '#/lib/transition'
 
 /** A damped spring: its natural frequency in radians a second, and its damping ratio. */
 export type Spring = { omega: number; zeta: number }
 
 /**
- * The spring a DialKit transition describes, set by response and damping ratio as Apple's are:
+ * The spring a transition describes, set by response and damping ratio as Apple's are:
  * `visualDuration` (or an easing's `duration`) is the response, and the ratio is 1 less bounce,
  * so a bounce of 0 settles without overshoot. A critically damped spring is about 1.4% short of
  * its target one response in, so the response is close to how long the move looks.

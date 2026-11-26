@@ -486,7 +486,7 @@ export async function startAmbient(
     document.addEventListener('visibilitychange', pauseWhenHidden, options)
     // Window resize also covers DPR changes from zoom, which ResizeObserver misses.
     window.addEventListener('resize', resize, options)
-    // Scope pointer input to the scene; portaled overlays such as DialKit fire pointerleave.
+    // Scope pointer input to the scene; portaled overlays fire pointerleave.
     host.addEventListener('pointermove', movePointer, { ...options, passive: true })
     host.addEventListener('pointerleave', leavePointer, options)
     window.addEventListener('blur', leavePointer, options)

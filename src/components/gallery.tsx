@@ -1,5 +1,4 @@
 import { Dialog } from '@base-ui/react/dialog'
-import { useDialKit } from 'dialkit'
 import { useLayoutEffect, useRef } from 'react'
 
 import cameraPhoto from '#/assets/camera/fujifilm-x-t30-iii.webp'
@@ -15,13 +14,8 @@ import { figuresClass } from '#/lib/figures'
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
 import type { GalleryPhoto } from '#/lib/gallery'
 import { tileCells } from '#/lib/gallery-masonry'
-import { defaultGalleryTuning, galleryControls } from '#/lib/gallery-settings'
+import { galleryTuning } from '#/lib/gallery-settings'
 import { recedePage } from '#/lib/page-recede'
-
-// The build-time constant keeps hook order stable and drops DialKit from production.
-const useGalleryTuning = import.meta.env.DEV_TOOLS
-  ? () => useDialKit('Gallery', galleryControls)
-  : () => defaultGalleryTuning
 
 /** Text with its digit runs set in the project years' figure style. A range stays on one line. */
 function Figures({ text }: { text: string }) {
@@ -52,12 +46,11 @@ function Gallery({
   const columns = useOverlayColumns()
   const tile = tileCells(columns)
   const preview = overlayPhotos.slice(tile.start, tile.end)
-  const tuning = useGalleryTuning()
   const sectionRef = useRef<HTMLDivElement>(null)
   const tileRef = useRef<HTMLSpanElement>(null)
   const zoomedOutRef = useRef(false)
-  const stage = useFlightStage(tuning.expand, sectionRef)
-  const lightbox = useGalleryLightbox(stage, tuning)
+  const stage = useFlightStage(galleryTuning.expand, sectionRef)
+  const lightbox = useGalleryLightbox(stage, galleryTuning)
   // An open photo steps through the photos around its tile: the featured ones on the page, or
   // every photo in the overlay, in its order.
   const openFeatured: OpenPhoto = (photo, tile, keyboard) =>
@@ -80,17 +73,18 @@ function Gallery({
   const holdingTile = lightbox.holdingTile
   const receded = (overlay.open && !overlay.closing) || holdingTile !== null
   useLayoutEffect(() => {
-    if (sectionRef.current) recedePage(sectionRef.current, receded, tuning.recede)
-  }, [receded, tuning.recede])
+    if (sectionRef.current) recedePage(sectionRef.current, receded, galleryTuning.recede)
+  }, [receded])
   const { listRef } = overlay
   useLayoutEffect(() => {
     const list = listRef.current
-    if (list) recedePage(list, holdingTile !== null && list.contains(holdingTile), tuning.recede)
-  }, [holdingTile, listRef, tuning.recede])
+    if (list)
+      recedePage(list, holdingTile !== null && list.contains(holdingTile), galleryTuning.recede)
+  }, [holdingTile, listRef])
   useLayoutEffect(() => {
     const section = sectionRef.current
     return () => {
-      if (section) recedePage(section, false, defaultGalleryTuning.recede)
+      if (section) recedePage(section, false, galleryTuning.recede)
     }
   }, [])
 
@@ -126,7 +120,7 @@ function Gallery({
         <ul data-gallery-set className="grid w-full grid-cols-3 gap-2">
           {featured.map((photo) => (
             <li key={photo.id}>
-              <FeaturedPhoto photo={photo} tuning={tuning.photo} onOpen={openFeatured} />
+              <FeaturedPhoto photo={photo} tuning={galleryTuning.photo} onOpen={openFeatured} />
             </li>
           ))}
           <li>
@@ -134,7 +128,7 @@ function Gallery({
               photos={preview}
               columns={columns}
               total={photos.length}
-              tuning={tuning.seeMore}
+              tuning={galleryTuning.seeMore}
               tileRef={tileRef}
               zoomedOutRef={zoomedOutRef}
               onIntent={overlay.prepare}
@@ -147,7 +141,7 @@ function Gallery({
         photos={overlayPhotos}
         columns={columns}
         scrollsPage={scrollsPage}
-        photoTuning={tuning.photo}
+        photoTuning={galleryTuning.photo}
         listRef={overlay.listRef}
         flies={overlay.flies}
         cellsLifted={overlay.cellsLifted}

@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useDialKit, useDialKitController } from 'dialkit'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
@@ -14,10 +13,10 @@ import { SiteFooter } from '#/components/site-footer'
 import { TableOfContents } from '#/components/table-of-contents'
 import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
-import { ambientControls, defaultAmbientSettings } from '#/lib/ambient-settings'
+import { defaultAmbientSettings } from '#/lib/ambient-settings'
 import { recedeClass } from '#/lib/page-recede'
 import { projectFile, projectVideo } from '#/lib/project-media'
-import { defaultSignatureTiming, signatureControls } from '#/lib/signature-settings'
+import { signatureTiming } from '#/lib/signature-settings'
 import { textLinkClass } from '#/lib/text-link'
 import { cn } from '#/lib/utils'
 
@@ -217,45 +216,25 @@ function Section({
   )
 }
 
-const productionTuning = {
-  settings: defaultAmbientSettings,
-  isSleeping: false,
-  signatureTiming: defaultSignatureTiming,
-  signatureRun: 0,
-}
+const noChanges = () => () => {}
 
-function useDialTuning() {
-  const sunlit = useDialKitController('Sunlit', ambientControls, {
-    id: 'sunlit-tuning',
-    persist: true,
-    onAction(action) {
-      if (action === 'reset') sunlit.resetValues()
-    },
-  })
-  const profile = useDialKit('Profile', { isSleeping: false })
-  const [signatureRun, setSignatureRun] = useState(0)
-  const signature = useDialKit('Signature', signatureControls, {
-    onAction(action) {
-      if (action === 'replay') setSignatureRun((run) => run + 1)
-    },
-  })
-  return {
-    settings: sunlit.values,
-    isSleeping: profile.isSleeping,
-    signatureTiming: signature,
-    signatureRun,
-  }
-}
-
-// The build-time constant keeps hook order stable and drops DialKit from production.
-const useTuning = import.meta.env.DEV_TOOLS ? useDialTuning : () => productionTuning
+// Sleep Focus, with the dev tools only: `?sleep` puts the avatar to sleep. The build-time
+// constant keeps hook order stable and leaves it out of production.
+const useSleepFocus = import.meta.env.DEV_TOOLS
+  ? () =>
+      useSyncExternalStore(
+        noChanges,
+        () => new URLSearchParams(location.search).has('sleep'),
+        () => false,
+      )
+  : () => false
 
 function Home() {
-  const { settings, isSleeping, signatureTiming, signatureRun } = useTuning()
+  const isSleeping = useSleepFocus()
 
   return (
     <main className="relative isolate flex min-h-svh justify-center overflow-x-clip px-6 pb-16">
-      <AmbientLight settings={settings} />
+      <AmbientLight settings={defaultAmbientSettings} />
       <TableOfContents sections={sections} />
       {/* No z-index here: a stacking context would hold the wand under the light layer. */}
       <div data-sunlit-anchor className="relative w-full max-w-[34rem]">
@@ -267,7 +246,7 @@ function Home() {
           {/* The wand hangs from above the page to the bottom of this row, where a toggle sat. */}
           <div className="relative mb-10 flex animate-enter items-center justify-between gap-6">
             <ProfileAvatar isSleeping={isSleeping} />
-            <BlindWand settings={settings} />
+            <BlindWand settings={defaultAmbientSettings} />
           </div>
 
           <div className="space-y-8 text-base leading-[1.8] text-neutral-600 transition-colors duration-300 motion-reduce:transition-none dark:text-neutral-400">
@@ -310,7 +289,6 @@ function Home() {
 
           <div className="mt-12 flex flex-wrap items-center justify-between gap-x-10 gap-y-6">
             <Signature
-              key={signatureRun}
               timing={signatureTiming}
               className="h-auto w-28 text-black transition-colors duration-300 [--enter-index:6] motion-reduce:animate-enter motion-reduce:transition-none dark:text-white"
             />

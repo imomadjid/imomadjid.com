@@ -33,12 +33,11 @@ generated file committed. After adding or moving routes, run the dev server or
 `bun run build` before checking types. Do not run a separate Router CLI against
 this file; its output differs from Start's and triggers dev-server reloads.
 
-DialKit tunes the Sunlit background and the Sleep Focus avatar state in the
-dev server and on dev.imomadjid.com. `src/routes/index.tsx` reads the controls
-through a hook that is chosen at build time by `import.meta.env.DEV_TOOLS`, so
-production uses `defaultAmbientSettings` from `src/lib/ambient-settings.ts` and
-ships no DialKit code. Change the defaults in `ambientControls`; tuned values
-persist only in the browser that tuned them.
+The Sunlit background's settings are `defaultAmbientSettings` in
+`src/lib/ambient-settings.ts`, and the Gallery's timing is `galleryTuning` in
+`src/lib/gallery-settings.ts`. In the dev server and on dev.imomadjid.com,
+`?sleep` on the homepage turns on the Sleep Focus avatar state; a hook chosen at
+build time by `import.meta.env.DEV_TOOLS` keeps it out of production.
 
 Inside `main`, the `dark:` variant follows the renderer's `data-scene-tone`
 crossover instead of the instant `.dark` class, so text and inverted marks flip
@@ -145,8 +144,8 @@ deployed version. Check `bunx wrangler deployments list` for deployment history.
 
 Pushes to the `dev` branch deploy dev.imomadjid.com, a second Worker
 (`imomadjid-com-dev`) from the `dev` environment in `wrangler.jsonc`. It is a
-production build with the dev tools on: the `/dev` playground, DialKit, Sleep
-Focus, and `?ambientProfile`. It also answers on its own `workers.dev` subdomain.
+production build with the dev tools on: the `/dev` playground, Sleep Focus
+(`?sleep`), and `?ambientProfile`. It also answers on its own `workers.dev` subdomain.
 Every page carries a `noindex` robots meta tag, and static files send
 `X-Robots-Tag: noindex`. `robots.txt` still lets crawlers in, because a crawler
 that is kept out never reads the noindex and can list a linked URL anyway.

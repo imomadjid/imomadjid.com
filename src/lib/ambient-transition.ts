@@ -1,5 +1,6 @@
-import type { TransitionConfig } from 'dialkit'
 import { cubicBezier, spring } from 'motion'
+
+import type { TransitionConfig } from '#/lib/transition'
 
 export function smoothStep(value: number) {
   const progress = Math.min(1, Math.max(0, value))

@@ -1,17 +1,19 @@
-import { useDialKit } from 'dialkit'
-import type { DialConfig } from 'dialkit'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { featuredCount, galleryPhotos } from '#/lib/gallery'
-import { galleryControls } from '#/lib/gallery-settings'
+import { galleryTuning } from '#/lib/gallery-settings'
 import { startGalleryWarp } from '#/lib/gallery-warp'
 import type { GalleryWarp, WarpTuning } from '#/lib/gallery-warp'
+import { easing } from '#/lib/transition'
 
-const warpControls = {
-  ...galleryControls.seeMore,
-  /** Holds every tile zoomed out, to inspect the grid. */
-  zoomedOut: false,
-} satisfies DialConfig
+const { seeMore } = galleryTuning
+
+// The warp's sliders: each one's label, range and step.
+const sliders = {
+  duration: ['Seconds per move', 0.1, 1.5, 0.05],
+  lead: ['Seconds the corners start after the middle', 0, 0.6, 0.01],
+  bulge: ['Extra magnification of the middle halfway', 0, 0.5, 0.01],
+} as const
 
 // The See more tile's preview order: the photos past the grid, then from the top.
 const photoUrls = [...galleryPhotos.slice(featuredCount), ...galleryPhotos.slice(0, featuredCount)]
@@ -82,8 +84,21 @@ function WarpTile({ size, tuning, pinned }: { size: number; tuning: WarpTuning; 
 }
 
 export function GalleryWarpFixture() {
-  const { zoomedOut, ...values } = useDialKit('Warp', warpControls)
-  const tuning: WarpTuning = values
+  const [values, setValues] = useState({
+    duration: seeMore.motion.duration,
+    lead: seeMore.lead,
+    bulge: seeMore.bulge,
+  })
+  // Holds every tile zoomed out, to inspect the grid.
+  const [zoomedOut, setZoomedOut] = useState(false)
+  const tuning: WarpTuning = useMemo(
+    () => ({
+      motion: easing(values.duration, seeMore.motion.ease),
+      lead: values.lead,
+      bulge: values.bulge,
+    }),
+    [values],
+  )
 
   return (
     <div className="max-w-5xl space-y-14">
@@ -91,10 +106,41 @@ export function GalleryWarpFixture() {
         <h1 className="text-display font-medium">Gallery warp</h1>
         <p className="text-body text-muted-foreground">
           The homepage's See more tile, drawn with WebGPU. Hover a tile: the middle of the grid
-          zooms before the edges, ring by ring. Tune it in the Warp panel, then copy the values into
+          zooms before the edges, ring by ring. Tune it with the sliders, then copy the values into
           src/lib/gallery-settings.ts; at zero lead and bulge it moves like the CSS fallback.
         </p>
       </header>
+
+      <div className="flex flex-wrap items-end gap-6">
+        {(['duration', 'lead', 'bulge'] as const).map((key) => {
+          const [label, min, max, step] = sliders[key]
+          return (
+            <label key={key} className="flex flex-col gap-1 text-caption text-muted-foreground">
+              {`${label}: ${values[key]}`}
+              <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={values[key]}
+                className="w-56 accent-foreground"
+                onChange={(event) =>
+                  setValues((current) => ({ ...current, [key]: Number(event.target.value) }))
+                }
+              />
+            </label>
+          )
+        })}
+        <label className="flex items-center gap-2 text-caption text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={zoomedOut}
+            className="accent-foreground"
+            onChange={(event) => setZoomedOut(event.target.checked)}
+          />
+          Hold zoomed out
+        </label>
+      </div>
 
       <section className="flex flex-wrap items-end gap-10">
         {sizes.map((size) => (

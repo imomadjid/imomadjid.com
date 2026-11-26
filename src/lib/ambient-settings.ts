@@ -1,21 +1,22 @@
-import type { DialConfig, ResolvedValues } from 'dialkit'
+import { easing } from '#/lib/transition'
 
-export const ambientControls = {
-  reset: { type: 'action', label: 'Reset Sunlit' },
+// The Sunlit scene's settings. The capture pages (/dev/og, /dev/story) start from these and
+// override a few, and their query overrides (src/dev/scene-tuning.ts) tune them further.
+export const defaultAmbientSettings = {
   light: {
-    angle: [-28, -65, 10, 1],
-    intensity: [0.7, 0, 1, 0.01],
-    warmth: [0.55, 0, 1, 0.01],
-    softness: [0.65, 0.1, 1.5, 0.01],
-    progressiveSoftness: [3, 0, 6, 0.1],
-    beamWidth: [0.32, 0.18, 0.7, 0.01],
-    pointerInfluence: [0.9, 0, 1, 0.01],
+    angle: -28,
+    intensity: 0.7,
+    warmth: 0.55,
+    softness: 0.65,
+    progressiveSoftness: 3,
+    beamWidth: 0.32,
+    pointerInfluence: 0.9,
   },
   blinds: {
-    opening: [0.76, 0.1, 0.9, 0.01],
-    spacing: [0.12, 0.08, 0.35, 0.01],
-    railWidth: [0.018, 0, 0.06, 0.001],
-    distance: [0.25, 0.1, 0.6, 0.01],
+    opening: 0.76,
+    spacing: 0.12,
+    railWidth: 0.018,
+    distance: 0.25,
   },
   // Whether the light falls on the page's content too, as if it were printed on the wall.
   content: {
@@ -23,77 +24,34 @@ export const ambientControls = {
   },
   // The tilt wand's distance from the wall, which sets how far its shadow falls.
   wand: {
-    depth: [0.09, 0.02, 0.3, 0.01],
+    depth: 0.09,
   },
   foliage: {
-    movement: [0.7, 0, 1, 0.01],
-    speed: [1, 0, 1.5, 0.01],
-    density: [0.9, 0, 1, 0.01],
-    depth: [0.4, 0, 1, 0.01],
-    scale: [1, 0.65, 1.5, 0.01],
+    movement: 0.7,
+    speed: 1,
+    density: 0.9,
+    depth: 0.4,
+    scale: 1,
   },
   // Pointer gusts swing the branches and make the leaves near the stroke flicker.
   breeze: {
-    strength: [0.7, 0, 1.5, 0.01],
-    recovery: [1.3, 0.4, 3, 0.1],
-    rustle: [0.7, 0, 1, 0.01],
+    strength: 0.7,
+    recovery: 1.3,
+    rustle: 0.7,
   },
   // Phone tilt turns the room against the sun. Range is the most it turns, in degrees.
   phoneTilt: {
-    influence: [0.15, 0, 1, 0.01],
-    range: [3, 0, 12, 0.5],
-    recenter: [3, 0.5, 10, 0.1],
-    wandSwing: [1, 0, 1, 0.01],
+    influence: 0.15,
+    range: 3,
+    recenter: 3,
+    wandSwing: 1,
   },
   transition: {
-    dawnEntrance: { type: 'easing', duration: 3.2, ease: [0.3, 0, 0.2, 1] },
-    duskEntrance: { type: 'easing', duration: 3.6, ease: [0.25, 0, 0.3, 1] },
-    sunsetMotion: { type: 'easing', duration: 1.7, ease: [0.32, 0, 0.16, 1] },
-    sunriseMotion: { type: 'easing', duration: 1.4, ease: [0.16, 1, 0.3, 1] },
+    dawnEntrance: easing(3.2, [0.3, 0, 0.2, 1]),
+    duskEntrance: easing(3.6, [0.25, 0, 0.3, 1]),
+    sunsetMotion: easing(1.7, [0.32, 0, 0.16, 1]),
+    sunriseMotion: easing(1.4, [0.16, 1, 0.3, 1]),
   },
-} satisfies DialConfig
-
-export type AmbientSettings = ResolvedValues<typeof ambientControls>
-
-const { light, blinds, content, wand, foliage, breeze, phoneTilt, transition } = ambientControls
-
-// Production values; DialKit only tunes these in development.
-export const defaultAmbientSettings: AmbientSettings = {
-  reset: ambientControls.reset,
-  light: {
-    angle: light.angle[0],
-    intensity: light.intensity[0],
-    warmth: light.warmth[0],
-    softness: light.softness[0],
-    progressiveSoftness: light.progressiveSoftness[0],
-    beamWidth: light.beamWidth[0],
-    pointerInfluence: light.pointerInfluence[0],
-  },
-  blinds: {
-    opening: blinds.opening[0],
-    spacing: blinds.spacing[0],
-    railWidth: blinds.railWidth[0],
-    distance: blinds.distance[0],
-  },
-  content: { lit: content.lit },
-  wand: { depth: wand.depth[0] },
-  foliage: {
-    movement: foliage.movement[0],
-    speed: foliage.speed[0],
-    density: foliage.density[0],
-    depth: foliage.depth[0],
-    scale: foliage.scale[0],
-  },
-  breeze: {
-    strength: breeze.strength[0],
-    recovery: breeze.recovery[0],
-    rustle: breeze.rustle[0],
-  },
-  phoneTilt: {
-    influence: phoneTilt.influence[0],
-    range: phoneTilt.range[0],
-    recenter: phoneTilt.recenter[0],
-    wandSwing: phoneTilt.wandSwing[0],
-  },
-  transition,
 }
+
+export type AmbientSettings = typeof defaultAmbientSettings

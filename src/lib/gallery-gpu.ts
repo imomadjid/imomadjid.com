@@ -1,10 +1,10 @@
-import type { TransitionConfig } from 'dialkit'
 import { frame, init, sampler, surface, texture } from 'vgpu'
 import type { Effect, Gpu, Surface } from 'vgpu'
 
 import { transitionTiming } from '#/lib/ambient-transition'
 import { createRingMotion } from '#/lib/ring-motion'
 import type { RingMotion } from '#/lib/ring-motion'
+import type { TransitionConfig } from '#/lib/transition'
 
 // One WebGPU device for the whole Gallery: the See more tile, every featured photo and the
 // full-screen expand. A page with a dozen devices would hit browser limits and compile every

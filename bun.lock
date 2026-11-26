@@ -16,7 +16,6 @@
         "class-variance-authority": "^0.7.1",
         "cn": "^0.5.2",
         "cuelume": "./vendor/cuelume-0.2.9.tgz",
-        "dialkit": "^2.2.1",
         "lucide-react": "^1.77.0",
         "motion": "^14.14.0",
         "react": "^19.3.1",
@@ -880,8 +879,6 @@
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
     "devtools-protocol": ["devtools-protocol@0.0.1182435", "", {}, "sha512-EmlkWb62wSbQNE1gRZZsi4KZYRaF5Skpp183LhRU7+sadKR06O1dHCjZmFSEG6Kv7P6S/UYLxcY3NlYwqKM99w=="],
-
-    "dialkit": ["dialkit@2.2.1", "", { "peerDependencies": { "motion": ">=11.0.0", "motion-v": ">=2.0.0", "react": ">=18.0.0", "react-dom": ">=18.0.0", "solid-js": ">=1.6.0", "svelte": ">=5.8.0", "vue": ">=3.3.0" }, "optionalPeers": ["motion", "motion-v", "react", "react-dom", "solid-js", "svelte", "vue"] }, "sha512-4PDVfRy4LtOZxr3LHTzJmdIqeonYbqc+/jaUOmll5jYof/alQLdFd5D7DIVSmBgygqsb21nkoYxnmUH5uvKd7A=="],
 
     "diff": ["diff@9.0.0", "", {}, "sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw=="],
 
