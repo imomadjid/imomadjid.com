@@ -85,6 +85,12 @@ void test("a place's pictorials come from its city, region and country, weighted
   assert.deepEqual(pictorialPool(cimahi), ['bandung'])
   const tampines: PostmarkPlace = { ...placeOf('singapore'), key: 'tampines', name: 'Tampines' }
   assert.deepEqual(pictorialPool(tampines), ['singapore'])
+  // Each drawing is weighted by its level, so Depok's starfruit comes up 4 times to West Java's
+  // Gedung Sate's 3, and would come up less often as its region gains drawings.
+  const depok = pictorialPool(placeOf('depok'))
+  assert.equal(depok.filter((key) => key === 'depok').length, 4)
+  assert.equal(depok.filter((key) => key === 'bandung').length, 3)
+  assert.equal(depok.length, 7)
 })
 
 void test('visitors from one place share its ink and frames and are dealt each in turn', () => {

@@ -166,13 +166,18 @@ const scopeSets = new Map<PictorialKey, ReadonlySet<string>>(
   pictorialKeys.map((key) => [key, new Set<string>(pictorials[key].scopes)]),
 )
 
-// How often each level's drawings come up, out of 10, among the levels a place has drawings at.
-const levelWeights = { city: 5, region: 3, country: 2 } as const
+// How many times each drawing goes into a bag, by the level it stands for: a city's own drawings
+// come up a little more often than its region's, and those than its country's.
+const levelSlots = { city: 4, region: 3, country: 2 } as const
+
+const greatestDivisor = (a: number, b: number): number => (b === 0 ? a : greatestDivisor(b, a % b))
 
 /**
- * A place's pictorial bag: its city's drawings, its region's and its country's, each level taking
- * about 5 : 3 : 2 of the bag among the levels that have drawings, and each drawing at least once.
- * Empty where nothing is drawn yet, and the postmark shows the place's map outline.
+ * A place's pictorial bag: every drawing its city, region and country have, each weighted by its
+ * level (4 : 3 : 2) rather than each level by its share, so a city with one drawing doesn't repeat
+ * it on every other stamp when its region has several, and variety grows with every drawing added.
+ * A drawing scoped to several levels counts at the most specific. Empty where nothing is drawn
+ * yet, and the postmark shows the place's map outline.
  */
 export function pictorialPool(place: PostmarkPlace): PictorialKey[] {
   const scopes = {
@@ -186,17 +191,14 @@ export function pictorialPool(place: PostmarkPlace): PictorialKey[] {
       (key) => !taken.has(key) && scopeSets.get(key)?.has(scopes[level]),
     )
     for (const key of keys) taken.add(key)
-    return { weight: levelWeights[level], keys }
+    return { slots: levelSlots[level], keys }
   })
   const present = levels.filter((level) => level.keys.length > 0)
-  if (taken.size <= 1) return [...taken]
-  const total = present.reduce((sum, level) => sum + level.weight, 0)
-  return present.flatMap(({ weight, keys }) => {
-    const slots = Math.max(keys.length, Math.round((10 * weight) / total))
-    return Array.from({ length: slots }, (_, index) => keys[index % keys.length]).filter(
-      (key) => key !== undefined,
-    )
-  })
+  // The shortest bag with those proportions: one level alone deals each of its drawings once.
+  const divisor = present.reduce((gcd, level) => greatestDivisor(level.slots, gcd), 0)
+  return present.flatMap(({ slots, keys }) =>
+    keys.flatMap((key) => Array.from({ length: slots / divisor }, () => key)),
+  )
 }
 
 export type Deal = {
