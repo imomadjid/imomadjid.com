@@ -86,7 +86,7 @@ export const pileSettings = {
 
 export type PileSettings = typeof pileSettings
 
-// How far apart, in stamps, the visitor's own stamp and any other keep their centres.
+// How far down, in stamps, a stamp kept off the visitor's own lies under its centre.
 const clearance = 0.95
 
 // The golden ratio's fraction: stepping by it spreads consecutive stamps across the width as
@@ -111,15 +111,17 @@ type PileSpot = {
  * around it pack. Once the pile fills its room, the oldest run on past its foot, `runOut` stamps
  * further, where the page ends.
  *
- * The visitor's own stamp, `you`, lies at the top in the middle whenever they come, however long
- * ago they first did, and the rest of the pile is the newest stamps without it.
+ * The visitor's own stamp, `you.index`, lies at the top in the middle whenever they come, however
+ * long ago they first did, and the rest of the pile is the newest stamps without it. No other
+ * stamp near the top lies within `you.left` px to the left of its centre or `you.right` px to the
+ * right, which take in the stamp and the note written beside it, so both read clearly.
  */
 export function pileLayout(
   count: number,
   width: number,
   stamp: number,
   room: number,
-  you?: number,
+  you?: { index: number; left: number; right: number },
   settings: PileSettings = pileSettings,
 ) {
   const { topDensity: top, deepDensity: deep, dropoff, settle, bleed, runOut } = settings
@@ -134,13 +136,14 @@ export function pileLayout(
   // A little over half a stamp, so a turned stamp's corners clear the top edge.
   const first = stamp * 0.6
   let down = first
-  const pinned = you !== undefined && you >= 0 && you < count ? you : undefined
-  const spots: PileSpot[] =
-    pinned === undefined ? [] : [{ index: pinned, across: 0.5, down: first, you: true }]
+  const pinned = you && you.index >= 0 && you.index < count ? you : undefined
+  const spots: PileSpot[] = pinned
+    ? [{ index: pinned.index, across: 0.5, down: first, you: true }]
+    : []
   let index = count
   for (let depth = 0; depth < shown && down <= end; depth += 1) {
     index -= 1
-    if (index === pinned) index -= 1
+    if (index === pinned?.index) index -= 1
     if (index < 0) break
     const next = generator(hash(`pile:${index}`))
     const spread = (index * golden + next() * 0.08) % 1
@@ -149,10 +152,9 @@ export function pileLayout(
     spots.push({
       index,
       across: x / Math.max(1, width),
-      // One that would land on the visitor's own stamp sinks just under it instead, so theirs
-      // reads clearly.
+      // One that would land on the visitor's own stamp or its note sinks just under them instead.
       down:
-        pinned !== undefined && Math.abs(x - width / 2) < stamp * clearance
+        pinned && x > width / 2 - pinned.left && x < width / 2 + pinned.right
           ? Math.max(jittered, first + stamp * clearance)
           : jittered,
     })

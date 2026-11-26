@@ -68,7 +68,7 @@ void test('the top of the pile spreads its stamps across the width', () => {
 })
 
 void test("the visitor's own stamp lies at the top in the middle, and only there", () => {
-  const { spots } = pileLayout(300, 1200, 124, 600, 40)
+  const { spots } = pileLayout(300, 1200, 124, 600, { index: 40, left: 120, right: 280 })
   const yours = spots.filter((spot) => spot.index === 40)
   assert.equal(yours.length, 1)
   assert.equal(yours[0]?.you, true)
@@ -83,14 +83,15 @@ void test("the visitor's own stamp lies at the top in the middle, and only there
   assert.equal(others[0], 299)
 })
 
-void test("no stamp lands on the visitor's own, however the visitors come", () => {
+void test("no stamp lands on the visitor's own or its note, however the visitors come", () => {
   for (let count = 2; count < 400; count += 1) {
-    const { spots } = pileLayout(count, 1200, 124, 600, count - 1)
+    const { spots } = pileLayout(count, 1200, 124, 600, { index: count - 1, left: 120, right: 280 })
     const [yours, ...others] = spots
     assert.ok(yours?.you)
     for (const spot of others) {
-      const apart = Math.max(Math.abs(spot.across - 0.5) * 1200, spot.down - yours.down)
-      assert.ok(apart >= 124 * 0.95, `stamp ${spot.index} of ${count} sits on yours`)
+      const x = (spot.across - 0.5) * 1200
+      const beside = x > -120 && x < 280
+      assert.ok(!beside || spot.down - yours.down >= 124 * 0.95, `stamp ${spot.index} of ${count}`)
     }
   }
 })

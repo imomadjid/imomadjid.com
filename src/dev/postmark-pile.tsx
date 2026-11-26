@@ -2,10 +2,10 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { cn } from '#/lib/utils'
 
-import { Postmark } from './postmark'
+import { Postmark, postmarkSize } from './postmark'
+import { ThanksNote, thanksReach } from './postmark-thanks'
 import { pileLayout, pileSettings } from './postmark-visits'
 import type { StampRecord } from './postmark-visits'
-import { YouNote } from './postmark-you'
 
 // The postmark footer's pile at the foot of the page (postmark-visits.ts): the newest stamps on
 // top, spread out enough that every name shows, the older ones packed tighter as they sink,
@@ -75,7 +75,7 @@ export function PostmarkPile({
   // Every stamp so far, oldest first.
   records: readonly StampRecord[]
   // The visitor's own stamp, by its place among the visitors: it lies at the top in the middle,
-  // with "you!" written beside it, however long ago they first came.
+  // with "thanks for visiting!" written beside it, however long ago they first came.
   you?: number
   // Span the viewport's width from inside the page's column, as the homepage's does.
   bleed?: boolean
@@ -84,9 +84,24 @@ export function PostmarkPile({
   const id = useId().replace(/[^\w-]/g, '')
   const [element, width, room] = useFrame()
   const stamp = stampSize(width)
+  const pinned = you === undefined ? undefined : records[you]
+  // The visitor's own stamp's size, which its note starts past.
+  const yourSize = useMemo(
+    () => pinned && postmarkSize(pinned.place, pinned.deal, pinned.print, stamp),
+    [pinned, stamp],
+  )
+  // Other stamps' centres keep about half a stamp clear of the visitor's own and its note.
+  const keep = yourSize && yourSize.width / 2 + stamp * 0.45
   const { spots, height } = useMemo(
-    () => pileLayout(records.length, width, stamp, room, you),
-    [records.length, width, stamp, room, you],
+    () =>
+      pinned && keep !== undefined
+        ? pileLayout(records.length, width, stamp, room, {
+            index: pinned.index,
+            left: keep,
+            right: keep + thanksReach,
+          })
+        : pileLayout(records.length, width, stamp, room),
+    [records.length, width, stamp, room, pinned, keep],
   )
   // The darkening covers the blur's fade, at least the bottom 120 px.
   const fade = Math.max(120, height * fadeShare)
@@ -158,7 +173,15 @@ export function PostmarkPile({
                 </g>
               )
             })}
-            {yours && <YouNote x={yours.across * width} y={yours.down - stamp / 2} />}
+            {yours && pinned && yourSize && (
+              <ThanksNote
+                x={yours.across * width}
+                y={yours.down}
+                width={yourSize.width}
+                height={yourSize.height}
+                rotation={pinned.print.rotation}
+              />
+            )}
             {/* The darkening holds its depth on past the foot, under the stamps that run on. */}
             {(['light', 'dark'] as const).map((scheme) => (
               <rect

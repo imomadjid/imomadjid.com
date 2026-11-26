@@ -8,7 +8,7 @@
 @source not './dev';
 /* The postmark footer renders at the foot of the homepage with the dev tools, so its classes
    are the site's own; it costs production a few unused rules until it ships. */
-@source './dev/{postmark-footer,postmark-pile,postmark-you,postmark}.tsx';
+@source './dev/{postmark-footer,postmark-pile,postmark-thanks,postmark}.tsx';
 @source not './hooks';
 @source not './components/fluid-hover-highlight.tsx';
 @source not './components/ui/{badge,button,checkbox,field,input,radio-group,scroll-area,sidebar,sidebar-core,sidebar-menu,slider,switch,textarea,tooltip}.tsx';

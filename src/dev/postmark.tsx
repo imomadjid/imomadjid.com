@@ -14,6 +14,14 @@ import type { Family, Kit, PostmarkPlace, Print, Style } from './postmark-kit'
 
 export type { PostmarkPlace } from './postmark-kit'
 
+/** How wide and tall a saved stamp shows at `size`, as `Postmark` draws it, before it's turned. */
+export function postmarkSize(place: PostmarkPlace, deal: Deal, print: Print, size: number) {
+  const { design, family, pictorial, style } = deal
+  const kit: Kit = { id: 'size', place, design, print, style, pictorial, outline: false }
+  const { width, height } = drawFamily(family, kit)
+  return { width: (width * size) / 220, height: (height * size) / 220 }
+}
+
 // Every family is drawn to the same scale: `size` is how wide a 220-unit round stamp shows, so a
 // wide machine cancel comes out wider, not smaller.
 export function Postmark({
