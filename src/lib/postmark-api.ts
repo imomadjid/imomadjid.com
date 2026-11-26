@@ -1,3 +1,4 @@
+import { placeFor } from './postmark-ledger'
 import type { LedgerStats, Pile, Visit } from './postmark-ledger'
 
 // The postmark footer's API, which src/server.ts routes to with the dev tools on:
@@ -7,6 +8,8 @@ import type { LedgerStats, Pile, Visit } from './postmark-ledger'
 //                              used the page, so a page that only loads stamps no one)
 //   POST /api/postmarks/here   an open tab checking in, for the online count
 //   GET  /api/postmarks/stats  counts: visitors, visits, places, countries, online
+//   GET  /api/postmarks/where  a page of what Cloudflare reads about the visitor's connection,
+//                              to see how close its guess of where they are comes
 //
 // The visitor's id lives in an HttpOnly cookie; the ledger finds them by it.
 
@@ -33,11 +36,27 @@ function readCookie(header: string | null) {
 }
 
 /** Cloudflare's reading of where the request came from; empty outside Cloudflare. */
-type RequestGeo = { city?: string; region?: string; country?: string }
+type RequestGeo = {
+  city?: string
+  region?: string
+  regionCode?: string
+  country?: string
+  postalCode?: string
+  latitude?: string
+  longitude?: string
+  timezone?: string
+  asn?: number
+  asOrganization?: string
+  colo?: string
+}
+
+function geoOf(request: Request): RequestGeo | undefined {
+  // SAFETY: Workers add `cf` to every incoming request; it is undefined only in tests.
+  return (request as Request & { cf?: RequestGeo }).cf
+}
 
 function visitOf(request: Request): Visit {
-  // SAFETY: Workers add `cf` to every incoming request; it is undefined only in tests.
-  const cf = (request as Request & { cf?: RequestGeo }).cf
+  const cf = geoOf(request)
   return {
     visitor: readCookie(request.headers.get('Cookie')),
     address: request.headers.get('CF-Connecting-IP') ?? '',
@@ -63,6 +82,58 @@ function withVisitor(response: Response, visitor: string | undefined) {
   return response
 }
 
+const escapeHtml = (value: string) =>
+  value.replace(/[&<>"]/g, (character) => `&#${character.charCodeAt(0)};`)
+
+/**
+ * What Cloudflare reads about the request's connection, and the place its stamp would name, as
+ * a page readable on a phone. It answers nothing it doesn't show the visitor, and keeps nothing.
+ */
+function wherePage(request: Request) {
+  const cf = geoOf(request)
+  const place = placeFor({ city: cf?.city, region: cf?.region, countryCode: cf?.country })
+  const point = cf?.latitude && cf.longitude ? `${cf.latitude}, ${cf.longitude}` : undefined
+  const map = point
+    ? `https://www.openstreetmap.org/?mlat=${cf?.latitude}&mlon=${cf?.longitude}#map=11/${cf?.latitude}/${cf?.longitude}`
+    : undefined
+  const rows: [string, string | undefined, string?][] = [
+    [
+      'Stamp would say',
+      place
+        ? `${place.name}${place.region && place.region !== place.name ? `, ${place.region}` : ''}`
+        : 'No stamp',
+    ],
+    ['City', cf?.city],
+    [
+      'Province or region',
+      cf?.region && `${cf.region}${cf.regionCode ? ` (${cf.regionCode})` : ''}`,
+    ],
+    ['Country', cf?.country],
+    ['Postal code', cf?.postalCode],
+    ['Map point', point, map],
+    ['Time zone', cf?.timezone],
+    ['Provider', cf?.asOrganization && `${cf.asOrganization}${cf.asn ? ` (AS${cf.asn})` : ''}`],
+    ['Address', request.headers.get('CF-Connecting-IP') ?? undefined],
+    ['Cloudflare data centre', cf?.colo],
+  ]
+  const body = rows
+    .map(([label, value, link]) => {
+      const shown = escapeHtml(value || '—')
+      return `<tr><th>${label}</th><td>${link ? `<a href="${escapeHtml(link)}">${shown}</a>` : shown}</td></tr>`
+    })
+    .join('')
+  return new Response(
+    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Where Cloudflare thinks you are</title><style>:root{color-scheme:light dark;font:16px/1.4 system-ui,sans-serif}body{margin:0 auto;max-width:36rem;padding:24px 16px}h1{font-size:1.25rem;margin:0 0 4px}p{margin:0 0 20px;opacity:.65}table{border-collapse:collapse;width:100%}th,td{padding:10px 0;border-top:1px solid #8884;text-align:left;vertical-align:top}th{font-weight:500;opacity:.65;padding-right:16px;width:40%}a{color:inherit}</style></head><body><h1>Where Cloudflare thinks you are</h1><p>Read from this connection just now, and not kept. Try it on Wi-Fi and on mobile data.</p><table>${body}</table></body></html>`,
+    {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex',
+      },
+    },
+  )
+}
+
 export async function postmarkApi(request: Request, ledger: LedgerStub) {
   const url = new URL(request.url)
   const visit = visitOf(request)
@@ -84,5 +155,7 @@ export async function postmarkApi(request: Request, ledger: LedgerStub) {
   }
   if (url.pathname === `${postmarkPath}/stats` && request.method === 'GET')
     return json(await ledger.stats())
+  if (url.pathname === `${postmarkPath}/where` && request.method === 'GET')
+    return wherePage(request)
   return new Response('Not found', { status: 404 })
 }
