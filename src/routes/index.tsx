@@ -269,8 +269,8 @@ function Home() {
               <LinkButton href="https://meeting.ai" logoSrc="/images/companies/meeting-ai.png">
                 Meeting.ai
               </LinkButton>
-              , designing and engineering web and mobile apps that use AI before, during, and after
-              meetings.
+              , where I designed and built apps across web and mobile that use AI before, during,
+              and after meetings.
             </p>
 
             <p className="animate-enter [--enter-index:3]">
