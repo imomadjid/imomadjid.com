@@ -46,12 +46,14 @@ export function stampRecords(arrivals: readonly Arrival[]): StampRecord[] {
 /**
  * Made-up visitors for the prototype: `count` arrivals from 2026 on, one every six hours, each
  * from a place drawn by weight and numbered among their place's visitors in the order they came.
- * A longer list starts with the shorter one, as real visits only add up.
+ * A longer list starts with the shorter one, as real visits only add up. Each place's numbers
+ * start at `firstOrdinal`, which deals them stamps of their own.
  */
 export function fakeArrivals(
   count: number,
   places: readonly { place: PostmarkPlace; weight: number }[],
   seed = 'wall',
+  firstOrdinal = 0,
 ): Arrival[] {
   const next = generator(hash(seed))
   const total = places.reduce((sum, { weight }) => sum + weight, 0)
@@ -61,7 +63,7 @@ export function fakeArrivals(
     let roll = next() * total
     const chosen = places.find(({ weight }) => (roll -= weight) < 0) ?? places[0]
     if (!chosen) throw new Error('fakeArrivals needs places')
-    const ordinal = seen.get(chosen.place.key) ?? 0
+    const ordinal = seen.get(chosen.place.key) ?? firstOrdinal
     seen.set(chosen.place.key, ordinal + 1)
     return { place: chosen.place, ordinal, date: postmarkDate(start + index * 6 * 3_600_000) }
   })

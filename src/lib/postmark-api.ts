@@ -6,8 +6,9 @@ import type { Ledger, LedgerStats, Pile, Visit } from './postmark-ledger'
 //   GET  /api/postmarks        the pile and the visitor's stamp, if they have one; stamps no one
 //   POST /api/postmarks        the same, stamping a new visitor (the page sends it once they've
 //                              used the page, so a page that only loads stamps no one)
-//   POST /api/postmarks/here   an open tab checking in, for the online count
-//   GET  /api/postmarks/stats  counts: visitors, visits, places, countries, online
+//   POST /api/postmarks/here   with the dev tools, an open tab checking in, for the online count
+//   GET  /api/postmarks/stats  with the dev tools, counts: visitors, visits, places, countries,
+//                              online
 //   GET  /api/postmarks/where  with the dev tools, a page of what Cloudflare reads about the
 //                              visitor's connection, to see how close its guess comes
 //
@@ -145,11 +146,20 @@ export async function postmarkApi(request: Request, ledger: LedgerStub) {
     const { visitor, pile } = await ledger.stamp(visit)
     return withVisitor(json(pile), visitor)
   }
-  if (url.pathname === `${postmarkPath}/here` && request.method === 'POST') {
+  if (
+    import.meta.env.DEV_TOOLS &&
+    url.pathname === `${postmarkPath}/here` &&
+    request.method === 'POST'
+  ) {
     await ledger.here(visit.visitor)
     return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } })
   }
-  if (url.pathname === `${postmarkPath}/stats` && request.method === 'GET')
+  // The counts, and the check-ins they take, are for the dev fixture, not the site.
+  if (
+    import.meta.env.DEV_TOOLS &&
+    url.pathname === `${postmarkPath}/stats` &&
+    request.method === 'GET'
+  )
     return json(await ledger.stats())
   if (
     import.meta.env.DEV_TOOLS &&

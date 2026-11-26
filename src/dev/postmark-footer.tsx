@@ -18,6 +18,9 @@ import type { StampRecord } from './postmark-visits'
 
 // Made-up stamps under the real ones.
 const fill = 60
+// The made-up visitors are numbered among their places' visitors from here, far past any real
+// visitor's number, so none is dealt the stamp a real visitor gets.
+const madeUpOrdinal = 10_000
 
 const noChanges = () => () => {}
 
@@ -55,7 +58,10 @@ export function PostmarkFooter() {
     () => undefined,
   )
   const count = preview?.count ?? fill
-  const madeUp = useMemo(() => stampRecords(fakeArrivals(count, visitorPlaces)), [count])
+  const madeUp = useMemo(
+    () => stampRecords(fakeArrivals(count, visitorPlaces, undefined, madeUpOrdinal)),
+    [count],
+  )
   // The pile keys stamps by index, so the visitor's own may repeat one of the newest.
   const shown = useMemo(() => {
     if (preview) return { records: madeUp, you: preview.you }

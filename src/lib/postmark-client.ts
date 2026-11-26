@@ -7,11 +7,15 @@ import type { LedgerStats, Pile } from '#/lib/postmark-ledger'
 // looked at then and the visitor is stamped on their first move of the mouse, click, key,
 // wheel or touch anywhere on the page, however far they scroll. It takes an action as the
 // browser reports it rather than as a script sends it, so a page that only loads stamps no one.
-// Once they have a stamp, their tab checks in every minute it shows, and as it comes back into
-// view, for the online count.
+// With the dev tools, once they have a stamp, their tab checks in every minute it shows, and as it
+// comes back into view, for the online count.
 
 const checkInEvery = 60_000
 const actions = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'] as const
+// A stamp that fails (the network, or the ledger) is asked for again on a later action, a few
+// seconds on, a few times at most.
+const retryAfter = 5000
+const attempts = 3
 
 let pile: Pile | undefined
 let started = false
@@ -37,20 +41,37 @@ function checkIn() {
   void fetch('/api/postmarks/here', { method: 'POST' }).catch(() => {})
 }
 
-function stampOnAction(event: Event) {
-  if (!event.isTrusted) return
+let stamping = false
+let failures = 0
+let retryAt = 0
+
+function stopListening() {
   for (const action of actions) window.removeEventListener(action, stampOnAction, true)
+}
+
+function stampOnAction(event: Event) {
+  if (!event.isTrusted || stamping || performance.now() < retryAt) return
+  stamping = true
   void ask('POST')
     .then((found) => {
-      if (!found) return
+      if (!found) throw new Error('The ledger answered no pile')
+      stopListening()
       publish(found)
-      if (!found.you) return
+      // The online count is the dev fixture's, so only the dev tools check in.
+      if (!import.meta.env.DEV_TOOLS || !found.you) return
       // For as long as the page is open.
       checkIn()
       setInterval(checkIn, checkInEvery)
       document.addEventListener('visibilitychange', checkIn)
     })
-    .catch(() => {})
+    .catch(() => {
+      failures += 1
+      if (failures >= attempts) stopListening()
+      else retryAt = performance.now() + retryAfter
+    })
+    .finally(() => {
+      stamping = false
+    })
 }
 
 function start() {

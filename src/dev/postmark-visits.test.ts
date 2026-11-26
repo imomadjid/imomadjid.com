@@ -95,3 +95,13 @@ void test("no stamp lands on the visitor's own or its note, however the visitors
     }
   }
 })
+
+void test("made-up visitors numbered from firstOrdinal never take a real visitor's stamp", () => {
+  const made = stampRecords(fakeArrivals(60, visitorPlaces, undefined, 10_000))
+  const real = stampRecords(fakeArrivals(60, visitorPlaces))
+  assert.ok(made.every((record) => record.ordinal >= 10_000))
+  const stamp = (record: (typeof real)[number]) =>
+    JSON.stringify([record.place.key, record.deal, { ...record.print, day: 0, month: 0, year: 0 }])
+  const realStamps = new Set(real.map(stamp))
+  assert.ok(!made.some((record) => realStamps.has(stamp(record))))
+})
