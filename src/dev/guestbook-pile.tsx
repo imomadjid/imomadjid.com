@@ -22,40 +22,13 @@ function stampSize(width: number) {
 const contentsGap = 24
 const roomShare = 0.5
 
-// The foot of the pile goes out of focus over this share of its height, its blur growing evenly
-// from nothing to `footBlur` px at the foot (on a 124 px stamp), and darkens a little.
+// The foot of the pile goes out of focus and darkens a little over this share of its height.
+// The blur is skiper41's: one backdrop blur across the whole width, masked to full strength over
+// the lower half of the fade and fading out above it.
 const fadeShare = 0.6
-const footBlur = 14
+const footBlur = 8
+const blurMask = 'linear-gradient(to top, black 50%, transparent)'
 const darken = { light: 0.15, dark: 0.45 }
-
-// The blur is cut into bands across the fade, each a copy of just the stamps it crosses, blurred
-// a step more than the band above and masked to its own strip. Steps of about 1 px don't show,
-// and the stamps don't move, so the browser paints the bands once: unlike a backdrop-filter,
-// which the compositor runs again every frame the Sunlit light changes, and which only sees what
-// lies under it in the same backdrop root. The masks are hard gradient stops, not clip-paths: a
-// gradient is sampled at each pixel's centre, so every row falls in exactly one band, where a
-// clip's antialiased edge between pixels leaves a faint line at each seam.
-const bandCount = 12
-
-type Band = { top: number; bottom: number; blur: number }
-
-function blurBands(height: number, stamp: number): Band[] {
-  const fade = Math.max(120, height * fadeShare)
-  const start = height - fade
-  const strongest = footBlur * (stamp / 124)
-  const step = fade / bandCount
-  const sharp = { top: Number.NEGATIVE_INFINITY, bottom: start, blur: 0 }
-  return [
-    sharp,
-    ...Array.from({ length: bandCount }, (_, band) => ({
-      top: start + band * step,
-      // The last band runs on past the foot, where the stamps that hang off it are cut.
-      bottom: band === bandCount - 1 ? Number.POSITIVE_INFINITY : start + (band + 1) * step,
-      // Evenly stronger down the fade, each band at its middle's share of the foot's blur.
-      blur: (strongest * (band + 0.5)) / bandCount,
-    })),
-  ]
-}
 
 /**
  * The pile's width, and its room: from just under the contents to the viewport's foot, which
@@ -115,7 +88,6 @@ export function GuestbookPile({
     () => pileLayout(records.length, width, stamp, room),
     [records.length, width, stamp, room],
   )
-  const bands = useMemo(() => blurBands(height, stamp), [height, stamp])
   // The darkening covers the blur's fade, and at least the footer's row.
   const fade = Math.max(120, height * fadeShare)
   // Deepest first, so the newest lie on top.
@@ -141,48 +113,35 @@ export function GuestbookPile({
         style={{ height: width > 0 ? height : 0 }}
       >
         {width > 0 &&
-          bands.map((band) => {
-            // A stamp turned a little reaches about 0.72 of its width from its centre, and its
-            // blur spreads it by about twice the radius again.
-            const reach = stamp * 0.72 + band.blur * 2
-            const crossing = deepestFirst.filter(
-              ({ down }) => down - reach < band.bottom && down + reach > band.top,
-            )
-            if (crossing.length === 0) return null
-            const top = Number.isFinite(band.top) ? `${band.top}px` : '-1px'
-            const bottom = Number.isFinite(band.bottom) ? `${band.bottom}px` : `${height + 1}px`
+          deepestFirst.map(({ index, across, down }) => {
+            const record = records[index]
+            if (!record) return null
             return (
-              <div
-                key={band.top}
-                className="absolute inset-0 mix-blend-multiply dark:mix-blend-screen"
-                style={{
-                  maskImage: `linear-gradient(to bottom, transparent ${top}, black ${top}, black ${bottom}, transparent ${bottom})`,
-                  filter: band.blur > 0 ? `blur(${band.blur.toFixed(2)}px)` : undefined,
-                }}
-              >
-                {crossing.map(({ index, across, down }) => {
-                  const record = records[index]
-                  if (!record) return null
-                  return (
-                    <Postmark
-                      key={index}
-                      place={record.place}
-                      visitor={record.ordinal}
-                      deal={record.deal}
-                      print={record.print}
-                      size={stamp}
-                      className={`absolute mix-blend-multiply dark:mix-blend-screen ${
-                        yours?.has(index)
-                          ? 'outline-2 outline-offset-4 outline-foreground/50 outline-dashed'
-                          : ''
-                      }`}
-                      style={{ left: `${across * 100}%`, top: down, translate: '-50% -50%' }}
-                    />
-                  )
-                })}
-              </div>
+              <Postmark
+                key={index}
+                place={record.place}
+                visitor={record.ordinal}
+                deal={record.deal}
+                print={record.print}
+                size={stamp}
+                className={`absolute mix-blend-multiply dark:mix-blend-screen ${
+                  yours?.has(index)
+                    ? 'outline-2 outline-offset-4 outline-foreground/50 outline-dashed'
+                    : ''
+                }`}
+                style={{ left: `${across * 100}%`, top: down, translate: '-50% -50%' }}
+              />
             )
           })}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{
+            height: fade,
+            backdropFilter: `blur(${footBlur}px)`,
+            WebkitBackdropFilter: `blur(${footBlur}px)`,
+            maskImage: blurMask,
+          }}
+        />
         {(['light', 'dark'] as const).map((scheme) => (
           <div
             key={scheme}
