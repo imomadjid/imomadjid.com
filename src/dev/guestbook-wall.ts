@@ -84,7 +84,7 @@ export type PileSettings = typeof pileSettings
 // evenly as any sequence can, and a stamp keeps its spot however many arrive after it.
 const golden = 0.6180339887498949
 
-export type PileSpot = {
+type PileSpot = {
   // The stamp's place in the Guestbook.
   index: number
   // Its centre: across as a share of the pile's width, down in px from the pile's top.
