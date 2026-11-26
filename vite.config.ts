@@ -10,6 +10,9 @@ import { wgslVitePlugin } from 'vgpu/client'
 import { defineConfig } from 'vite-plus'
 import type { Plugin } from 'vite-plus'
 
+// Oxfmt's settings live in .oxfmtrc.json, where the oxfmt CLI and the editor read them; `vp fmt`
+// reads the same file, so no formatter falls back to oxfmt's defaults.
+import formatting from './.oxfmtrc.json' with { type: 'json' }
 import { fluidRegistryFiles } from './tools/fluid-registry-files.ts'
 
 const toolingIgnores = [
@@ -81,23 +84,7 @@ const devTools = (): Plugin => ({
 })
 
 const config = defineConfig({
-  fmt: {
-    semi: false,
-    singleQuote: true,
-    sortImports: {},
-    sortTailwindcss: {
-      stylesheet: './src/styles.css',
-      functions: ['clsx', 'cn', 'cva', 'twMerge'],
-    },
-    // Generated tables: tools/glass-live/fit.py writes the live-glass ones (formatted, they run
-    // to 30k lines), tools/postmarks/metrics.ts the postmark glyph metrics.
-    ignorePatterns: [
-      ...toolingIgnores,
-      'bun.lock',
-      'src/lib/live-glass-material.json',
-      'src/dev/postmark-metrics.json',
-    ],
-  },
+  fmt: formatting,
   lint: {
     options: {
       typeAware: process.env.PORTFOLIO_STAGED_LINT !== '1',
