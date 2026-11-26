@@ -21,18 +21,23 @@ export class PostmarkLedger extends DurableObject<Bindings> {
     this.#ledger = new Ledger(ctx.storage.sql)
   }
 
+  // Called over RPC, which Fallow can't follow.
+  // fallow-ignore-next-line unused-class-member
   look(visit: Visit) {
     return this.#ledger.look(visit)
   }
 
+  // fallow-ignore-next-line unused-class-member
   stamp(visit: Visit) {
     return this.#ledger.stamp(visit)
   }
 
+  // fallow-ignore-next-line unused-class-member
   here(visitor: string | undefined) {
     this.#ledger.here(visitor)
   }
 
+  // fallow-ignore-next-line unused-class-member
   stats() {
     return this.#ledger.stats()
   }
