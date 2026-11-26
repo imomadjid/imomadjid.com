@@ -65,14 +65,41 @@ const onlineWindow = 90_000
 
 const day = 86_400_000
 
-/** Crawlers, link previews, uptime checks and scripts that name themselves. */
+/**
+ * Crawlers, link previews, uptime checks and scripts that name themselves. A `bot` counts only as
+ * a crawler names itself (Googlebot/2.1, Slackbot 1.0, TelegramBot (like…)), so a phone such as a
+ * CUBOT X30 doesn't; and apps count by their crawlers, not their in-app browsers, which are people.
+ */
 export function isBot(userAgent: string) {
   return (
     userAgent.length < 20 ||
-    /bot|crawl|spider|slurp|headless|preview|scrape|curl|wget|python|httpclient|okhttp|axios|node-fetch|java\/|go-http|monitor|lighthouse|pingdom|uptime|facebookexternalhit|embedly|whatsapp|telegram|discord|slack|vkshare|quora|pinterest|bitly/i.test(
+    /bot(?:[/\-;),]|\s+[\d(+]|$)|crawl|spider|slurp|headless|preview|scrape|curl|wget|python|httpclient|okhttp|axios|node-fetch|java\/|go-http|monitor|lighthouse|pingdom|uptime|facebookexternalhit|embedly|vkshare|^whatsapp\/|^pinterest\//i.test(
       userAgent,
     )
   )
+}
+
+/**
+ * The part of an address one household holds: an IPv4 address whole, an IPv6 one's /64, since a
+ * connection is usually given a whole /64 and can take any address in it.
+ */
+export function addressGroup(address: string) {
+  if (!address.includes(':')) return address
+  const [head = '', tail] = address.toLowerCase().split('::')
+  const front = head ? head.split(':') : []
+  const back = tail ? tail.split(':') : []
+  // An IPv4 address written as IPv6 (::ffff:192.0.2.1) is that IPv4 address.
+  const last = back.at(-1) ?? front.at(-1) ?? ''
+  if (last.includes('.')) return last
+  const groups = [
+    ...front,
+    ...Array<string>(Math.max(0, 8 - front.length - back.length)).fill('0'),
+    ...back,
+  ]
+  return `${groups
+    .slice(0, 4)
+    .map((group) => group.replace(/^0+(?=.)/, ''))
+    .join(':')}::/64`
 }
 
 const hex = (bytes: Uint8Array) =>
@@ -122,7 +149,7 @@ export function placeFor({ city, region, countryCode }: Geo): PostmarkPlace | un
  * The outline for a place nobody has drawn: its own boundary, else its region's, else its
  * country's, each a little coarser. Nominatim knows many towns only as points.
  */
-async function placeOutline(place: PostmarkPlace, signal?: AbortSignal) {
+async function placeOutline(place: PostmarkPlace) {
   const searches: [Record<string, string>, number][] = []
   if (place.name !== place.region && place.name !== place.country)
     searches.push([
@@ -132,7 +159,11 @@ async function placeOutline(place: PostmarkPlace, signal?: AbortSignal) {
   if (place.region) searches.push([{ state: place.region, countrycodes: place.countryCode }, 0.004])
   searches.push([{ country: place.countryCode }, 0.02])
   for (const [query, detail] of searches) {
-    const outline = await nominatimOutline(query, { detail, signal })
+    // A search that fails or takes too long falls back to the next, coarser one.
+    const outline = await nominatimOutline(query, {
+      detail,
+      signal: AbortSignal.timeout(12_000),
+    }).catch(() => undefined)
     if (outline) return outline
   }
   return undefined
@@ -153,6 +184,8 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS stamped (
     hash TEXT PRIMARY KEY, day INTEGER NOT NULL, stamps INTEGER NOT NULL)`,
   'CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+  // Places waiting for their map outline (drawOutlines).
+  'CREATE TABLE IF NOT EXISTS outline_queue (key TEXT PRIMARY KEY)',
 ]
 
 const stampColumns = `v.idx, v.ordinal, v.day, v.month, v.year, v.deal, v.print,
@@ -186,6 +219,7 @@ export class Ledger {
   readonly #sql: Sql
   readonly #now: () => number
   readonly #outline: (place: PostmarkPlace) => Promise<string | undefined>
+  readonly #queued: () => void
   readonly #salt: string
   // When each visitor's tab last checked in, while it's open.
   readonly #present = new Map<string, number>()
@@ -194,15 +228,19 @@ export class Ledger {
     sql: Sql,
     {
       now = Date.now,
-      outline = (place) => placeOutline(place, AbortSignal.timeout(12_000)),
+      outline = placeOutline,
+      queued = () => {},
     }: {
       now?: () => number
       outline?: (place: PostmarkPlace) => Promise<string | undefined>
+      // Called when a place joins the outline queue, to have drawOutlines run soon.
+      queued?: () => void
     } = {},
   ) {
     this.#sql = sql
     this.#now = now
     this.#outline = outline
+    this.#queued = queued
     for (const statement of schema) sql.exec(statement)
     const saved = sql.exec("SELECT value FROM meta WHERE key = 'salt'").toArray()[0]
     if (saved) this.#salt = text(saved.value)
@@ -279,7 +317,7 @@ export class Ledger {
     // Both before the lookup: from it to the inserts nothing may wait.
     const [fingerprint, address] = await Promise.all([
       this.#fingerprint(visit),
-      this.#hash('address', visit.address, String(today)),
+      this.#hash('address', addressGroup(visit.address), String(today)),
     ])
     const found = this.#identify(visit, fingerprint)
     if (found) {
@@ -303,7 +341,7 @@ export class Ledger {
     // Nothing waits until the inserts, so two visitors can't take the same number.
     const id = crypto.randomUUID()
     const saved = this.#sql
-      .exec('SELECT visitors FROM places WHERE key = ?', place.key)
+      .exec('SELECT visitors, outline FROM places WHERE key = ?', place.key)
       .toArray()[0]
     const ordinal = number(saved?.visitors)
     if (saved) this.#sql.exec('UPDATE places SET visitors = visitors + 1 WHERE key = ?', place.key)
@@ -344,7 +382,11 @@ export class Ledger {
       today,
     )
     this.#remember(fingerprint, id, now)
-    await this.#drawOutline(place)
+    // Drawn places, and places with pictorials, need no outline.
+    if (!text(saved?.outline) && !place.outline && pictorialPool(place).length === 0) {
+      this.#sql.exec('INSERT OR IGNORE INTO outline_queue (key) VALUES (?)', place.key)
+      this.#queued()
+    }
     return { visitor: id, pile: this.#pile(id) }
   }
 
@@ -360,15 +402,32 @@ export class Ledger {
   }
 
   /**
-   * A place's map outline, the first time someone comes from it, where nothing is drawn for it:
-   * its stamps show the outline. Until one is found, they show the placeholder, and the next
-   * visitor from there tries again.
+   * Draws the queued places' map outlines, one place at a time, after the visitors who brought
+   * them have their answer: their stamps show the placeholder until then. A place whose outline
+   * isn't found leaves the queue, and the next visitor from there queues it again.
    */
-  async #drawOutline(place: PostmarkPlace) {
-    const row = this.#sql.exec('SELECT outline FROM places WHERE key = ?', place.key).toArray()[0]
-    if (text(row?.outline) || pictorialPool(place).length > 0) return
-    const outline = await this.#outline(place).catch(() => undefined)
-    if (outline) this.#sql.exec('UPDATE places SET outline = ? WHERE key = ?', outline, place.key)
+  async drawOutlines(): Promise<void> {
+    const queued = this.#sql.exec('SELECT key FROM outline_queue LIMIT 1').toArray()[0]
+    if (!queued) return
+    const key = text(queued.key)
+    const row = this.#sql
+      .exec('SELECT name, region, country, country_code, outline FROM places WHERE key = ?', key)
+      .toArray()[0]
+    const outline =
+      row && !text(row.outline)
+        ? await this.#outline({
+            key,
+            name: text(row.name),
+            region: text(row.region),
+            country: text(row.country),
+            countryCode: text(row.country_code),
+            outline: '',
+          }).catch(() => undefined)
+        : undefined
+    if (outline) this.#sql.exec('UPDATE places SET outline = ? WHERE key = ?', outline, key)
+    this.#sql.exec('DELETE FROM outline_queue WHERE key = ?', key)
+    // One place at a time, as Nominatim asks, until the queue is empty.
+    return this.drawOutlines()
   }
 
   /** A visitor's open tab checking in, for the count of who's online. */

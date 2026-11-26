@@ -10,8 +10,11 @@ import type { Visit } from './postmark-ledger'
  * binds it as POSTMARKS, a separate one for each of the site and the dev site.
  */
 export class PostmarkLedger extends DurableObject {
-  // Fields start after the base constructor has set `ctx`.
-  readonly #ledger = new Ledger(this.ctx.storage.sql)
+  // Fields start after the base constructor has set `ctx`. New places' map outlines are drawn in
+  // an alarm, after their visitors have their answer; the runtime retries an alarm that fails.
+  readonly #ledger = new Ledger(this.ctx.storage.sql, {
+    queued: () => void this.ctx.storage.setAlarm(Date.now()),
+  })
 
   // Called over RPC, which Fallow can't follow.
   // fallow-ignore-next-line unused-class-member
@@ -32,5 +35,10 @@ export class PostmarkLedger extends DurableObject {
   // fallow-ignore-next-line unused-class-member
   stats() {
     return this.#ledger.stats()
+  }
+
+  // The runtime calls it when the alarm the ledger set goes off.
+  alarm() {
+    return this.#ledger.drawOutlines()
   }
 }
