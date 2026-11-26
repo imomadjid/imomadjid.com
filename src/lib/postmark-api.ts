@@ -1,15 +1,15 @@
 import { placeFor } from './postmark-ledger'
 import type { LedgerStats, Pile, Visit } from './postmark-ledger'
 
-// The postmark footer's API, which src/server.ts routes to with the dev tools on:
+// The postmark footer's API, which src/server.ts routes to:
 //
 //   GET  /api/postmarks        the pile and the visitor's stamp, if they have one; stamps no one
 //   POST /api/postmarks        the same, stamping a new visitor (the page sends it once they've
 //                              used the page, so a page that only loads stamps no one)
 //   POST /api/postmarks/here   an open tab checking in, for the online count
 //   GET  /api/postmarks/stats  counts: visitors, visits, places, countries, online
-//   GET  /api/postmarks/where  a page of what Cloudflare reads about the visitor's connection,
-//                              to see how close its guess of where they are comes
+//   GET  /api/postmarks/where  with the dev tools, a page of what Cloudflare reads about the
+//                              visitor's connection, to see how close its guess comes
 //
 // The visitor's id lives in an HttpOnly cookie; the ledger finds them by it.
 
@@ -155,7 +155,11 @@ export async function postmarkApi(request: Request, ledger: LedgerStub) {
   }
   if (url.pathname === `${postmarkPath}/stats` && request.method === 'GET')
     return json(await ledger.stats())
-  if (url.pathname === `${postmarkPath}/where` && request.method === 'GET')
+  if (
+    import.meta.env.DEV_TOOLS &&
+    url.pathname === `${postmarkPath}/where` &&
+    request.method === 'GET'
+  )
     return wherePage(request)
   return new Response('Not found', { status: 404 })
 }

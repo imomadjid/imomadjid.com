@@ -14,6 +14,7 @@ import type { PageSection } from '#/components/table-of-contents'
 import { LinkButton } from '#/components/ui/link-button'
 import { defaultAmbientSettings } from '#/lib/ambient-settings'
 import { recedeClass } from '#/lib/page-recede'
+import { PostmarkStamp } from '#/lib/postmark-client'
 import { projectFile, projectVideo } from '#/lib/project-media'
 import { signatureTiming } from '#/lib/signature-settings'
 import { textLinkClass } from '#/lib/text-link'
@@ -175,16 +176,13 @@ const projects = [
 // Lazy, so the first load carries neither its code nor its photos.
 const GallerySection = lazy(() => import('#/components/gallery'))
 
-// The postmark footer, a pile of visitors' postmarks at the foot of the page, shows only with
-// the dev tools until it has real visitors, so merging dev into master never puts it on
-// imomadjid.com.
-const PostmarkFooter = import.meta.env.DEV_TOOLS
-  ? lazy(() =>
-      import('#/dev/postmark-footer').then(({ PostmarkFooter }) => ({
-        default: PostmarkFooter,
-      })),
-    )
-  : undefined
+// The postmark footer, a pile of visitors' postmarks at the foot of the page. Lazy, as the
+// Gallery is; the visitor's stamp doesn't wait for it (PostmarkStamp).
+const PostmarkFooter = lazy(() =>
+  import('#/dev/postmark-footer').then(({ PostmarkFooter }) => ({
+    default: PostmarkFooter,
+  })),
+)
 
 // One list names the page's sections for both their headings and the table of contents.
 const sections = [
@@ -236,6 +234,8 @@ function Home() {
     <main className="relative isolate flex min-h-svh justify-center overflow-x-clip px-6 pb-16">
       <AmbientLight settings={defaultAmbientSettings} />
       <TableOfContents sections={sections} />
+      {/* Stamps the visitor on their first action, wherever on the page they are. */}
+      <PostmarkStamp />
       {/* No z-index here: a stacking context would hold the wand under the light layer. */}
       <div data-sunlit-anchor className="relative w-full max-w-[34rem]">
         <h1 className="sr-only">Imo Madjid</h1>
@@ -328,14 +328,10 @@ function Home() {
             </Suspense>
           </Section>
 
-          {/* The page ends 8rem past the Gallery, or at the postmark footer's foot. */}
-          {PostmarkFooter ? (
-            <Suspense fallback={<div className="h-32" />}>
-              <PostmarkFooter />
-            </Suspense>
-          ) : (
-            <div className="h-32" />
-          )}
+          {/* The page ends at the postmark footer's foot. */}
+          <Suspense fallback={<div className="h-32" />}>
+            <PostmarkFooter />
+          </Suspense>
         </div>
       </div>
     </main>

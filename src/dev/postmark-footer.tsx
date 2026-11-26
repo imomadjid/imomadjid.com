@@ -1,18 +1,20 @@
 import { useMemo, useSyncExternalStore } from 'react'
 
-import { currentPile, subscribePile } from './postmark-ledger-client'
+import { currentPile, subscribePile } from '#/lib/postmark-client'
+
 import { PostmarkPile } from './postmark-pile'
 import { visitorPlaces } from './postmark-visitor-places'
 import { fakeArrivals, stampRecords } from './postmark-visits'
 import type { StampRecord } from './postmark-visits'
 
-// The homepage's postmark footer, a pile of visitors' postmarks at the foot of the page, with the
-// dev tools only until it ships. Its stamps come from the ledger (src/lib/postmark-ledger.ts):
-// every real visitor's, the newest on top, over a bottom layer of made-up ones that the real
-// ones bury as they come, so the pile looks lived in from the first day. A visitor is stamped
-// once they use the page, not when it merely loads (postmark-ledger-client.ts).
+// The homepage's postmark footer, a pile of visitors' postmarks at the foot of the page. Its
+// stamps come from the ledger (src/lib/postmark-ledger.ts): every real visitor's, the newest on
+// top, over a bottom layer of made-up ones that the real ones bury as they come, so the pile
+// looks lived in from the first day. A visitor is stamped once they use the page, not when it
+// merely loads (src/lib/postmark-client.ts).
 //
-// `?postmarks=` shows that many made-up visitors instead, and `?you=` pins one of them as yours.
+// With the dev tools, `?postmarks=` shows that many made-up visitors instead, and `?you=` pins
+// one of them as yours.
 
 // Made-up stamps under the real ones.
 const fill = 60
@@ -27,7 +29,8 @@ const askedYou = () => {
   const value = search().get('you')
   return value !== null && Number.isInteger(Number(value)) ? Number(value) : -1
 }
-const previewing = () => search().has('postmarks') || search().has('you')
+const previewing = () =>
+  import.meta.env.DEV_TOOLS && (search().has('postmarks') || search().has('you'))
 
 /** A real stamp's place in the pile: over every made-up one. */
 const lift = (record: StampRecord): StampRecord => ({ ...record, index: record.index + fill })

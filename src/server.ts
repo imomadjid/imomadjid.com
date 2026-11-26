@@ -8,7 +8,7 @@ import { withByteRange } from '#/lib/byte-range'
 import { postmarkApi, postmarkPath } from '#/lib/postmark-api'
 import type { LedgerStub } from '#/lib/postmark-api'
 
-// The postmark footer's ledger, a Durable Object only the dev site binds until the footer ships.
+// The postmark footer's ledger, a Durable Object (wrangler.jsonc binds it as POSTMARKS).
 export { PostmarkLedger } from '#/lib/postmark-ledger-object'
 
 // A Durable Object's id, which only its namespace reads.
@@ -30,7 +30,7 @@ const rangedMedia = /^\/assets\/[^/]+\.(?:webm|mp4)$/
 export default {
   async fetch(request: Request, env: Env) {
     const { pathname } = new URL(request.url)
-    if (import.meta.env.DEV_TOOLS && env.POSTMARKS && pathname.startsWith(postmarkPath))
+    if (env.POSTMARKS && pathname.startsWith(postmarkPath))
       return postmarkApi(request, env.POSTMARKS.get(env.POSTMARKS.idFromName('ledger')))
     if (!rangedMedia.test(pathname)) return start.fetch(request)
     const response = await withByteRange(request, await env.ASSETS.fetch(request))

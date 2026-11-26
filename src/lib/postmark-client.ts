@@ -1,13 +1,17 @@
+import { useSyncExternalStore } from 'react'
+
 import type { LedgerStats, Pile } from '#/lib/postmark-ledger'
 
 // The page's side of the postmark ledger (src/lib/postmark-api.ts), as stores for
-// useSyncExternalStore. The pile is looked at once something subscribes, and the visitor is
-// stamped on their first click, key, wheel or touch, as the browser reports it rather than as a
-// script sends it, so a page that only loads stamps no one. Once they have a stamp, their tab
-// checks in every minute it shows, and as it comes back into view, for the online count.
+// useSyncExternalStore. The homepage subscribes as it opens (PostmarkStamp), so the pile is
+// looked at then and the visitor is stamped on their first move of the mouse, click, key,
+// wheel or touch anywhere on the page, however far they scroll. It takes an action as the
+// browser reports it rather than as a script sends it, so a page that only loads stamps no one.
+// Once they have a stamp, their tab checks in every minute it shows, and as it comes back into
+// view, for the online count.
 
 const checkInEvery = 60_000
-const actions = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const
+const actions = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'] as const
 
 let pile: Pile | undefined
 let started = false
@@ -71,6 +75,15 @@ export function subscribePile(listener: () => void) {
 }
 
 export const currentPile = () => pile
+
+const unchanged = () => undefined
+
+/** Starts the ledger as the page opens: looks at the pile, and stamps on the first action. */
+export function PostmarkStamp() {
+  // Subscribing is what starts it; the snapshot never changes, so this never renders again.
+  useSyncExternalStore(subscribePile, unchanged, unchanged)
+  return null
+}
 
 // The ledger's counts, read every few seconds while something shows them.
 const statsEvery = 5000

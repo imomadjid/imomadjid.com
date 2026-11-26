@@ -1,8 +1,8 @@
 import { useMemo, useState, useSyncExternalStore } from 'react'
 
 import { Button } from '#/components/ui/button'
+import { currentStats, subscribeStats } from '#/lib/postmark-client'
 
-import { currentStats, subscribeStats } from './postmark-ledger-client'
 import { PostmarkPile } from './postmark-pile'
 import { visitorPlaces } from './postmark-visitor-places'
 import { fakeArrivals, stampRecords } from './postmark-visits'

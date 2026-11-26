@@ -10,36 +10,30 @@ type Bindings = Readonly<Record<string, never>>
 /**
  * The postmark footer's ledger as one Durable Object for the whole site, over its own SQLite
  * storage: every stamp, visitor and place in one place, numbered in order, and who's online in
- * its memory. The Worker calls its methods over RPC (src/lib/postmark-api.ts). Only the dev
- * site binds it until the footer ships (wrangler.jsonc).
+ * its memory. The Worker calls its methods over RPC (src/lib/postmark-api.ts); wrangler.jsonc
+ * binds it as POSTMARKS, a separate one for each of the site and the dev site.
  */
 export class PostmarkLedger extends DurableObject<Bindings> {
-  readonly #ledger: Ledger | undefined
+  readonly #ledger: Ledger
 
   constructor(ctx: DurableObjectState, env: Bindings) {
     super(ctx, env)
-    // Production builds leave the ledger out until the footer ships there.
-    this.#ledger = import.meta.env.DEV_TOOLS ? new Ledger(ctx.storage.sql) : undefined
-  }
-
-  #open() {
-    if (!this.#ledger) throw new Error('The postmark ledger is off in this build')
-    return this.#ledger
+    this.#ledger = new Ledger(ctx.storage.sql)
   }
 
   look(visit: Visit) {
-    return this.#open().look(visit)
+    return this.#ledger.look(visit)
   }
 
   stamp(visit: Visit) {
-    return this.#open().stamp(visit)
+    return this.#ledger.stamp(visit)
   }
 
   here(visitor: string | undefined) {
-    this.#open().here(visitor)
+    this.#ledger.here(visitor)
   }
 
   stats() {
-    return this.#open().stats()
+    return this.#ledger.stats()
   }
 }
