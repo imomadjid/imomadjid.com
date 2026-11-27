@@ -88,14 +88,19 @@ void test("a place's bag holds its city's and region's drawings and its region's
   const bandung = pictorialPool(placeOf('bandung'))
   assert.equal(count(bandung, 'bandung'), 4)
   assert.equal(count(bandung, 'west-java-tangkuban-perahu'), 3)
+  assert.equal(count(bandung, 'west-java-tea'), 3)
   assert.equal(count(bandung, mapOutline), 3)
-  assert.equal(bandung.length, 10)
+  assert.equal(bandung.length, 4 + 3 * 4)
   // A city's landmark stays in its city: Chicago gets its water tower, a small Illinois town
-  // only Illinois, which is its outline until the state has more drawings.
+  // only what belongs anywhere in Illinois, its outline among it.
   const chicago = pictorialPool(us('Chicago', 'Illinois'))
   assert.equal(count(chicago, 'illinois-water-tower'), 4)
   assert.equal(count(chicago, mapOutline), 3)
-  assert.deepEqual(pictorialPool(us('Carbondale', 'Illinois')), [mapOutline])
+  assert.deepEqual(pictorialPool(us('Carbondale', 'Illinois')), [
+    'illinois-white-oak',
+    'illinois-corn-elevator',
+    mapOutline,
+  ])
   // A state symbol reaches every town in the state, alongside the state's outline.
   assert.deepEqual(pictorialPool(us('Reedsburg', 'Wisconsin')), ['wisconsin-holstein', mapOutline])
   // The country's drawings never reach a place in a region, however few the region has.
@@ -110,19 +115,26 @@ void test("a place's bag holds its city's and region's drawings and its region's
   assert.ok(pictorialPool(placeOf('jakarta-barat')).includes('jakarta-monas'))
   // A city with no drawing of its own deals its region's drawings and outline evenly.
   const cimahi: PostmarkPlace = { ...placeOf('bandung'), key: 'cimahi', name: 'Cimahi' }
-  assert.deepEqual(pictorialPool(cimahi), ['west-java-tangkuban-perahu', mapOutline])
+  assert.deepEqual(pictorialPool(cimahi), [
+    'west-java-tangkuban-perahu',
+    'west-java-tea',
+    'west-java-kawah-putih',
+    mapOutline,
+  ])
+  // A motif scoped to every region of Japan is a region drawing in each, beside its own.
+  const tochigi = pictorialPool({ ...placeOf('shibuya'), key: 'utsunomiya', region: 'Tochigi' })
+  assert.deepEqual(tochigi, [
+    'tochigi-strawberry',
+    'japan-sakura',
+    'japan-pagoda',
+    'japan-maneki-neko',
+    mapOutline,
+  ])
+  assert.ok(pictorialPool(placeOf('shibuya')).includes('japan-sakura'))
 })
 
 void test('a stamp dealt the outline records no pictorial, so it draws its map outline', () => {
-  const carbondale: PostmarkPlace = {
-    key: 'us-illinois-carbondale',
-    name: 'Carbondale',
-    region: 'Illinois',
-    country: 'United States',
-    countryCode: 'US',
-    outline: '',
-  }
-  assert.equal(dealPostmark(carbondale, 0, 0).pictorial, undefined)
+  assert.equal(dealPostmark(placeOf('wloclawek'), 0, 0).pictorial, undefined)
 })
 
 void test('visitors from one place share its ink and frames and are dealt each in turn', () => {

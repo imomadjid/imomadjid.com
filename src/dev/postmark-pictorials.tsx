@@ -4158,6 +4158,836 @@ export const pictorials = {
       </>
     ),
   },
+  // West Java grows most of Indonesia's tea, in the Priangan highland estates at Puncak (Bogor Regency), Ciwidey, Rancabali and Pangalengan/Malabar (Bandung Regency), so tea hills belong to the whole province.
+  'west-java-tea': {
+    subject: 'Tea hills, West Java',
+    scopes: ['region:ID:West Java'],
+    ink: [2.3, 15.7, 94.9, 72],
+    draw: (id) => (
+      <>
+        <defs>
+          <mask id={`${id}-ridge`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M4 40 C 14 33, 24 30, 36 30 C 52 30, 64 44, 94 90 V 100 H 0 V 40 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="11"
+            />
+            <path
+              d="M64 53 L76 44 L88 53 Q 76 55.5 64 53 Z M76 59.5 m-3.2 0 a3.2 3.2 0 1 0 6.4 0 a3.2 3.2 0 1 0 -6.4 0 M69.5 73 C 69.5 66, 72 63.5, 76 63.5 C 80 63.5, 82 66, 82 73 Z M71 66 L 60 77"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="9"
+            />
+          </mask>
+          <mask id={`${id}-crest`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M64 53 L76 44 L88 53 Q 76 55.5 64 53 Z M76 59.5 m-3.2 0 a3.2 3.2 0 1 0 6.4 0 a3.2 3.2 0 1 0 -6.4 0 M69.5 73 C 69.5 66, 72 63.5, 76 63.5 C 80 63.5, 82 66, 82 73 Z M71 66 L 60 77"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="9"
+            />
+            <path
+              d="M5 86 C 5 80.5, 6.5 79, 9.5 79 Q 13.5 76.4, 17.5 79 Q 21.5 76.4, 25.5 79 C 28.5 79, 30 80.5, 30 86 V 100 H 5 Z M35 86 C 35 80.5, 36.5 79, 39.5 79 Q 42.5 76.4, 45.5 79 Q 48.5 76.4, 51.5 79 Q 54.5 76.4, 57.5 79 C 60.5 79, 62 80.5, 62 86 V 100 H 35 Z M67 86 C 67 80.5, 68.5 79, 71.5 79 Q 74.7 76.4, 77.8 79 Q 81 76.4, 84.2 79 Q 87.3 76.4, 90.5 79 C 93.5 79, 95 80.5, 95 86 V 100 H 67 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="9"
+            />
+          </mask>
+          <mask id={`${id}-rows`}>
+            <path
+              d="M4 40 C 14 33, 24 30, 36 30 C 52 30, 64 44, 94 90 V 100 H 0 V 40 Z"
+              fill="#fff"
+            />
+            <path
+              d="M4 40 C 14 33, 24 30, 36 30 C 52 30, 64 44, 94 90"
+              stroke="#000"
+              strokeWidth="11"
+            />
+            <path
+              d="M64 53 L76 44 L88 53 Q 76 55.5 64 53 Z M76 59.5 m-3.2 0 a3.2 3.2 0 1 0 6.4 0 a3.2 3.2 0 1 0 -6.4 0 M69.5 73 C 69.5 66, 72 63.5, 76 63.5 C 80 63.5, 82 66, 82 73 Z M71 66 L 60 77"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="9"
+            />
+            <path
+              d="M5 86 C 5 80.5, 6.5 79, 9.5 79 Q 13.5 76.4, 17.5 79 Q 21.5 76.4, 25.5 79 C 28.5 79, 30 80.5, 30 86 V 100 H 5 Z M35 86 C 35 80.5, 36.5 79, 39.5 79 Q 42.5 76.4, 45.5 79 Q 48.5 76.4, 51.5 79 Q 54.5 76.4, 57.5 79 C 60.5 79, 62 80.5, 62 86 V 100 H 35 Z M67 86 C 67 80.5, 68.5 79, 71.5 79 Q 74.7 76.4, 77.8 79 Q 81 76.4, 84.2 79 Q 87.3 76.4, 90.5 79 C 93.5 79, 95 80.5, 95 86 V 100 H 67 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="9"
+            />
+          </mask>
+        </defs>
+        <path
+          d="M28 36 C 42 22, 60 16, 74 17 C 86 18, 92 26, 96 34"
+          strokeWidth="2.4"
+          mask={`url(#${id}-ridge)`}
+        />
+        <path d="M4 40 C 14 33, 24 30, 36 30 C 52 30, 64 44, 94 90" mask={`url(#${id}-crest)`} />
+        <g mask={`url(#${id}-rows)`} strokeWidth="2.4">
+          <path d="M4 47 C 14 40, 24 37, 36 37 C 50.4 37, 61.6 48.3, 85.5 84.1" />
+          <path d="M4 54 C 14 47, 24 44, 36 44 C 48.8 44, 59 53, 78 80.1" />
+          <path d="M4 61 C 14 54, 24 51, 36 51 C 47.2 51, 56.4 57.9, 71.3 77.8" />
+          <path d="M4 68 C 14 61, 24 58, 36 58 C 45.6 58, 53.8 63, 65.2 77" />
+          <path d="M4 75 C 14 68, 24 65, 36 65 C 44 65, 51 68.5, 59.8 77.8" />
+        </g>
+        <path d="M5 86 C 5 80.5, 6.5 79, 9.5 79 Q 13.5 76.4, 17.5 79 Q 21.5 76.4, 25.5 79 C 28.5 79, 30 80.5, 30 86" />
+        <path d="M35 86 C 35 80.5, 36.5 79, 39.5 79 Q 42.5 76.4, 45.5 79 Q 48.5 76.4, 51.5 79 Q 54.5 76.4, 57.5 79 C 60.5 79, 62 80.5, 62 86" />
+        <path d="M67 86 C 67 80.5, 68.5 79, 71.5 79 Q 74.7 76.4, 77.8 79 Q 81 76.4, 84.2 79 Q 87.3 76.4, 90.5 79 C 93.5 79, 95 80.5, 95 86" />
+        <path d="M4 86 H 96" strokeWidth="2.4" />
+        <path d="M64 53 L76 44 L88 53 Q 76 55.5 64 53 Z" fill="currentColor" />
+        <path
+          d="M76 59.5 m-3.2 0 a3.2 3.2 0 1 0 6.4 0 a3.2 3.2 0 1 0 -6.4 0"
+          fill="currentColor"
+          stroke="none"
+        />
+        <path
+          d="M69.5 73 C 69.5 66, 72 63.5, 76 63.5 C 80 63.5, 82 66, 82 73 Z"
+          fill="currentColor"
+        />
+        <path d="M71 66 L 60 77" />
+      </>
+    ),
+  },
+  // Kawah Putih is the crater lake of Mount Patuha near Ciwidey in Bandung Regency, West Java; as a natural feature it is the region's, per the style guide.
+  'west-java-kawah-putih': {
+    subject: 'Kawah Putih',
+    scopes: ['region:ID:West Java'],
+    ink: [2.3, 16.3, 95.4, 73.4],
+    draw: (_id) => (
+      <>
+        <path d="M4 18 L 10 22 L 16 20 L 24 27 L 32 26 L 40 32 L 50 30 L 60 33 L 68 27 L 76 28 L 84 21 L 90 23 L 96 18" />
+        <path d="M10 25 L 20 43 M24 31 L 30 42" strokeWidth="2.4" />
+        <path d="M76 32 L 70 42 M89 26 L 80 43" strokeWidth="2.4" />
+        <path d="M4 50 C 24 46, 76 46, 96 50" />
+        <path d="M36 57 H 64 M74 57 H 92" strokeWidth="2.4" />
+        <path d="M34 65 H 68" strokeWidth="2.4" />
+        <path d="M28 73 H 70" strokeWidth="2.4" />
+        <path
+          d="M41 53 C 38 48, 44 44, 41 39 C 38 34, 44 30, 41 24"
+          strokeWidth="2.4"
+          strokeDasharray="0.1 4.5"
+        />
+        <path
+          d="M51 53 C 54 48, 48 43, 51 38 C 54 33, 48 28, 51 20"
+          strokeWidth="2.4"
+          strokeDasharray="0.1 4.5"
+        />
+        <path
+          d="M61 53 C 58 48, 64 44, 61 39 C 58 34, 64 30, 61 25"
+          strokeWidth="2.4"
+          strokeDasharray="0.1 4.5"
+        />
+        <path d="M20 88 C 21.5 80, 19 72, 21 62" />
+        <path
+          d="M20.5 75 C 16.5 72, 13 69, 12 62 M21 66 C 23.5 62, 26 59, 29.5 56 M21 71 C 24.5 69.5, 27.5 69, 31 66"
+          strokeWidth="2.4"
+        />
+        <path d="M81 88 C 80 82, 82 76, 80 69" />
+        <path
+          d="M80.8 78 C 84 75.5, 86.5 73, 88 68 M80.5 73 C 78 70, 76 68.5, 74 66"
+          strokeWidth="2.4"
+        />
+        <path d="M4 88 H 96" />
+      </>
+    ),
+  },
+  // The Cikoneng lighthouse (1885, rebuilt after the 1883 Krakatoa tsunami destroyed its predecessor) stands at Anyer, Serang Regency, Banten, on the Sunda Strait at kilometre zero of Daendels' Great Post Road (Anyer to Panarukan); as a built landmark of one place it is scoped to Serang's city key, as Masjid Agung Banten is.
+  'banten-anyer-lighthouse': {
+    subject: 'Anyer lighthouse',
+    scopes: ['city:id-banten-serang'],
+    ink: [2.3, 5.3, 95.4, 91.2],
+    draw: (_id) => (
+      <>
+        <path d="M40.5 86 L 45 27 H 55 L 59.5 86" />
+        <path d="M42.5 27 H 57.5" />
+        <path d="M44 27 V 21 H 56 V 27" strokeWidth="2.4" />
+        <path d="M48 27 V 21 M52 27 V 21" strokeWidth="1.8" />
+        <path d="M46 21 V 15 H 54 V 21" />
+        <path d="M45 15 C 45 10, 55 10, 55 15" />
+        <path d="M50 10.5 V 6.5" strokeWidth="2.4" />
+        <path d="M44 41 H 56 M43 56 H 57 M41.9 71 H 58.1" strokeWidth="2.4" />
+        <rect x="48.5" y="31" width="3" height="5" fill="currentColor" stroke="none" />
+        <rect x="48.5" y="46" width="3" height="5" fill="currentColor" stroke="none" />
+        <rect x="48.5" y="61" width="3" height="5" fill="currentColor" stroke="none" />
+        <path d="M47 86 V 78 C 47 75.5, 53 75.5, 53 78 V 86" strokeWidth="2.4" />
+        <path d="M80 86 C 80 75, 81 65, 84 57" />
+        <path d="M84 57 C 78 51, 71 51, 66 55" />
+        <path d="M84 57 C 81 49, 75 45, 69 45 M84 57 C 87 49, 91 47, 95 48.5" strokeWidth="2.4" />
+        <path d="M84 57 C 89 54, 93 58, 94 63" />
+        <circle cx="82.6" cy="61" r="2" fill="currentColor" stroke="none" />
+        <path d="M4 86 H 96" />
+        <path
+          d="M8 93 C 12 90, 16 96, 20 93 S 28 90, 32 93 S 40 96, 44 93 M56 93 C 60 90, 64 96, 68 93 S 76 90, 80 93 S 88 96, 92 93"
+          strokeWidth="2.4"
+        />
+      </>
+    ),
+  },
+  // Reog Ponorogo is the dance of Ponorogo Regency in East Java, and troupes perform it across the province. Its dadak merak, a tiger mask under a peacock-feather fan, was inscribed on UNESCO's Intangible Cultural Heritage list in 2024 as Indonesia's.
+  'east-java-reog': {
+    subject: 'Reog Ponorogo',
+    scopes: ['region:ID:East Java'],
+    ink: [4.3, 8.3, 91.4, 83.4],
+    draw: (id) => (
+      <>
+        <defs>
+          <mask id={`${id}-cut`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M50 52.5 C 40 52.5, 33 54, 29 58.5 L 25 64 L 28 69 L 23 74 L 28 79 C 31 86, 39 90, 50 90 C 61 90, 69 86, 72 79 L 77 74 L 72 69 L 75 64 L 71 59 C 67 54, 60 52.5, 50 52.5 Z M32 56.5 C 30 51.5, 33 48.5, 37 49.5 C 39 50.3, 40 51.5, 40.5 53 M68 56.5 C 70 51.5, 67 48.5, 63 49.5 C 61 50.3, 60 51.5, 59.5 53"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="8"
+            />
+            <path
+              d="M47 54 C 46 46, 44 38, 46 30 L 50 30 C 49 38, 51 46, 53 54 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="7"
+            />
+            <circle cx="48" cy="26" r="7.5" fill="#000" />
+            <path
+              d="M51 23.8 L 59.5 27.3 L 51 29 Z M45.5 21.5 L 43.5 16.5 M48 20.5 L 47.5 15 M50.5 21.5 L 52.5 16.5"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="7"
+            />
+          </mask>
+        </defs>
+        <g mask={`url(#${id}-cut)`}>
+          <path d="M9.3 69.2 Q2.6 65.3 9.6 56.1 Q4.7 46.0 13.5 41.2 Q11.5 29.7 21.1 28.5 Q22.0 16.8 31.4 19.3 Q35.3 8.5 43.6 14.4 Q50.0 5.6 56.4 14.4 Q64.7 8.5 68.6 19.3 Q78.0 16.8 78.9 28.5 Q88.5 29.7 86.5 41.2 Q95.3 46.0 90.4 56.1 Q97.4 65.3 90.7 69.2" />
+          <path
+            d="M36.8 64.0 L21.0 64.0 M37.4 59.0 L22.4 53.0 M39.3 54.5 L26.5 43.1 M42.2 50.9 L32.9 35.2 M45.9 48.6 L42.1 34.2 M54.1 48.6 L57.9 34.2 M57.8 50.9 L67.1 35.2 M60.7 54.5 L73.5 43.1 M62.6 59.0 L77.6 53.0 M63.2 64.0 L79.0 64.0"
+            strokeWidth="2.4"
+          />
+        </g>
+        <circle cx="13.5" cy="64.0" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="15.3" cy="50.1" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="20.5" cy="37.7" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="28.5" cy="27.7" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="38.7" cy="21.4" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="61.3" cy="21.4" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="71.5" cy="27.7" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="79.5" cy="37.7" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="84.7" cy="50.1" r="2.6" fill="currentColor" stroke="none" />
+        <circle cx="86.5" cy="64.0" r="2.6" fill="currentColor" stroke="none" />
+
+        <path
+          d="M47 54 C 46 46, 44 38, 46 30 L 50 30 C 49 38, 51 46, 53 54 Z"
+          fill="currentColor"
+          strokeWidth="1.6"
+        />
+        <circle cx="48" cy="26" r="4.3" fill="currentColor" stroke="none" />
+        <path d="M51 23.8 L 59.5 27.3 L 51 29 Z" fill="currentColor" strokeWidth="1.6" />
+        <path
+          d="M45.5 21.5 L 43.5 16.5 M48 20.5 L 47.5 15 M50.5 21.5 L 52.5 16.5"
+          strokeWidth="1.8"
+        />
+        <path d="M50 52.5 C 40 52.5, 33 54, 29 58.5 L 25 64 L 28 69 L 23 74 L 28 79 C 31 86, 39 90, 50 90 C 61 90, 69 86, 72 79 L 77 74 L 72 69 L 75 64 L 71 59 C 67 54, 60 52.5, 50 52.5 Z" />
+        <path d="M32 56.5 C 30 51.5, 33 48.5, 37 49.5 C 39 50.3, 40 51.5, 40.5 53 M68 56.5 C 70 51.5, 67 48.5, 63 49.5 C 61 50.3, 60 51.5, 59.5 53" />
+        <path d="M31 63.5 C 34 58.5, 41 57, 46.5 59 L 50 61.5 L 53.5 59 C 59 57, 66 58.5, 69 63.5" />
+        <circle cx="39" cy="70" r="4.4" />
+        <circle cx="61" cy="70" r="4.4" />
+        <circle cx="39" cy="70" r="1.6" fill="currentColor" stroke="none" />
+        <circle cx="61" cy="70" r="1.6" fill="currentColor" stroke="none" />
+        <path d="M47 73.5 H 53 L 55.5 77.5 H 44.5 Z" fill="currentColor" strokeWidth="1.6" />
+        <path d="M36 82.5 C 41 79.5, 46 80, 50 82 C 54 80, 59 79.5, 64 82.5" />
+        <path d="M40 87 H 60" strokeWidth="2.4" />
+        <path
+          d="M41.5 81.5 L 43.2 85.5 L 45.2 81.2 Z M54.8 81.2 L 56.8 85.5 L 58.5 81.5 Z"
+          fill="currentColor"
+          strokeWidth="1.6"
+        />
+      </>
+    ),
+  },
+  // Karapan sapi is the bull race of Madura island (the Bangkalan, Sampang, Pamekasan and Sumenep regencies), which belongs to East Java province. Its yearly President's Cup final is held in Pamekasan.
+  'east-java-karapan-sapi': {
+    subject: 'Karapan sapi',
+    scopes: ['region:ID:East Java'],
+    ink: [2.3, 24.4, 95.4, 64.8],
+    draw: (id) => (
+      <>
+        <defs>
+          <mask id={`${id}-cut`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M 30.6 42.8 L 21 46.2 C 18.6 47.2 18.2 51 19.1 52.9 C 19.6 54.4 21 54.8 23 54.8 L 27.3 54.4 C 28.7 57.7 27.8 61.1 30.2 63 C 32.1 64.4 33.5 64.4 35.4 64.4 C 44.1 66.8 53.7 66.8 61.4 64.4 C 65.2 63 68.1 60.1 69 56.3 C 70 52.4 69.5 48.1 67.1 45.7 L 47.9 43.8 C 47 40.4 44.6 38.5 41.7 38.5 C 38.8 38.5 37.4 40 36.4 42.4 C 34.5 42.8 32.6 42.8 30.6 42.8 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="9"
+            />
+            <path
+              d="M 28.2 43.6 C 26.3 39.5 26.8 36.1 30.2 33.2 M 35.4 64.4 L 28.2 70.7 L 21 73.6 M 21 73.6 L 19.6 76 M 41.2 65.9 L 42.2 75.5 L 37.4 84.1 M 37.4 84.1 H 34.5 M 66.2 61.1 L 71.9 69.7 L 79.1 73.1 M 79.1 73.1 L 80.6 75.5 M 58.5 65.4 L 62.3 75 L 69 82.2 M 69 82.2 L 71.4 83.6 M 68.6 49.6 C 72.4 48.1 74.3 44.8 73.8 40.4"
+              stroke="#000"
+              strokeWidth="8"
+            />
+          </mask>
+        </defs>
+        <g mask={`url(#${id}-cut)`}>
+          <path
+            d="M 34.5 35.2 L 19.1 35.2 L 9.5 38.5 C 7.1 39.5 6.6 43.3 7.6 45.2 C 8.1 46.7 9.5 47.2 11.4 47.2 L 15.8 46.7 C 17.2 50 16.2 53.4 18.6 55.3 C 20.6 56.8 22 56.8 23.9 56.8"
+            strokeWidth="2.4"
+          />
+          <path
+            d="M 16.7 35.9 C 14.8 31.8 15.3 28.4 18.6 25.6 M 23.9 56.8 L 16.7 63 L 9.5 65.9 M 9.5 65.9 L 8.1 68.3"
+            strokeWidth="2.4"
+          />
+          <path d="M 66.2 63 L 83.4 79.3" strokeWidth="2.4" />
+        </g>
+        <path d="M 30.6 42.8 L 21 46.2 C 18.6 47.2 18.2 51 19.1 52.9 C 19.6 54.4 21 54.8 23 54.8 L 27.3 54.4 C 28.7 57.7 27.8 61.1 30.2 63 C 32.1 64.4 33.5 64.4 35.4 64.4 C 44.1 66.8 53.7 66.8 61.4 64.4 C 65.2 63 68.1 60.1 69 56.3 C 70 52.4 69.5 48.1 67.1 45.7 L 47.9 43.8 C 47 40.4 44.6 38.5 41.7 38.5 C 38.8 38.5 37.4 40 36.4 42.4 C 34.5 42.8 32.6 42.8 30.6 42.8 Z" />
+        <path d="M 28.2 43.6 C 26.3 39.5 26.8 36.1 30.2 33.2" />
+        <path d="M 27.3 46.2 L 32.6 48.1" strokeWidth="2.4" />
+        <circle cx="24.4" cy="48.6" r="1.6" fill="currentColor" stroke="none" />
+        <circle cx="12.9" cy="40.9" r="1.6" fill="currentColor" stroke="none" />
+        <path d="M 35.4 64.4 L 28.2 70.7 L 21 73.6 M 21 73.6 L 19.6 76 M 41.2 65.9 L 42.2 75.5 L 37.4 84.1 M 37.4 84.1 H 34.5 M 66.2 61.1 L 71.9 69.7 L 79.1 73.1 M 79.1 73.1 L 80.6 75.5 M 58.5 65.4 L 62.3 75 L 69 82.2 M 69 82.2 L 71.4 83.6" />
+        <path d="M 68.6 49.6 C 72.4 48.1 74.3 44.8 73.8 40.4" strokeWidth="2.4" />
+        <path d="M95 82 H 82.5 C 80 82, 79 85, 81 87.5" strokeWidth="2.4" />
+        <circle cx="83.5" cy="63" r="2.2" fill="currentColor" stroke="none" />
+        <path d="M85 82 L 87.5 76.5 L 91.5 73 M93 82 L 91.5 73 L 86.5 67" />
+        <path d="M88.5 68.5 L 92 62.5" />
+        <path d="M92 62.5 L 94.5 57.5" strokeWidth="1.8" />
+        <path d="M4 87.5 H 96" />
+      </>
+    ),
+  },
+  // The gunungan (kayon) opens and closes every wayang kulit performance, the shadow-puppet theatre at home in the Surakarta (Solo) courts and villages across Central Java. UNESCO proclaimed wayang a Masterpiece of Oral and Intangible Heritage in 2003.
+  'central-java-gunungan': {
+    subject: 'Gunungan',
+    scopes: ['region:ID:Central Java'],
+    ink: [2.3, 5.3, 95.4, 84.4],
+    draw: (_id) => (
+      <>
+        <path d="M27 74 C 20 62, 21 49, 30 39 C 38 30, 46 20, 50 7 C 54 20, 62 30, 70 39 C 79 49, 80 62, 73 74 Z" />
+        <path d="M50 74 V88" strokeWidth="2.4" />
+        <path d="M4 88 H96" />
+        <path d="M37 63 L50 56 L63 63" strokeWidth="2.4" />
+        <path d="M40 63 V74 M60 63 V74" strokeWidth="2.4" />
+        <rect x="44" y="65" width="4.4" height="9" fill="currentColor" stroke="none" />
+        <rect x="51.6" y="65" width="4.4" height="9" fill="currentColor" stroke="none" />
+        <path d="M50 56 V16" strokeWidth="2.4" />
+        <path
+          d="M50 48 C 44 47, 35 48, 31 54 C 29 57.5, 32.5 60.5, 35.5 58 M50 48 C 56 47, 65 48, 69 54 C 71 57.5, 67.5 60.5, 64.5 58"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M50 36 C 45 35, 39 37, 37 42 C 36 45, 39 46.5, 41 44.5 M50 36 C 55 35, 61 37, 63 42 C 64 45, 61 46.5, 59 44.5"
+          strokeWidth="2.4"
+        />
+        <path d="M50 25 C 46 24, 43 26, 42 30 M50 25 C 54 24, 57 26, 58 30" strokeWidth="2.4" />
+        <path d="M44 42 l0 0.1 M56 42 l0 0.1 M43 53 l0 0.1 M57 53 l0 0.1 M30 65 l0 0.1 M70 65 l0 0.1 M46 31 l0 0.1 M54 31 l0 0.1" />
+      </>
+    ),
+  },
+  // Tochigi has been Japan's largest strawberry-growing prefecture every year since 1968 and bills itself as the strawberry kingdom (ichigo ōkoku). Its own varieties are Tochiotome, Skyberry and Tochiaika, so the crop belongs to every town in the prefecture.
+  'tochigi-strawberry': {
+    subject: 'Strawberries, Tochigi',
+    scopes: ['region:JP:Tochigi'],
+    ink: [2.3, 8.3, 95.4, 84.4],
+    draw: (id) => (
+      <>
+        <defs>
+          <mask id={`${id}-cut`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M60 40 C 48 35, 36 39, 36 52 C 36 66, 50 80, 60 89 C 70 80, 84 66, 84 52 C 84 39, 72 35, 60 40 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="7"
+            />
+            <polygon
+              points="39 44 53 38 44 29 57 34 63 34 76 29 67 38 81 44 64.5 42 60 51 55.5 42"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="6"
+            />
+          </mask>
+        </defs>
+        <g mask={`url(#${id}-cut)`}>
+          <path
+            d="M26 36 C 18 33, 10 37, 10 47 C 10 58, 20 68, 26 75 C 32 68, 42 58, 42 47 C 42 37, 34 33, 26 36 Z"
+            strokeWidth="2.4"
+          />
+          <path
+            d="M26 36 L15 37 L22 32.5 L20 26 L26 30 L32 26 L30 32.5 L37 37 Z"
+            fill="currentColor"
+            strokeWidth="1.6"
+          />
+          <path
+            d="M18 45 l0.4 1 M25 44 l0.2 1 M32 44 l-0.2 1 M38 47 l-0.4 1 M21 53 l0.3 1 M29 52 l0 1 M36 55 l-0.3 1 M25 61 l0 1"
+            strokeWidth="2.4"
+          />
+        </g>
+        <path d="M26 30 C 28 20, 38 12, 52 11" strokeWidth="2.4" />
+        <path d="M60 40 C 48 35, 36 39, 36 52 C 36 66, 50 80, 60 89 C 70 80, 84 66, 84 52 C 84 39, 72 35, 60 40 Z" />
+        <polygon
+          points="39 44 53 38 44 29 57 34 63 34 76 29 67 38 81 44 64.5 42 60 51 55.5 42"
+          fill="currentColor"
+          strokeWidth="1.6"
+        />
+        <path d="M60 33 C 60 24, 57 17, 52 11" />
+        <path d="M79 29.5 C 72 31, 63 28, 58.5 20" strokeWidth="2.4" />
+        <path
+          d="M76.60 13.95 A4.4 4.4 0 1 1 85.40 13.95 A4.4 4.4 0 1 1 88.11 22.31 A4.4 4.4 0 1 1 81.00 27.48 A4.4 4.4 0 1 1 73.89 22.31 A4.4 4.4 0 1 1 76.60 13.95 Z"
+          strokeWidth="2.4"
+        />
+        <circle cx="81" cy="20" r="2.6" fill="currentColor" stroke="none" />
+        <path d="M47 53 l0.5 1.2 M54 53 l0.2 1.2 M66 53 l-0.2 1.2 M73 53 l-0.5 1.2 M42 60 l0.5 1.2 M51 59.5 l0.2 1.2 M60 58 l0 1.2 M69 59.5 l-0.2 1.2 M78 60 l-0.5 1.2 M48 68 l0.4 1.2 M57 67 l0.1 1.2 M66 67 l-0.1 1.2 M73 68 l-0.4 1.2 M55 76 l0.2 1.2 M64 76 l-0.2 1.2 M60 83 l0 1" />
+        <path d="M4 91 H96" />
+      </>
+    ),
+  },
+  // The Texas Longhorn is the official state large mammal of Texas (designated 1995) and the bluebonnet is the state flower (1901), and both are found across the whole state.
+  'texas-bluebonnet-longhorn': {
+    subject: 'Longhorn in the bluebonnets',
+    scopes: ['region:US:Texas'],
+    ink: [0.3, 18.8, 99.4, 73.4],
+    draw: (_id) => (
+      <>
+        <path d="M25 31 C 17.5 31.5, 11 30, 7.5 26.5 C 6 25, 5.6 23, 6 20.5 C 9.5 24.5, 15 26.5, 25 26.5" />
+        <path d="M37 31 C 45 31.5, 52 30, 56 26.5 C 57.5 25, 58 23, 57.5 20.5 C 54 24.5, 48 26.5, 37 26.5" />
+        <path d="M25 29 C 25 26, 28 25, 31 25 C 34 25, 37 26, 37 29 C 37 37, 36 45, 35.5 51 C 35 55, 33.5 57, 31 57 C 28.5 57, 27 55, 26.5 51 C 26 45, 25 37, 25 29 Z" />
+        <path
+          d="M25 34 C 22 34, 19.5 35.5, 18.5 37.5 C 21 38.5, 24 38, 25.5 37"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M37 34 C 40 34, 42.5 35.5, 43.5 37.5 C 41 38.5, 38 38, 36.5 37"
+          strokeWidth="2.4"
+        />
+        <circle cx="28.5" cy="39" r="1.6" fill="currentColor" stroke="none" />
+        <circle cx="33.5" cy="39" r="1.6" fill="currentColor" stroke="none" />
+        <path d="M29 52.5 L29.5 54 M33 52.5 L32.5 54" strokeWidth="1.8" />
+        <path d="M37.5 41 C 44 37, 52 38, 62 38.5 C 70 39, 78 37, 85 40 C 90 42.5, 90.5 50, 89.5 58 L 89 82 H 84 L 82.5 65 C 74 67, 64 67, 57 65 L 55.5 82 H 50.5 L 48 63 C 44 62, 40 59, 36.5 55" />
+        <path d="M44 62 L 43 82 M80.5 65.5 L 79.5 82" strokeWidth="2.4" />
+        <path d="M39 56 C 40 60, 42 62.5, 44.5 63.5" strokeWidth="2.4" />
+        <path
+          d="M89.5 46 C 92.5 50, 93 58, 92.5 68 M92.5 68 C 94.2 70, 94.2 72.5, 92.8 74.5"
+          strokeWidth="2.4"
+        />
+        <path d="M80 40 C 79 43, 78 46, 78.5 49" strokeWidth="1.8" />
+        <path d="M2 84 H98" />
+        <path
+          d="M7 84 V67 M14.5 84 V70 M21.5 84 V68 M62 84 V69 M69 84 V67 M76 84 V70"
+          strokeWidth="1.8"
+        />
+        <path d="M5.7 79 l0 0.01 M8.3 76.2 l0 0.01 M5.8 73.4 l0 0.01 M15.8 82 l0 0.01 M13.2 79.2 l0 0.01 M15.7 76.4 l0 0.01 M20.2 80 l0 0.01 M22.8 77.2 l0 0.01 M20.3 74.4 l0 0.01 M63.3 81 l0 0.01 M60.7 78.2 l0 0.01 M63.2 75.4 l0 0.01 M67.7 79 l0 0.01 M70.3 76.2 l0 0.01 M67.8 73.4 l0 0.01 M77.3 82 l0 0.01 M74.7 79.2 l0 0.01 M77.2 76.4 l0 0.01" />
+        <path
+          d="M7.9 70.8 l0 0.01 M6.4 68.4 l0 0.01 M7 66.2 l0 0.01 M13.6 73.8 l0 0.01 M15.1 71.4 l0 0.01 M14.5 69.2 l0 0.01 M22.4 71.8 l0 0.01 M20.9 69.4 l0 0.01 M21.5 67.2 l0 0.01 M61.1 72.8 l0 0.01 M62.6 70.4 l0 0.01 M62 68.2 l0 0.01 M69.9 70.8 l0 0.01 M68.4 68.4 l0 0.01 M69 66.2 l0 0.01 M75.1 73.8 l0 0.01 M76.6 71.4 l0 0.01 M76 69.2 l0 0.01"
+          strokeWidth="2.4"
+        />
+        <path d="M8 91 H30 M40 91 H62 M72 91 H92" strokeWidth="2.4" />
+      </>
+    ),
+  },
+  // The American Falls and the US side of the Horseshoe Falls lie in Niagara Falls State Park, Niagara County, New York, and the falls are the state's best-known natural feature.
+  'new-york-niagara': {
+    subject: 'Niagara Falls',
+    scopes: ['region:US:New York'],
+    ink: [0.3, 5.8, 99.4, 88.3],
+    draw: (_id) => (
+      <>
+        <path d="M18 22 C 36 25, 64 25, 82 22" />
+        <path d="M6 22 H18 L 31 7 M94 22 H82 L 69 7" strokeWidth="2.4" />
+        <path d="M37 12 H46 M54 12 H63 M30 17 H40 M48 17 H56 M62 17 H70" strokeWidth="1.8" />
+        <path d="M18 22 L 20 33 L 17 45 L 20 57 L 18 66 M82 22 L 80 34 L 83 46 L 80 57 L 82 66" />
+        <path
+          d="M25 23.4 V56 M32 24.2 V48 M39 24.6 V58 M46 24.8 V50 M53 24.8 V57 M60 24.6 V47 M67 24.2 V55 M74 23.4 V49"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M25 60.5 V66 M32 52.5 V65 M39 62.5 V66 M46 54.5 V65 M53 61.5 V66 M60 51.5 V65 M67 59.5 V66 M74 53.5 V65"
+          strokeWidth="2.4"
+          strokeDasharray="0.1 4.5"
+        />
+        <path d="M12 73 C 13 69, 17 68, 20 70 C 22 67, 27 67, 29 70 C 32 67, 37 68, 38 70.5 C 41 67.5, 46 68, 48 70 C 51 67, 56 68, 57 70.5 C 60 67.5, 65 68, 67 70 C 70 67, 75 68, 76 70.5 C 79 68, 84 68, 86 72" />
+        <path
+          d="M89 66 C 86 60, 92 55, 89 48 C 86 41, 93 36, 90 30"
+          strokeWidth="2.4"
+          strokeDasharray="0.1 4.5"
+        />
+        <path d="M2 85 H34 M66 85 H98" />
+        <path d="M34 80 H66 L62 86 H38 Z" />
+        <path d="M39 80 V75 H61 V80" strokeWidth="2.4" />
+        <path d="M45 75 V80 M50 75 V80 M55 75 V80" strokeWidth="1.8" />
+        <path
+          d="M8 92 C 12 89, 16 95, 20 92 S 28 89, 32 92 M68 92 C 72 89, 76 95, 80 92 S 88 89, 92 92"
+          strokeWidth="2.4"
+        />
+      </>
+    ),
+  },
+  // Sakura (Prunus serrulata and its cultivars, such as Somei-yoshino) is Japan's de facto national flower and is planted and celebrated (hanami) in every prefecture, so it belongs anywhere in Japan.
+  'japan-sakura': {
+    subject: 'Cherry blossom',
+    scopes: ['region:JP:*'],
+    ink: [4.3, 5.9, 90.4, 86.8],
+    draw: (id) => (
+      <>
+        <defs>
+          <mask id={`${id}-cut`}>
+            <rect width="100" height="100" fill="#fff" />
+            <circle cx="40" cy="57" r="15.64" fill="#000" stroke="#000" strokeWidth="7" />
+            <circle cx="72" cy="36" r="12.88" fill="#000" stroke="#000" strokeWidth="7" />
+            <circle
+              cx="32"
+              cy="23"
+              r="11.040000000000001"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="7"
+            />
+          </mask>
+        </defs>
+        <g mask={`url(#${id}-cut)`}>
+          <path d="M6 87 C 8 82, 10 79, 14 77 C 18 75, 20 71, 24 69 L 30 66 C 36 63, 40 61, 46 57 C 55 51, 61 46, 69 41 C 77 36, 85 30, 93 25 C 86 32, 79 38, 72 44 C 65 50, 59 55, 52 60 C 46 64, 41 67, 36 69 C 33 72, 30 73, 27 73 C 23 74, 20 78, 18 81 C 16 85, 15 88, 14 91 Z" />
+          <path
+            d="M50 55 C 46 46, 42 40, 37 33 M84 30 C 86 24, 86 20, 84 15 M80 35 C 83 38, 85 40, 86 44"
+            strokeWidth="2.4"
+          />
+        </g>
+        <path d="M40.6 52.6 C 36.0 48.6, 36.0 39.6, 40.0 40.3 L 41.9 43.5 L 44.6 41.0 C 48.7 41.4, 46.2 50.0, 40.6 52.6 Z M44.4 56.2 C 46.8 50.6, 55.3 47.8, 55.8 51.9 L 53.4 54.6 L 56.6 56.4 C 57.5 60.4, 48.6 60.7, 44.4 56.2 Z M42.1 60.9 C 48.2 61.4, 53.5 68.7, 49.8 70.5 L 46.4 69.0 L 45.7 72.7 C 42.2 74.7, 39.1 66.3, 42.1 60.9 Z M36.9 60.2 C 38.3 66.2, 33.0 73.4, 30.2 70.5 L 30.6 66.8 L 26.9 67.3 C 23.8 64.5, 30.9 59.0, 36.9 60.2 Z M36.0 55.1 C 30.7 58.2, 22.2 55.4, 24.2 51.9 L 27.8 51.0 L 26.2 47.7 C 27.8 43.9, 35.3 48.9, 36.0 55.1 Z" />
+        <path d="M71.1 32.5 C 66.3 30.8, 63.6 24.0, 66.9 23.3 L 69.3 25.1 L 70.6 22.4 C 73.8 21.4, 74.6 28.7, 71.1 32.5 Z M75.1 34.1 C 75.2 29.0, 80.8 24.3, 82.5 27.2 L 81.5 30.1 L 84.5 30.4 C 86.4 33.2, 79.7 36.2, 75.1 34.1 Z M74.8 38.3 C 79.7 36.9, 85.9 40.8, 83.6 43.3 L 80.6 43.2 L 81.2 46.2 C 79.1 48.9, 74.2 43.4, 74.8 38.3 Z M70.6 39.4 C 73.5 43.5, 71.7 50.7, 68.7 49.3 L 67.8 46.4 L 65.1 47.9 C 62.0 46.8, 65.6 40.4, 70.6 39.4 Z M68.4 35.7 C 65.3 39.8, 57.9 40.3, 58.3 37.0 L 60.8 35.2 L 58.6 33.1 C 58.7 29.8, 65.9 31.3, 68.4 35.7 Z" />
+        <path d="M33.3 19.4 C 30.4 16.6, 31.8 10.4, 34.4 11.5 L 35.3 14.0 L 37.5 12.6 C 40.3 13.5, 37.3 19.1, 33.3 19.4 Z M35.8 23.1 C 37.6 19.5, 43.9 18.9, 43.7 21.8 L 41.6 23.3 L 43.6 25.0 C 43.6 27.9, 37.4 26.8, 35.8 23.1 Z M33.1 26.7 C 37.0 27.3, 39.6 33.1, 36.8 33.7 L 34.6 32.2 L 33.6 34.6 C 30.9 35.6, 30.0 29.3, 33.1 26.7 Z M28.8 25.1 C 29.5 29.1, 24.8 33.3, 23.3 30.9 L 24.0 28.4 L 21.4 28.2 C 19.7 25.8, 25.4 23.0, 28.8 25.1 Z M29.0 20.6 C 25.4 22.5, 20.0 19.3, 21.8 17.1 L 24.4 17.1 L 23.8 14.5 C 25.5 12.2, 29.9 16.7, 29.0 20.6 Z" />
+        <circle cx="40" cy="57" r="2.2" fill="currentColor" stroke="none" />
+        <circle cx="72" cy="36" r="2.2" fill="currentColor" stroke="none" />
+        <circle cx="32" cy="23" r="2.2" fill="currentColor" stroke="none" />
+        <path
+          d="M84.0 15.0 C 81.2 13.4, 80.4 8.8, 82.6 7.1 C 85.3 7.9, 86.1 12.5, 84.0 15.0 Z M86.0 44.0 C 89.0 45.1, 90.6 49.5, 88.7 51.5 C 86.0 51.2, 84.4 46.8, 86.0 44.0 Z"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M14.0 34.0 C 15.8 39.1, 15.7 43.6, 13.1 43.0 L 11.5 40.8 L 9.0 41.5 C 6.6 40.2, 9.3 36.7, 14.0 34.0 Z M70.0 80.0 C 75.4 80.0, 79.6 81.7, 78.1 83.9 L 75.5 84.6 L 75.3 87.3 C 73.3 89.1, 70.9 85.3, 70.0 80.0 Z"
+          strokeWidth="2.4"
+        />
+      </>
+    ),
+  },
+  // Five-storey pagodas (gojū-no-tō) stand across Japan, from Hōryū-ji in Nara and Tō-ji in Kyoto to Haguro-san in Yamagata, Rurikō-ji in Yamaguchi and Itsukushima in Hiroshima, so a generic one is at home in any region.
+  'japan-pagoda': {
+    subject: 'Five-storey pagoda',
+    scopes: ['region:JP:*'],
+    ink: [2.3, 5.4, 95.4, 89.8],
+    draw: (_id) => (
+      <>
+        <path d="M4 90 H96" />
+        <path d="M34 90 V86 H66 V90" />
+        <path
+          d="M37.0 86 V81 M63.0 86 V81 M38.5 74.5 V68 M61.5 74.5 V68 M39.5 61.5 V56 M60.5 61.5 V56 M40.5 49.5 V45 M59.5 49.5 V45 M42.0 38.5 V35 M58.0 38.5 V35"
+          strokeWidth="2.4"
+        />
+        <path d="M19 75.5 C 22 80, 26 81, 31 81 H 69 C 74 81, 78 80, 81 75.5" />
+        <path
+          d="M81 75.5 C 75 75.5, 69.5 75, 63.5 74.5 H 36.5 C 30.5 75, 25 75.5, 19 75.5"
+          strokeWidth="2.4"
+        />
+        <path d="M21.5 62.5 C 24.5 67, 28.5 68, 33.5 68 H 66.5 C 71.5 68, 75.5 67, 78.5 62.5" />
+        <path
+          d="M78.5 62.5 C 72.5 62.5, 68.5 62, 62.5 61.5 H 37.5 C 31.5 62, 27.5 62.5, 21.5 62.5"
+          strokeWidth="2.4"
+        />
+        <path d="M24 50.5 C 27 55, 31 56, 36 56 H 64 C 69 56, 73 55, 76 50.5" />
+        <path
+          d="M76 50.5 C 70 50.5, 67.5 50, 61.5 49.5 H 38.5 C 32.5 50, 30 50.5, 24 50.5"
+          strokeWidth="2.4"
+        />
+        <path d="M26.5 39.5 C 29.5 44, 33.5 45, 38.5 45 H 61.5 C 66.5 45, 70.5 44, 73.5 39.5" />
+        <path
+          d="M73.5 39.5 C 67.5 39.5, 66 39, 60 38.5 H 40 C 34 39, 32.5 39.5, 26.5 39.5"
+          strokeWidth="2.4"
+        />
+        <path d="M28.5 29.5 C 31.5 34, 35.5 35, 40.5 35 H 59.5 C 64.5 35, 68.5 34, 71.5 29.5" />
+        <path
+          d="M71.5 29.5 C 65.5 29.5, 63 29, 57 28.5 H 43 C 37 29, 34.5 29.5, 28.5 29.5"
+          strokeWidth="2.4"
+        />
+        <rect x="47" y="81" width="6" height="5" fill="currentColor" stroke="none" />
+        <path d="M50 28.5 V10.5" strokeWidth="2.4" />
+        <path d="M46.2 20.5 H53.8 M46.2 15.5 H53.8 M46.2 10.5 H53.8" strokeWidth="1.8" />
+        <circle cx="50" cy="7.6" r="2.2" fill="currentColor" stroke="none" />
+        <path d="M10 94 H28 M72 94 H90" strokeWidth="2.4" />
+      </>
+    ),
+  },
+  // The maneki-neko is a Japanese folk figurine (said to come from Edo-period Tokyo, Gōtoku-ji or Imado, and made in quantity in Tokoname, Aichi) that is placed in shops and homes in every part of Japan.
+  'japan-maneki-neko': {
+    subject: 'Maneki-neko',
+    scopes: ['region:JP:*'],
+    ink: [7.3, 10.3, 81.4, 85.4],
+    draw: (id) => (
+      <>
+        <path d="M31 30 L29 12 L41 20.5 C 45 19.5, 51 19.5, 55 20.5 L67 12 L65 30 C 69 36, 68 45, 62 49 C 57 52, 39 52, 34 49 C 28 45, 27 36, 31 30 Z" />
+        <path d="M33 24 L32 17.5 L37 21 M63 24 L64 17.5 L59 21" strokeWidth="1.8" />
+        <ellipse cx="41" cy="36" rx="2.2" ry="2.8" fill="currentColor" stroke="none" />
+        <ellipse cx="55" cy="36" rx="2.2" ry="2.8" fill="currentColor" stroke="none" />
+        <path d="M46 41 H50 L48 43.5 Z" fill="currentColor" strokeWidth="1.6" />
+        <path
+          d="M48 43.5 C 47 45.5, 44.5 45.5, 44 44 M48 43.5 C 49 45.5, 51.5 45.5, 52 44"
+          strokeWidth="1.8"
+        />
+        <path
+          d="M37 41 L28 39.5 M37 44 L28.5 45 M59 41 L68 39.5 M59 44 L67.5 45"
+          strokeWidth="1.6"
+        />
+        <path d="M35 51 C 28 56, 25 66, 26 76 C 26.5 82, 29 86, 34 86 M62 86 C 67 86, 70 82, 70 76 C 70 69, 69 63, 66 57" />
+        <path d="M66 57 C 72 52, 77 46, 80 39 C 83 34, 83 27, 78 24.5 C 73 22, 68 25.5, 68 31 C 68 34, 68.5 36, 69.5 38 C 68 42, 66 46, 62 49.5" />
+        <path d="M71.5 25.5 L72.5 28.5 M76 24.5 L76 27.5" strokeWidth="1.6" />
+        <path d="M36 52 C 44 56, 52 56, 60 52" strokeWidth="2.4" />
+        <circle cx="48" cy="57.6" r="3" fill="currentColor" stroke="none" />
+        <defs>
+          <mask id={`${id}-paw`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M37 76 C 40 74.5, 43.5 75.5, 44 78.5 C 44.5 81.5, 42 83.5, 38.5 83.5 C 35.5 83.5, 34 81.5, 34 79.5 C 34 78, 35 76.8, 37 76 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="7"
+            />
+          </mask>
+        </defs>
+        <g mask={`url(#${id}-paw)`}>
+          <path d="M48 64.5 C 52.5 64.5, 55 68.5, 55 73 C 55 77.5, 52.5 81.5, 48 81.5 C 43.5 81.5, 41 77.5, 41 73 C 41 68.5, 43.5 64.5, 48 64.5 Z" />
+          <path d="M45.5 68.5 H50.5 M45 73 H51 M45.5 77.5 H50.5" strokeWidth="1.6" />
+        </g>
+        <path
+          d="M37 76 C 40 74.5, 43.5 75.5, 44 78.5 C 44.5 81.5, 42 83.5, 38.5 83.5 C 35.5 83.5, 34 81.5, 34 79.5 C 34 78, 35 76.8, 37 76 Z"
+          strokeWidth="2.4"
+        />
+        <path d="M38.6 74.6 L39.2 76.8 M42 75.4 L41.8 77.6" strokeWidth="1.6" />
+        <path d="M18 86 H78 C 81.5 86, 83 88, 83 90 C 83 92, 81.5 94, 78 94 H18 C 14.5 94, 13 92, 13 90 C 13 88, 14.5 86, 18 86 Z" />
+        <path d="M13 90 L8.5 94 M83 90 L87.5 94" strokeWidth="2.4" />
+      </>
+    ),
+  },
+  // The white oak is Illinois's state tree (1973) and grows in every part of the state, and big bluestem, the turkey-foot grass at its feet, is the state prairie grass (1989) of the Prairie State, so the scene belongs to every town in Illinois.
+  'illinois-white-oak': {
+    subject: 'White oak on the prairie',
+    scopes: ['region:US:Illinois'],
+    ink: [2.8, 15.1, 94.4, 72.1],
+    draw: (_id) => (
+      <>
+        <path d="M30 55 C 24 59, 16 58, 14 53 C 7 53, 5 45, 10 41 C 6 35, 12 29, 18 31 C 19 24, 27 21, 32 25 C 35 18, 44 16, 49 20 C 54 15, 63 16, 66 22 C 72 19, 80 23, 80 29 C 87 28, 93 34, 89 40 C 95 44, 92 52, 86 52 C 84 58, 76 59, 71 55" />
+        <path
+          d="M44 86 C 46 80, 46.5 72, 46 66 C 42 63, 37 62, 30 55 C 38 59, 43 60, 47 61 C 47.5 56, 46 50, 44 45 C 48 50, 50 55, 50.5 61 C 52 55, 55 50, 58 46 C 56 52, 54 57, 54 61 C 59 60, 64 58, 71 55 C 65 61, 59 63, 55 66 C 54.5 72, 55 80, 57 86 Z"
+          fill="currentColor"
+          strokeWidth="1.6"
+        />
+        <path d="M18 31 C 21 33, 23 36, 23 40 M10 41 C 13 42, 16 44, 17 47" strokeWidth="1.8" />
+        <path d="M49 20 C 49 23, 48 26, 46 28 M66 22 C 65 25, 63 27, 61 28" strokeWidth="1.8" />
+        <path d="M89 40 C 86 41, 83 43, 82 46 M80 29 C 78 31, 77 33, 77 36" strokeWidth="1.8" />
+        <path d="M4 86 H 96" strokeWidth="2.4" />
+        <path d="M9 86 C 9 82, 7.5 78, 5.5 75.5 M22 86 C 22 82, 23 79, 25.5 76" strokeWidth="2.4" />
+        <path
+          d="M15 86 C 15 80, 15.5 75, 16 70 M28.5 86 C 28.5 82, 28 78, 27.5 74.5"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M16 70 C 14.5 68, 13 67, 11.5 67 M16 70 C 16 68, 16.5 66.5, 17.5 65 M16 70 C 18 68.5, 19.5 68, 21 68.5"
+          strokeWidth="1.8"
+        />
+        <path
+          d="M27.5 74.5 C 26 72.5, 24.5 72, 23 72 M27.5 74.5 C 27.5 72.5, 28 71, 29 69.5 M27.5 74.5 C 29.5 73, 31 72.5, 32.5 73"
+          strokeWidth="1.8"
+        />
+        <path
+          d="M73 86 C 73 82, 71.5 79, 69.5 76.5 M85 86 C 85 82, 86 78.5, 88.5 76"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M79 86 C 79 80, 79.5 75, 80 70 M91.5 86 C 91.5 81, 91 77, 90.5 73"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M80 70 C 78.5 68, 77 67, 75.5 67 M80 70 C 80 68, 80.5 66.5, 81.5 65 M80 70 C 82 68.5, 83.5 68, 85 68.5"
+          strokeWidth="1.8"
+        />
+        <path
+          d="M90.5 73 C 89 71, 87.5 70.5, 86 70.5 M90.5 73 C 90.5 71, 91 69.5, 92 68"
+          strokeWidth="1.8"
+        />
+      </>
+    ),
+  },
+  // Illinois is the leading or second-leading US corn producer (it swaps first place with Iowa from year to year), and concrete country grain elevators stand over cornfields in nearly every county of the state.
+  'illinois-corn-elevator': {
+    subject: 'Cornfield and grain elevator',
+    scopes: ['region:US:Illinois'],
+    ink: [2.3, 4.7, 95.4, 89],
+    draw: (id) => (
+      <>
+        <defs>
+          <mask id={`${id}-cut`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M16 92 V 68 M16 85 C 12 80, 9 79, 6 83 M16 77 C 20 72, 23 71, 26 75 M33 92 V 68 M33 85 C 29 80, 26 79, 23 83 M33 77 C 37 72, 40 71, 43 75 M50 92 V 68 M50 85 C 46 80, 43 79, 40 83 M50 77 C 54 72, 57 71, 60 75 M67 92 V 68 M67 85 C 63 80, 60 79, 57 83 M67 77 C 71 72, 74 71, 77 75 M84 92 V 68 M84 85 C 80 80, 77 79, 74 83 M84 77 C 88 72, 91 71, 94 75 M16 68 L 13 63 M16 68 V 62 M16 68 L 19 63 M33 68 L 30 63 M33 68 V 62 M33 68 L 36 63 M50 68 L 47 63 M50 68 V 62 M50 68 L 53 63 M67 68 L 64 63 M67 68 V 62 M67 68 L 70 63 M84 68 L 81 63 M84 68 V 62 M84 68 L 87 63"
+              stroke="#000"
+              strokeWidth="7"
+            />
+          </mask>
+        </defs>
+        <g mask={`url(#${id}-cut)`}>
+          <path d="M4 66 H 24 M76 66 H 96" strokeWidth="2.4" />
+          <path d="M26 66 V 32 C 26 28, 38 28, 38 32 C 38 28, 50 28, 50 32 C 50 28, 62 28, 62 32 C 62 28, 74 28, 74 32 V 66" />
+          <path d="M38 66 V 32 M50 66 V 32 M62 66 V 32" strokeWidth="2.4" />
+          <path d="M58 18 L 84 50 V 66" strokeWidth="2.4" />
+        </g>
+        <path d="M42 30 V 12 H 58 V 30" />
+        <path d="M40 13 L 50 6 L 60 13" strokeWidth="2.4" />
+        <rect x="45.5" y="17" width="4" height="5" fill="currentColor" stroke="none" />
+        <path
+          d="M16 92 V 68 M16 85 C 12 80, 9 79, 6 83 M16 77 C 20 72, 23 71, 26 75"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M33 92 V 68 M33 85 C 29 80, 26 79, 23 83 M33 77 C 37 72, 40 71, 43 75"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M50 92 V 68 M50 85 C 46 80, 43 79, 40 83 M50 77 C 54 72, 57 71, 60 75"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M67 92 V 68 M67 85 C 63 80, 60 79, 57 83 M67 77 C 71 72, 74 71, 77 75"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M84 92 V 68 M84 85 C 80 80, 77 79, 74 83 M84 77 C 88 72, 91 71, 94 75"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M16 68 L 13 63 M16 68 V 62 M16 68 L 19 63 M33 68 L 30 63 M33 68 V 62 M33 68 L 36 63 M50 68 L 47 63 M50 68 V 62 M50 68 L 53 63 M67 68 L 64 63 M67 68 V 62 M67 68 L 70 63 M84 68 L 81 63 M84 68 V 62 M84 68 L 87 63"
+          strokeWidth="1.8"
+        />
+        <ellipse
+          cx="36"
+          cy="83"
+          rx="2"
+          ry="4.5"
+          transform="rotate(25 36 83)"
+          fill="currentColor"
+          stroke="none"
+        />
+        <ellipse
+          cx="70"
+          cy="83"
+          rx="2"
+          ry="4.5"
+          transform="rotate(25 70 83)"
+          fill="currentColor"
+          stroke="none"
+        />
+        <path d="M4 92 H 96" />
+      </>
+    ),
+  },
+  // Lancaster County, Pennsylvania, has one of the largest Old Order Amish settlements in the US, and its grey boxy horse-drawn buggies are seen on farm roads across the state's Amish country (Lancaster, Mifflin, Big Valley and other counties).
+  'pennsylvania-amish-buggy': {
+    subject: 'Amish buggy',
+    scopes: ['region:US:Pennsylvania'],
+    ink: [2.8, 20.8, 94.4, 70.4],
+    draw: (id) => (
+      <>
+        <path d="M4 90 H 96" strokeWidth="2.4" />
+        <path d="M22 64 C 18 62, 16 58, 16 54 C 16 49, 16 45, 15 41 C 13 41, 10 44, 8 46 C 7 47, 5.5 46, 6 43.5 L 13 28 L 14 22.5 L 18 27 C 21 32, 24 38, 28 43 C 34 44, 39 44, 43.5 45 C 46.5 46, 47 51, 45.5 57 C 44.5 60, 43 62.5, 40.5 63.5 Z" />
+        <path d="M20 63 L 19 76 L 18 88 M40 62 L 42 74 L 39 88" />
+        <path d="M25 64 L 29 73 L 24 79 M36.5 64 L 35 72 L 32.5 79" />
+        <path d="M46 47 C 49.5 51, 50.5 57, 48 63.5" strokeWidth="2.4" />
+        <circle cx="12.5" cy="32.5" r="1.4" fill="currentColor" stroke="none" />
+        <path d="M28 52 L 56 60" strokeWidth="2.4" />
+        <defs>
+          <mask id={`${id}-cut`}>
+            <rect width="100" height="100" fill="#fff" />
+            <circle cx="82" cy="77" r="12" fill="#000" stroke="#000" strokeWidth="8" />
+          </mask>
+        </defs>
+        <path
+          mask={`url(#${id}-cut)`}
+          d="M56 66 V 30 C 56 27, 58 26, 61 26 H 88 C 91 26, 92 27, 92 30 V 66 Z"
+        />
+        <path d="M62 32 H 78 V 54 H 62 Z" strokeWidth="2.4" />
+        <rect x="81" y="32" width="6" height="8" fill="currentColor" stroke="none" />
+        <circle cx="56" cy="81" r="8" />
+        <path
+          d="M49.5 81 L 62.5 81 M52.75 75.37 L 59.25 86.63 M59.25 75.37 L 52.75 86.63"
+          strokeWidth="1.8"
+        />
+        <circle cx="56" cy="81" r="2.2" fill="currentColor" stroke="none" />
+        <circle cx="82" cy="77" r="12" />
+        <path
+          d="M72.3 73.0 L 91.7 81.0 M78.0 67.3 L 86.0 86.7 M86.0 67.3 L 78.0 86.7 M91.7 73.0 L 72.3 81.0"
+          strokeWidth="1.8"
+        />
+        <circle cx="82" cy="77" r="2.2" fill="currentColor" stroke="none" />
+      </>
+    ),
+  },
+  // The northern cardinal is Virginia's state bird and the flowering dogwood is its state flower (adopted 1918) and state tree; both are found statewide.
+  'virginia-cardinal': {
+    subject: 'Cardinal on dogwood',
+    scopes: ['region:US:Virginia'],
+    ink: [2.8, 13.3, 94.4, 74.7],
+    draw: (id) => (
+      <>
+        <defs>
+          <mask id={`${id}-cut`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M44 27 C 52 32, 58 42, 60 54 L 76 78 C 77 80, 75 82, 73 81 L 54 66 C 46 68, 38 64, 34 56 C 30 50, 28 42, 29 34 L 20 30 L 29 24 C 31 18, 34 13, 39 10 C 39 16, 41 23, 44 27 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="8"
+            />
+          </mask>
+          <mask id={`${id}-bl`}>
+            <rect width="100" height="100" fill="#fff" />
+            <path
+              d="M16.2 51.6 C 12.4 47.2, 16.8 42.8, 20.4 45.6 L 20.7 49.0 L 24.0 48.6 C 27.4 51.7, 23.9 56.7, 18.8 53.8 Z M19.0 55.6 C 23.4 51.8, 27.8 56.2, 25.0 59.8 L 21.6 60.1 L 22.0 63.4 C 18.9 66.8, 13.9 63.3, 16.8 58.2 Z M15.0 58.4 C 18.8 62.8, 14.4 67.2, 10.8 64.4 L 10.5 61.0 L 7.2 61.4 C 3.8 58.3, 7.3 53.3, 12.4 56.2 Z M12.2 54.4 C 7.8 58.2, 3.4 53.8, 6.2 50.2 L 9.6 49.9 L 9.2 46.6 C 12.3 43.2, 17.3 46.7, 14.4 51.8 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="7"
+            />
+            <path
+              d="M80.4 28.5 C 74.4 26.3, 76.1 19.9, 81.0 20.6 L 83.1 23.6 L 86.1 21.4 C 90.9 22.5, 90.3 29.2, 83.9 29.2 Z M85.1 30.8 C 87.3 24.8, 93.7 26.5, 93.0 31.4 L 90.0 33.5 L 92.2 36.5 C 91.1 41.3, 84.4 40.7, 84.4 34.3 Z M82.8 35.5 C 88.8 37.7, 87.1 44.1, 82.2 43.4 L 80.1 40.4 L 77.1 42.6 C 72.3 41.5, 72.9 34.8, 79.3 34.8 Z M78.1 33.2 C 75.9 39.2, 69.5 37.5, 70.2 32.6 L 73.2 30.5 L 71.0 27.5 C 72.1 22.7, 78.8 23.3, 78.8 29.7 Z"
+              fill="#000"
+              stroke="#000"
+              strokeWidth="7"
+            />
+          </mask>
+        </defs>
+        <g transform="translate(0 5)">
+          <g mask={`url(#${id}-bl)`}>
+            <path
+              d="M4 78 C 24 74, 50 74, 70 70 C 80 68, 88 66, 96 62 M24 76 C 22 70, 19.5 62, 15.6 55 M66 71 C 72 60, 76 46, 81.6 32"
+              strokeWidth="2.4"
+              mask={`url(#${id}-cut)`}
+            />
+          </g>
+          <path d="M44 27 C 52 32, 58 42, 60 54 L 76 78 C 77 80, 75 82, 73 81 L 54 66 C 46 68, 38 64, 34 56 C 30 50, 28 42, 29 34 L 20 30 L 29 24 C 31 18, 34 13, 39 10 C 39 16, 41 23, 44 27 Z" />
+          <path d="M44 34 C 49.5 41.5, 53.5 50.5, 55 59" strokeWidth="2.4" />
+          <path d="M48 48 L 52 50 M50 56 L 54 58" strokeWidth="1.8" />
+          <path
+            d="M29 24.5 C 32 25, 34.5 27, 35.5 30.5 C 35.5 34.5, 33 37.5, 30 38.5 C 29.5 36.5, 29 35, 29 34 Z"
+            fill="currentColor"
+            strokeWidth="1.6"
+          />
+          <path d="M41 66 L 40 75 M46 67 L 47 74.5" strokeWidth="1.8" />
+          <path
+            d="M16.2 51.6 C 12.4 47.2, 16.8 42.8, 20.4 45.6 L 20.7 49.0 L 24.0 48.6 C 27.4 51.7, 23.9 56.7, 18.8 53.8 Z M19.0 55.6 C 23.4 51.8, 27.8 56.2, 25.0 59.8 L 21.6 60.1 L 22.0 63.4 C 18.9 66.8, 13.9 63.3, 16.8 58.2 Z M15.0 58.4 C 18.8 62.8, 14.4 67.2, 10.8 64.4 L 10.5 61.0 L 7.2 61.4 C 3.8 58.3, 7.3 53.3, 12.4 56.2 Z M12.2 54.4 C 7.8 58.2, 3.4 53.8, 6.2 50.2 L 9.6 49.9 L 9.2 46.6 C 12.3 43.2, 17.3 46.7, 14.4 51.8 Z"
+            strokeWidth="2.4"
+          />
+          <path
+            d="M80.4 28.5 C 74.4 26.3, 76.1 19.9, 81.0 20.6 L 83.1 23.6 L 86.1 21.4 C 90.9 22.5, 90.3 29.2, 83.9 29.2 Z M85.1 30.8 C 87.3 24.8, 93.7 26.5, 93.0 31.4 L 90.0 33.5 L 92.2 36.5 C 91.1 41.3, 84.4 40.7, 84.4 34.3 Z M82.8 35.5 C 88.8 37.7, 87.1 44.1, 82.2 43.4 L 80.1 40.4 L 77.1 42.6 C 72.3 41.5, 72.9 34.8, 79.3 34.8 Z M78.1 33.2 C 75.9 39.2, 69.5 37.5, 70.2 32.6 L 73.2 30.5 L 71.0 27.5 C 72.1 22.7, 78.8 23.3, 78.8 29.7 Z"
+            strokeWidth="2.4"
+          />
+          <circle cx="15.6" cy="55" r="2.4" fill="currentColor" stroke="none" />
+          <circle cx="81.6" cy="32" r="2.4" fill="currentColor" stroke="none" />
+        </g>
+      </>
+    ),
+  },
 } as const satisfies Record<string, Pictorial>
 
 // The drawings' shared stroke style, set once on the group that holds one.

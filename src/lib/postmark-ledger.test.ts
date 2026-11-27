@@ -319,13 +319,22 @@ void test('isBot knows crawlers from browsers', () => {
     assert.equal(isBot(person), false, person)
 })
 
-void test('a place drawn with a pictorial sends no outline at all', async () => {
+void test('the pile sends an outline only for places whose stamps draw one', async () => {
   const { book } = ledger()
-  await book.stamp(visit({ geo: { city: 'Depok', region: 'West Java', countryCode: 'ID' } }))
+  const depok = { city: 'Depok', region: 'West Java', countryCode: 'ID' }
+  for (const address of ['198.51.100.1', '198.51.100.2', '198.51.100.3', '198.51.100.4'])
+    await book.stamp(visit({ address, geo: depok }))
   const { pile } = await book.look(visit({ address: '198.51.100.9' }))
-  assert.equal(pile.newest.length, 1)
-  assert.notEqual(pile.newest[0]?.deal.pictorial, undefined)
-  assert.deepEqual(pile.outlines, {})
+  const drawn = pile.newest.filter((record) => record.deal.pictorial !== undefined)
+  assert.ok(drawn.length > 0 && drawn.length < pile.newest.length, 'Depok deals both')
+  assert.deepEqual(Object.keys(pile.outlines), ['depok'])
+  const { book: other } = ledger()
+  await other.stamp(visit({ address: '198.51.100.1', geo: depok }))
+  const one = (await other.look(visit({ address: '198.51.100.9' }))).pile
+  assert.deepEqual(
+    Object.keys(one.outlines),
+    one.newest[0]?.deal.pictorial === undefined ? ['depok'] : [],
+  )
 })
 
 void test('an outline that fails to load is tried again later, not settled coarser', async () => {
