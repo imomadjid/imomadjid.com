@@ -62,3 +62,9 @@ function channel<T>() {
 
 export const sceneLight = channel<SceneLight>()
 export const wandPose = channel<WandPose>()
+/**
+ * The plain wall's colour as the renderer paints it under the light (CSS), through theme changes
+ * and the sunrise and sunset glow; null without the renderer, where the wall is `--surface-1`.
+ * What paints in it under the light layer is lit as the wall is, so it reads as a cut to the wall.
+ */
+export const wallColor = channel<string>()

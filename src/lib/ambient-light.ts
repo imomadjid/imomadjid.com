@@ -10,7 +10,7 @@ import { lightFrame, lightOverscan } from './light-frame'
 import { glowBackdrop } from './sunlit-backdrop'
 import { anchorShadow, canopies, sunSource } from './sunlit-geometry'
 import { createGust } from './sunlit-gust'
-import { sceneLight, wandPose } from './sunlit-scene'
+import { sceneLight, wallColor, wandPose } from './sunlit-scene'
 import { watchTilt } from './tilt-sensor'
 
 const FOLIAGE_SIZE = 1024
@@ -58,6 +58,7 @@ export async function startAmbient(
     if (disposed) return
     disposed = true
     sceneLight.set(null)
+    wallColor.set(null)
     backdrop.style.removeProperty('background-color')
     cancelAnimationFrame(frameId)
     for (const cleanup of cleanups.reverse()) cleanup()
@@ -417,6 +418,7 @@ export async function startAmbient(
         blue !== paintedBackdrop[2]
       ) {
         backdrop.style.backgroundColor = `rgb(${red} ${green} ${blue})`
+        wallColor.set(backdrop.style.backgroundColor)
         paintedBackdrop = backdropColor
       }
       try {
