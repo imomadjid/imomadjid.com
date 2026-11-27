@@ -413,7 +413,7 @@ export const pictorials = {
   // Mount Fuji stands on the border of Shizuoka and Yamanashi prefectures. It is Japan's highest peak (3,776 m) and its best-known natural landmark, and visitors from anywhere in Japan recognise it.
   'japan-fuji': {
     subject: 'Mount Fuji',
-    scopes: ['country:JP'],
+    scopes: ['region:JP:Shizuoka', 'region:JP:Yamanashi', 'country:JP'],
     ink: [0.3, 11.3, 99.4, 82.9],
     draw: (_id) => (
       <>
@@ -1438,7 +1438,7 @@ export const pictorials = {
   // Rafflesia arnoldii is one of Indonesia's three national flowers, named puspa langka (the rare flower) by Presidential Decree No. 4 of 1993; it grows in the rainforests of Sumatra (Bengkulu) and Borneo.
   rafflesia: {
     subject: 'Rafflesia',
-    scopes: ['country:ID'],
+    scopes: ['region:ID:Bengkulu', 'country:ID'],
     ink: [8, 8.7, 84, 81.6],
     draw: (_id) => (
       <>
@@ -3947,7 +3947,7 @@ export const pictorials = {
   // The Taj Mahal stands in Agra, Uttar Pradesh, India; it is a UNESCO World Heritage Site and India's best-known building.
   'india-taj-mahal': {
     subject: 'Taj Mahal',
-    scopes: ['country:IN'],
+    scopes: ['region:IN:Uttar Pradesh', 'country:IN'],
     ink: [1.3, 5.3, 97.4, 84.4],
     draw: (_id) => (
       <>
@@ -3982,7 +3982,7 @@ export const pictorials = {
   // Windmills are the Netherlands' best-known national image; the 19 mills at Kinderdijk in South Holland are a UNESCO World Heritage Site.
   'netherlands-windmill': {
     subject: 'Windmill',
-    scopes: ['country:NL'],
+    scopes: ['region:NL:South Holland', 'country:NL'],
     ink: [1.3, 6.4, 97.4, 88.1],
     draw: (id) => (
       <>
@@ -4048,7 +4048,7 @@ export const pictorials = {
   // Mont-Saint-Michel is a tidal island commune in Manche, Normandy, France; it is a UNESCO World Heritage Site and one of France's most-visited landmarks.
   'france-mont-saint-michel': {
     subject: 'Mont-Saint-Michel',
-    scopes: ['country:FR'],
+    scopes: ['region:FR:Normandy', 'country:FR'],
     ink: [1.8, 7.5, 96.4, 87.7],
     draw: (_id) => (
       <>
@@ -4103,7 +4103,7 @@ export const pictorials = {
   // The jeepney grew out of WWII surplus Willys jeeps rebuilt into long-bodied public-transport vehicles. It is the Philippines' most common form of public transport and a widely recognised national cultural symbol ("King of the Road").
   'philippines-jeepney': {
     subject: 'Jeepney',
-    scopes: ['country:PH'],
+    scopes: ['region:PH:Metro Manila', 'country:PH'],
     ink: [0.3, 32.8, 99.4, 54.9],
     draw: (_id) => (
       <>

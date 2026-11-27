@@ -182,7 +182,8 @@ export type BagItem = PictorialKey | typeof mapOutline
  * (4 : 3) rather than each level by its share, so a city with one drawing doesn't repeat it on
  * every other stamp when its region has several, and variety grows with every drawing added. The
  * region's map outline is one of its drawings, as a state's shape is as much a postmark's picture
- * as its bird. The country's drawings are a last resort, for a place Cloudflare knows no region
+ * as its bird. A drawing scoped `region:<code>:*` (a cherry blossom for Japan) is a region drawing
+ * in every region of its country: a motif that belongs anywhere in it, unlike a national emblem. The country's drawings are a last resort, for a place Cloudflare knows no region
  * for: a small town in Illinois gets Illinois, never the bison that stands for all of the US. A
  * drawing scoped to several levels counts at the most specific.
  */
@@ -194,9 +195,12 @@ export function pictorialPool(place: PostmarkPlace): BagItem[] {
   } as const
   const taken = new Set<PictorialKey>()
   const levels = (['city', 'region', 'country'] as const).map((level) => {
-    const keys = pictorialKeys.filter(
-      (key) => !taken.has(key) && scopeSets.get(key)?.has(scopes[level]),
-    )
+    const keys = pictorialKeys.filter((key) => {
+      const scoped = scopeSets.get(key)
+      // `region:<code>:*` is every region of the country: a motif at home anywhere in it.
+      const everywhere = level === 'region' && scoped?.has(`region:${place.countryCode}:*`)
+      return !taken.has(key) && (scoped?.has(scopes[level]) || everywhere)
+    })
     for (const key of keys) taken.add(key)
     // The outline is the region's where there is one, else the country's.
     const outline: BagItem[] = level === (place.region ? 'region' : 'country') ? [mapOutline] : []
