@@ -417,3 +417,43 @@ void test("the browser test's stamps come off the pile once, and only where they
   const kept = await new Ledger(other).look(visit({ address: '192.0.2.1' }))
   assert.equal(kept.pile.newest.length, 52)
 })
+
+void test('a town Cloudflare files under the wrong region is placed in its own', () => {
+  const place = placeFor({ city: 'Pasarkemis', region: 'West Java', countryCode: 'ID' })
+  assert.equal(place?.region, 'Banten')
+  assert.equal(place?.key, 'id-banten-pasarkemis')
+})
+
+void test("stamps saved under a town's wrong region move to its own once, dealt from its bag", async () => {
+  const sql = memory()
+  let queued = 0
+  const book = new Ledger(sql, {
+    queued: () => {
+      queued += 1
+    },
+  })
+  const pasarkemis = visit({ geo: { city: 'Pasarkemis', region: 'West Java', countryCode: 'ID' } })
+  const { visitor } = await book.stamp(pasarkemis)
+  // As it was saved before the fix: under West Java, with a West Java drawing.
+  sql.exec(
+    "UPDATE places SET key = 'id-west-java-pasarkemis', region = 'West Java', outline = 'M9 9Z'",
+  )
+  sql.exec("UPDATE visitors SET place = 'id-west-java-pasarkemis'")
+  const saved = (await book.look({ ...pasarkemis, visitor })).pile.you
+  assert.ok(saved)
+  sql.exec(
+    'UPDATE visitors SET deal = ?',
+    JSON.stringify({ ...saved.deal, pictorial: 'west-java-tea' }),
+  )
+  sql.exec("DELETE FROM meta WHERE key = 'fix:region-fixes-2026-11'")
+  const before = queued
+  const moved = (
+    await new Ledger(sql, { queued: () => (queued += 1) }).look({ ...pasarkemis, visitor })
+  ).pile.you
+  assert.equal(moved?.place.key, 'id-banten-pasarkemis')
+  assert.equal(moved?.place.region, 'Banten')
+  assert.notEqual(moved?.deal.pictorial, 'west-java-tea', 'dealt again from Banten')
+  assert.deepEqual(moved?.deal.design, saved.deal.design, 'its frame stays')
+  assert.equal(moved?.place.outline, placeholderOutline, "until Banten's outline is drawn")
+  assert.equal(queued, before + 1)
+})

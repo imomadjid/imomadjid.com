@@ -128,11 +128,24 @@ const slug = (parts: string[]) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
+// Towns Cloudflare files under the wrong region, by country and its spelling of the town.
+const regionFixes: { countryCode: string; city: string; region: string }[] = [
+  // Pasar Kemis is a district of Tangerang Regency, in Banten; Cloudflare says West Java.
+  { countryCode: 'ID', city: 'Pasarkemis', region: 'Banten' },
+]
+
+const sameName = (a: string, b: string) => slug([a]) === slug([b])
+
+/** The region a town is in, where Cloudflare names the wrong one. */
+const fixedRegion = (city: string | undefined, region: string | undefined, countryCode: string) =>
+  regionFixes.find((fix) => fix.countryCode === countryCode && city && sameName(fix.city, city))
+    ?.region ?? region
+
 /**
  * The place a visitor's stamp names: their city, or their region or country where Cloudflare
  * can't tell the city. None for an address with no country (Tor, or an unknown one).
  */
-export function placeFor({ city, region, countryCode }: Geo): PostmarkPlace | undefined {
+export function placeFor({ city, region: named, countryCode }: Geo): PostmarkPlace | undefined {
   if (!countryCode || !/^[A-Z]{2}$/.test(countryCode) || countryCode === 'XX') return undefined
   let country = countryCode
   try {
@@ -140,6 +153,7 @@ export function placeFor({ city, region, countryCode }: Geo): PostmarkPlace | un
   } catch {
     // An unassigned code keeps its letters.
   }
+  const region = fixedRegion(city, named, countryCode)
   const name = city || region || country
   const known = knownPlaces.find(
     (place) => place.countryCode === countryCode && place.name.toLowerCase() === name.toLowerCase(),
@@ -182,6 +196,10 @@ const pictorialBackfill = 'backfill:outline-pictorials-2026-11'
 // A place's map outline was its own boundary; it is now its region's, one of the region's
 // drawings, so every place's outline is cleared once and drawn again.
 const regionOutlines = 'backfill:region-outlines-2026-11'
+// Moves the stamps of towns `regionFixes` corrects to their real region, once: their place is
+// renamed, its outline redrawn, and each stamp's pictorial dealt again from the right region's
+// bag, as a visitor with its number would be dealt it there, keeping its frame and style.
+const regionFixBackfill = 'fix:region-fixes-2026-11'
 
 // Stamps that weren't visitors' and are taken off the pile, once, as a backfill is run. Each names
 // its place and day as well as its number, so a ledger where those numbers are someone else's
@@ -279,9 +297,52 @@ export class Ledger {
       sql.exec('INSERT INTO meta (key, value) VALUES (?, ?)', regionOutlines, String(now()))
       if (sql.exec('SELECT key FROM outline_queue LIMIT 1').toArray().length > 0) this.#queued()
     }
+    if (
+      sql.exec('SELECT value FROM meta WHERE key = ?', regionFixBackfill).toArray().length === 0
+    ) {
+      this.#moveToFixedRegions()
+      sql.exec('INSERT INTO meta (key, value) VALUES (?, ?)', regionFixBackfill, String(now()))
+    }
     if (sql.exec('SELECT value FROM meta WHERE key = ?', strayStamps.name).toArray().length === 0) {
       this.#removeStrayStamps()
       sql.exec('INSERT INTO meta (key, value) VALUES (?, ?)', strayStamps.name, String(now()))
+    }
+  }
+
+  #moveToFixedRegions() {
+    const places = this.#sql.exec('SELECT key, name, region, country_code FROM places').toArray()
+    for (const row of places) {
+      const [old, name, region, countryCode] = [
+        row.key,
+        row.name,
+        row.region,
+        row.country_code,
+      ].map(text)
+      const fixed = placeFor({ city: name, region, countryCode })
+      if (!fixed || fixed.region === region || fixed.key === old) continue
+      const taken = this.#sql.exec('SELECT key FROM places WHERE key = ?', fixed.key).toArray()
+      if (taken.length > 0) continue
+      this.#sql.exec(
+        "UPDATE places SET key = ?, region = ?, outline = '' WHERE key = ?",
+        fixed.key,
+        fixed.region,
+        old,
+      )
+      this.#sql.exec('UPDATE visitors SET place = ? WHERE place = ?', fixed.key, old)
+      const stamps = this.#sql
+        .exec('SELECT id, ordinal, deal FROM visitors WHERE place = ?', fixed.key)
+        .toArray()
+      for (const stamp of stamps) {
+        const deal: StampRecord['deal'] = JSON.parse(text(stamp.deal))
+        const { pictorial } = dealPostmark(fixed, number(stamp.ordinal), 0)
+        this.#sql.exec(
+          'UPDATE visitors SET deal = ? WHERE id = ?',
+          JSON.stringify({ ...deal, pictorial }),
+          text(stamp.id),
+        )
+      }
+      this.#sql.exec('INSERT OR IGNORE INTO outline_queue (key) VALUES (?)', fixed.key)
+      this.#queued()
     }
   }
 
