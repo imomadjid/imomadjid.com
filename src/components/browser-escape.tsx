@@ -8,6 +8,7 @@ import { normalizeSurfaceLevel, surfaceClasses } from '#/lib/surface-classes'
 import { SurfaceProvider, useSurface } from '#/lib/surface-context'
 import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
+import { webGpuRuns } from '#/lib/webgpu-probe'
 
 // Offers a visitor in a social app's in-app browser the way back to their own browser
 // (#/lib/in-app-browser). Where the app hands the page on by itself (Android's intent, LINE),
@@ -17,9 +18,10 @@ import { cn } from '#/lib/utils'
 // which the postmark ledger's client doesn't count as an action, so a visitor leaving for their
 // browser is stamped there rather than twice.
 //
-// It all waits on WebGPU: where the web view runs it (Instagram's from Stories does), the Gallery's
-// flights and warps play as in a browser and nothing is worth leaving for, so the page stays and
-// says nothing. Only a web view without it (Instagram's from a DM) is redirected or shown the bar.
+// It all waits on WebGPU (#/lib/webgpu-probe): where the web view runs it (Instagram's from
+// Stories does), the Gallery's flights and warps play as in a browser and nothing is worth leaving
+// for, so the page stays and says nothing. Only a web view without it (Instagram's from a DM) is
+// redirected or shown the bar.
 
 const redirectedKey = 'browser-escape:redirected'
 const dismissedKey = 'browser-escape:dismissed'
@@ -49,12 +51,11 @@ function remember(key: string) {
   }
 }
 
+// Set once the page is known to be in an in-app browser without WebGPU, and never changes after.
 let here: Here | undefined
-let read = false
+let asked: Promise<void> | undefined
 
-function readHere() {
-  if (read) return here
-  read = true
+async function ask() {
   const nav: Navigator & { standalone?: boolean } = navigator
   const browser = inAppBrowser({
     userAgent: nav.userAgent,
@@ -62,30 +63,26 @@ function readHere() {
     standalone: nav.standalone === true || matchMedia('(display-mode: standalone)').matches,
     telegramGlobals: 'TelegramWebview' in window || 'TelegramWebviewProxy' in window,
   })
-  if (!browser) return undefined
+  // Only an in-app browser is probed, and only one the visitor hasn't already dismissed the bar in.
+  if (!browser || remembered(dismissedKey) || (await webGpuRuns(nav.gpu))) return
   const page = new URL(location.href)
   const escaped = page.searchParams.has(escapedParam)
   page.searchParams.delete(escapedParam)
   here = { platform: browser.platform, escape: escapeFrom(browser, page.toString()), escaped }
-  return here
 }
 
-// Asked once a load, and only in an in-app browser. No adapter, or a throw, means the Gallery
-// would fall back to its CSS fades.
-let gpuMissing: Promise<boolean> | undefined
-
-function webGpuMissing() {
-  gpuMissing ??= (async () => {
-    try {
-      return !(await navigator.gpu?.requestAdapter({ powerPreference: 'low-power' }))
-    } catch {
-      return true
-    }
-  })()
-  return gpuMissing
+function subscribe(onChange: () => void) {
+  let live = true
+  asked ??= ask()
+  void asked.then(() => {
+    if (live) onChange()
+  })
+  return () => {
+    live = false
+  }
 }
 
-const unchanging = () => () => {}
+const readHere = () => here
 const onServer = () => undefined
 
 /** Takes the escape marker off the address, in whatever browser the page opened in. */
@@ -103,30 +100,17 @@ const actionClass = tw(
 
 export function BrowserEscape() {
   const parentLevel = useSurface()
-  const found = useSyncExternalStore(unchanging, readHere, onServer)
-  // On the server, where there is no storage, this reads as not dismissed; the bar renders
-  // nothing there or while hydrating anyway.
-  const [dismissed, setDismissed] = useState(() => remembered(dismissedKey))
+  const found = useSyncExternalStore(subscribe, readHere, onServer)
+  // Dismissed in an earlier load, the store never finds anything; this is for this one.
+  const [dismissed, setDismissed] = useState(false)
   const [copied, setCopied] = useState(false)
-  // Undefined until WebGPU has been asked about; the bar waits for the answer.
-  const [needed, setNeeded] = useState<boolean>()
 
   useEffect(unmark, [])
 
   useEffect(() => {
-    if (!found) return
-    let live = true
-    void webGpuMissing().then((missing) => {
-      if (!live) return
-      setNeeded(missing)
-      if (!missing || found.escape.kind !== 'redirect' || found.escaped) return
-      if (remembered(redirectedKey)) return
-      remember(redirectedKey)
-      location.href = found.escape.url
-    })
-    return () => {
-      live = false
-    }
+    if (found?.escape.kind !== 'redirect' || found.escaped || remembered(redirectedKey)) return
+    remember(redirectedKey)
+    location.href = found.escape.url
   }, [found])
 
   async function copyLink() {
@@ -138,7 +122,7 @@ export function BrowserEscape() {
     }
   }
 
-  if (!found || !needed || dismissed) return null
+  if (!found || dismissed) return null
   const { escape, platform } = found
   const menu = platform === 'ios' ? '•••' : '⋮'
 
