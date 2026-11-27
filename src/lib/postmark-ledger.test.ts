@@ -303,3 +303,29 @@ void test('an outline that fails to load is tried again later, not settled coars
   const { pile } = await book.look(visit({ visitor }))
   assert.equal(pile.you?.place.outline, 'M2 2Z')
 })
+
+void test('stamps that came before their place was drawn get a pictorial once, keeping their frame', async () => {
+  const sql = memory()
+  const book = new Ledger(sql)
+  const jakarta = visit({ geo: { city: 'Jakarta', region: 'Jakarta', countryCode: 'ID' } })
+  const drawn = (await book.stamp(jakarta)).pile.you
+  await book.stamp(visit({ address: '198.51.100.9' }))
+  assert.ok(drawn?.deal.pictorial)
+  // As the stamp was saved before Jakarta had a drawing, and before this backfill ran.
+  const { pictorial: _, ...bare } = drawn.deal
+  sql.exec('UPDATE visitors SET deal = ? WHERE idx = 0', JSON.stringify(bare))
+  sql.exec("DELETE FROM meta WHERE key LIKE 'backfill:%'")
+
+  const upgraded = (await new Ledger(sql).look({ ...jakarta, address: '192.0.2.1' })).pile.newest
+  assert.deepEqual(
+    upgraded[0]?.deal,
+    drawn.deal,
+    'the pictorial it would be dealt, the rest as it was',
+  )
+  assert.equal(upgraded[1]?.deal.pictorial, undefined, 'Wellington still has no drawing')
+
+  // It runs once: a stamp without a pictorial after it stays as it is.
+  sql.exec('UPDATE visitors SET deal = ? WHERE idx = 0', JSON.stringify(bare))
+  const later = (await new Ledger(sql).look({ ...jakarta, address: '192.0.2.1' })).pile.newest
+  assert.equal(later[0]?.deal.pictorial, undefined)
+})

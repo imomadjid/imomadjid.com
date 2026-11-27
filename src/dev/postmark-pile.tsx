@@ -1,13 +1,11 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 
-import { textLinkClass } from '#/lib/text-link'
 import { tw } from '#/lib/tw'
 import { cn } from '#/lib/utils'
 
 import { Postmark, postmarkSize } from './postmark'
 import { ThanksNote, thanksReach } from './postmark-thanks'
-import { placeholderOutline } from './postmark-visitor-places'
 import { pileLayout, pileSettings } from './postmark-visits'
 import type { StampRecord } from './postmark-visits'
 
@@ -218,16 +216,6 @@ export function PostmarkPile({
   const recent = [...byIndex.values()]
     .filter((record) => record.index >= count - Math.min(5, visitors))
     .sort((a, b) => b.index - a.index)
-  // A stamp without a pictorial draws its place's OpenStreetMap outline, whose licence asks for
-  // a credit wherever one shows.
-  const mapped = spots.some((spot) => {
-    const record = byIndex.get(spot.index)
-    return (
-      record?.deal.pictorial === undefined &&
-      !!record?.place.outline &&
-      record.place.outline !== placeholderOutline
-    )
-  })
 
   return (
     <section
@@ -328,15 +316,6 @@ export function PostmarkPile({
           }}
         />
       </div>
-      {mapped && (
-        <p className="absolute bottom-3 left-4 text-xs text-neutral-500 dark:text-neutral-400">
-          Map outlines ©{' '}
-          <a href="https://www.openstreetmap.org/copyright" className={textLinkClass}>
-            OpenStreetMap
-          </a>{' '}
-          contributors
-        </p>
-      )}
     </section>
   )
 }

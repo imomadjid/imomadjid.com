@@ -1,6 +1,6 @@
 import type { DurableObjectState } from 'cloudflare:workers'
 
-import { pictorialPool } from '#/dev/postmark-deal'
+import { dealPostmark, pictorialPool } from '#/dev/postmark-deal'
 import type { PostmarkPlace } from '#/dev/postmark-kit'
 import { placeholderOutline, visitorPlaces } from '#/dev/postmark-visitor-places'
 import { pileSettings, postmarkDate, stampFor } from '#/dev/postmark-visits'
@@ -196,6 +196,12 @@ const schema = [
   'CREATE TABLE IF NOT EXISTS outline_queue (key TEXT PRIMARY KEY)',
 ]
 
+// Saved stamps are never dealt again, so a drawing added later reaches no one's stamp by itself.
+// A backfill is a deliberate step over the saved records, run once per ledger as it next wakes and
+// remembered in `meta` under its name. This one gives the stamps that showed a map outline,
+// because their place had no drawing when they came, one of the drawings their place has now.
+const pictorialBackfill = 'backfill:outline-pictorials-2026-11'
+
 const stampColumns = `v.idx, v.ordinal, v.day, v.month, v.year, v.deal, v.print,
   p.key, p.name, p.region, p.country, p.country_code, p.outline`
 
@@ -266,6 +272,33 @@ export class Ledger {
     else {
       this.#salt = hex(crypto.getRandomValues(new Uint8Array(16)))
       sql.exec("INSERT INTO meta (key, value) VALUES ('salt', ?)", this.#salt)
+    }
+    if (
+      sql.exec('SELECT value FROM meta WHERE key = ?', pictorialBackfill).toArray().length === 0
+    ) {
+      this.#pictorialsForOutlines()
+      sql.exec('INSERT INTO meta (key, value) VALUES (?, ?)', pictorialBackfill, String(now()))
+    }
+  }
+
+  /**
+   * Gives each stamp drawn with its place's map outline a pictorial where its place now has any:
+   * the one a visitor with its number would be dealt today. Its frame, style and ink stay.
+   */
+  #pictorialsForOutlines() {
+    const rows = this.#sql
+      .exec(`SELECT v.id, ${stampColumns} FROM visitors v JOIN places p ON p.key = v.place`)
+      .toArray()
+    for (const row of rows) {
+      const stamp = toRecord(row)
+      if (stamp.deal.pictorial !== undefined) continue
+      const { pictorial } = dealPostmark(stamp.place, stamp.ordinal, 0)
+      if (pictorial === undefined) continue
+      this.#sql.exec(
+        'UPDATE visitors SET deal = ? WHERE id = ?',
+        JSON.stringify({ ...stamp.deal, pictorial }),
+        text(row.id),
+      )
     }
   }
 
