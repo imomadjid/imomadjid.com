@@ -19,6 +19,7 @@ import { Route as DevLiveGlassRouteImport } from './routes/dev/live-glass'
 import { Route as DevOgRouteImport } from './routes/dev/og'
 import { Route as DevPostmarkFooterRouteImport } from './routes/dev/postmark-footer'
 import { Route as DevPostmarksRouteImport } from './routes/dev/postmarks'
+import { Route as DevSleepRouteImport } from './routes/dev/sleep'
 import { Route as DevStampsRouteImport } from './routes/dev/stamps'
 import { Route as DevStoryRouteImport } from './routes/dev/story'
 import { Route as DevSurfacesRouteImport } from './routes/dev/surfaces'
@@ -73,6 +74,11 @@ const DevPostmarksRoute = DevPostmarksRouteImport.update({
   path: '/postmarks',
   getParentRoute: () => DevRouteRoute,
 } as any)
+const DevSleepRoute = DevSleepRouteImport.update({
+  id: '/sleep',
+  path: '/sleep',
+  getParentRoute: () => DevRouteRoute,
+} as any)
 const DevStampsRoute = DevStampsRouteImport.update({
   id: '/stamps',
   path: '/stamps',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/dev/og': typeof DevOgRoute
   '/dev/postmark-footer': typeof DevPostmarkFooterRoute
   '/dev/postmarks': typeof DevPostmarksRoute
+  '/dev/sleep': typeof DevSleepRoute
   '/dev/stamps': typeof DevStampsRoute
   '/dev/story': typeof DevStoryRoute
   '/dev/surfaces': typeof DevSurfacesRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/dev/og': typeof DevOgRoute
   '/dev/postmark-footer': typeof DevPostmarkFooterRoute
   '/dev/postmarks': typeof DevPostmarksRoute
+  '/dev/sleep': typeof DevSleepRoute
   '/dev/stamps': typeof DevStampsRoute
   '/dev/story': typeof DevStoryRoute
   '/dev/surfaces': typeof DevSurfacesRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/dev/og': typeof DevOgRoute
   '/dev/postmark-footer': typeof DevPostmarkFooterRoute
   '/dev/postmarks': typeof DevPostmarksRoute
+  '/dev/sleep': typeof DevSleepRoute
   '/dev/stamps': typeof DevStampsRoute
   '/dev/story': typeof DevStoryRoute
   '/dev/surfaces': typeof DevSurfacesRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/dev/og'
     | '/dev/postmark-footer'
     | '/dev/postmarks'
+    | '/dev/sleep'
     | '/dev/stamps'
     | '/dev/story'
     | '/dev/surfaces'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/dev/og'
     | '/dev/postmark-footer'
     | '/dev/postmarks'
+    | '/dev/sleep'
     | '/dev/stamps'
     | '/dev/story'
     | '/dev/surfaces'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/dev/og'
     | '/dev/postmark-footer'
     | '/dev/postmarks'
+    | '/dev/sleep'
     | '/dev/stamps'
     | '/dev/story'
     | '/dev/surfaces'
@@ -258,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevPostmarksRouteImport
       parentRoute: typeof DevRouteRoute
     }
+    '/dev/sleep': {
+      id: '/dev/sleep'
+      path: '/sleep'
+      fullPath: '/dev/sleep'
+      preLoaderRoute: typeof DevSleepRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
     '/dev/stamps': {
       id: '/dev/stamps'
       path: '/stamps'
@@ -290,6 +309,7 @@ interface DevRouteRouteChildren {
   DevOgRoute: typeof DevOgRoute
   DevPostmarkFooterRoute: typeof DevPostmarkFooterRoute
   DevPostmarksRoute: typeof DevPostmarksRoute
+  DevSleepRoute: typeof DevSleepRoute
   DevStampsRoute: typeof DevStampsRoute
   DevStoryRoute: typeof DevStoryRoute
   DevSurfacesRoute: typeof DevSurfacesRoute
@@ -304,6 +324,7 @@ const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevOgRoute: DevOgRoute,
   DevPostmarkFooterRoute: DevPostmarkFooterRoute,
   DevPostmarksRoute: DevPostmarksRoute,
+  DevSleepRoute: DevSleepRoute,
   DevStampsRoute: DevStampsRoute,
   DevStoryRoute: DevStoryRoute,
   DevSurfacesRoute: DevSurfacesRoute,

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { lazy, Suspense, useSyncExternalStore } from 'react'
+import { lazy, Suspense } from 'react'
 import type { ReactNode } from 'react'
 
 import { AmbientLight } from '#/components/ambient-light'
@@ -17,7 +17,7 @@ import { recedeClass } from '#/lib/page-recede'
 import { PostmarkStamp } from '#/lib/postmark-client'
 import { projectFile, projectVideo } from '#/lib/project-media'
 import { signatureTiming } from '#/lib/signature-settings'
-import { useSleepFocus as usePhoneSleepFocus } from '#/lib/sleep-focus-client'
+import { useSleepFocus } from '#/lib/sleep-focus-client'
 import { textLinkClass } from '#/lib/text-link'
 import { cn } from '#/lib/utils'
 
@@ -213,26 +213,8 @@ function Section({
   )
 }
 
-const noChanges = () => () => {}
-
-// Sleep Focus: the avatar sleeps while Imo's phone is in its Sleep Focus (src/lib/sleep-focus.ts).
-// With the dev tools, `?sleep` puts it to sleep regardless. The build-time constant keeps hook
-// order stable and leaves the override out of production.
-const useSleepOverride = import.meta.env.DEV_TOOLS
-  ? () =>
-      useSyncExternalStore(
-        noChanges,
-        () => new URLSearchParams(location.search).has('sleep'),
-        () => false,
-      )
-  : () => false
-
-function useSleepFocus() {
-  const forced = useSleepOverride()
-  return usePhoneSleepFocus() || forced
-}
-
 function Home() {
+  // While Imo's phone is in its Sleep Focus (src/lib/sleep-focus.ts); /dev/sleep plays it alone.
   const isSleeping = useSleepFocus()
 
   return (

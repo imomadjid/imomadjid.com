@@ -35,9 +35,7 @@ this file; its output differs from Start's and triggers dev-server reloads.
 
 The Sunlit background's settings are `defaultAmbientSettings` in
 `src/lib/ambient-settings.ts`, and the Gallery's timing is `galleryTuning` in
-`src/lib/gallery-settings.ts`. In the dev server and on dev.imomadjid.com,
-`?sleep` on the homepage turns on the Sleep Focus avatar state; a hook chosen at
-build time by `import.meta.env.DEV_TOOLS` keeps it out of production.
+`src/lib/gallery-settings.ts`.
 
 ### Sleep Focus
 
@@ -45,7 +43,8 @@ The homepage avatar sleeps (Z's float off it) while Imo's iPhone is in its Sleep
 Focus. Two Shortcuts automations report it to `/api/sleep` (`src/lib/sleep-focus.ts`),
 and the page reads `GET /api/sleep` on load, when the tab comes back into view, and
 every minute. A sleep ends by itself after 14 hours, in case the "off" report never
-arrives.
+arrives. `/dev/sleep` plays the Z's on their own, in slow motion and with their
+paths, in the dev server and on dev.imomadjid.com.
 
 Writes need a bearer token, a Worker secret that is unset until you set it:
 
@@ -173,8 +172,8 @@ deployed version. Check `bunx wrangler deployments list` for deployment history.
 
 Pushes to the `dev` branch deploy dev.imomadjid.com, a second Worker
 (`imomadjid-com-dev`) from the `dev` environment in `wrangler.jsonc`. It is a
-production build with the dev tools on: the `/dev` playground, the Sleep Focus
-override (`?sleep`), and `?ambientProfile`. It has its own Sleep Focus state and
+production build with the dev tools on: the `/dev` playground and
+`?ambientProfile`. It has its own Sleep Focus state and
 `SLEEP_TOKEN`. It also answers on its own `workers.dev` subdomain.
 Every page carries a `noindex` robots meta tag, and static files send
 `X-Robots-Tag: noindex`. `robots.txt` still lets crawlers in, because a crawler

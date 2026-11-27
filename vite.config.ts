@@ -60,7 +60,7 @@ const vendoredStyleRules = {
 // `CLOUDFLARE_ENV=dev` builds dev.imomadjid.com from the `dev` environment in wrangler.jsonc.
 const devSite = process.env.CLOUDFLARE_ENV === 'dev'
 
-// Sets import.meta.env.DEV_TOOLS, which turns on the `?sleep` override, renderer profiling, and
+// Sets import.meta.env.DEV_TOOLS, which turns on renderer profiling and
 // the /dev playground in the dev server and on dev.imomadjid.com; production builds drop them.
 // It also keeps the dev site, a copy of production, out of search results. Prerendered pages and
 // other files are served as static assets before the Worker runs, so their header comes from
