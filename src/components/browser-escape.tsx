@@ -16,6 +16,10 @@ import { cn } from '#/lib/utils'
 // redirect too, in case the app ignored it. Its open and copy buttons carry `data-escape-open`,
 // which the postmark ledger's client doesn't count as an action, so a visitor leaving for their
 // browser is stamped there rather than twice.
+//
+// It all waits on WebGPU: where the web view runs it (Instagram's from Stories does), the Gallery's
+// flights and warps play as in a browser and nothing is worth leaving for, so the page stays and
+// says nothing. Only a web view without it (Instagram's from a DM) is redirected or shown the bar.
 
 const redirectedKey = 'browser-escape:redirected'
 const dismissedKey = 'browser-escape:dismissed'
@@ -66,6 +70,21 @@ function readHere() {
   return here
 }
 
+// Asked once a load, and only in an in-app browser. No adapter, or a throw, means the Gallery
+// would fall back to its CSS fades.
+let gpuMissing: Promise<boolean> | undefined
+
+function webGpuMissing() {
+  gpuMissing ??= (async () => {
+    try {
+      return !(await navigator.gpu?.requestAdapter({ powerPreference: 'low-power' }))
+    } catch {
+      return true
+    }
+  })()
+  return gpuMissing
+}
+
 const unchanging = () => () => {}
 const onServer = () => undefined
 
@@ -89,13 +108,25 @@ export function BrowserEscape() {
   // nothing there or while hydrating anyway.
   const [dismissed, setDismissed] = useState(() => remembered(dismissedKey))
   const [copied, setCopied] = useState(false)
+  // Undefined until WebGPU has been asked about; the bar waits for the answer.
+  const [needed, setNeeded] = useState<boolean>()
 
   useEffect(unmark, [])
 
   useEffect(() => {
-    if (found?.escape.kind !== 'redirect' || found.escaped || remembered(redirectedKey)) return
-    remember(redirectedKey)
-    location.href = found.escape.url
+    if (!found) return
+    let live = true
+    void webGpuMissing().then((missing) => {
+      if (!live) return
+      setNeeded(missing)
+      if (!missing || found.escape.kind !== 'redirect' || found.escaped) return
+      if (remembered(redirectedKey)) return
+      remember(redirectedKey)
+      location.href = found.escape.url
+    })
+    return () => {
+      live = false
+    }
   }, [found])
 
   async function copyLink() {
@@ -107,7 +138,7 @@ export function BrowserEscape() {
     }
   }
 
-  if (!found || dismissed) return null
+  if (!found || !needed || dismissed) return null
   const { escape, platform } = found
   const menu = platform === 'ios' ? '•••' : '⋮'
 
