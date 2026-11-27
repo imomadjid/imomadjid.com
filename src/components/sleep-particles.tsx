@@ -5,7 +5,7 @@ import type { RefObject } from 'react'
 
 import { wallColor } from '#/lib/sunlit-scene'
 
-import { breathPeriod, createBreath, flightPose, randomBetween } from './sleep-flight'
+import { createFlight, createStream, emitEvery, flightPose, randomBetween } from './sleep-flight'
 import type { SleepFlight } from './sleep-flight'
 
 // Each Z wears a ring in the wall's colour, so where it crosses the photo it seems to cut the photo
@@ -18,19 +18,20 @@ const ringWidth = 3.5
 // for its whole flight, so two crossing Z's never swap mid-way.
 const inFront = 11
 
-// The photo breathes with the Z's: it swells a touch over the inhale, and the breath's first Z
-// leaves the head as the exhale starts.
+// The photo breathes on its own slow clock, apart from the Z's: it swells a touch over the inhale
+// and settles over the exhale, every 4.8 to 5.8 s.
 const inhale = 1400
 const exhale = 1800
 const swell = 1.02
+const breathPeriod = { min: 4800, max: 5800 }
 
 type Particle = { id: number; flight: SleepFlight }
 
-/** For /dev/sleep: play the Z's and the breathing slower, and hear of each breath's flights. */
+/** For /dev/sleep: play the Z's and the breathing slower, and hear of each Z as it leaves. */
 export type SleepTuning = {
-  /** 1 is real time; 0.25 plays at a quarter speed. It takes effect from the next breath. */
+  /** 1 is real time; 0.25 plays at a quarter speed. Changing it starts the stream afresh. */
   speed?: number
-  onBreath?: (flights: SleepFlight[]) => void
+  onFlight?: (flight: SleepFlight) => void
 }
 
 /** The Z, as SVG text for its round stroke joins: HTML text strokes mitre, spiking the corners. */
@@ -139,12 +140,12 @@ export default function SleepParticles({
   photo: RefObject<HTMLImageElement | null>
   tuning?: SleepTuning
 }) {
-  const { speed = 1, onBreath } = tuning ?? {}
+  const { speed = 1, onFlight } = tuning ?? {}
   const reducedMotion = useReducedMotion() ?? false
   const [particles, setParticles] = useState<Particle[]>([])
   const nextId = useRef(0)
   const ring = useRef<HTMLSpanElement>(null)
-  const breathed = useEffectEvent((flights: SleepFlight[]) => onBreath?.(flights))
+  const flew = useEffectEvent((flight: SleepFlight) => onFlight?.(flight))
 
   // The rings take the wall's colour as the renderer paints it, frame by frame through theme
   // changes and the glow; without the renderer, the wall is the surface colour they fall back to.
@@ -159,48 +160,54 @@ export default function SleepParticles({
     return wallColor.subscribe(paint)
   }, [])
 
-  // Breathing: every breath, the photo swells and an exhale lets out the next Z's.
+  // The stream: one Z leaves the head every 1.6 to 1.9 s along this sleep's one path.
+  useEffect(() => {
+    if (!isSleeping || reducedMotion) return
+    const stream = createStream()
+    let timer: ReturnType<typeof setTimeout>
+    const emit = () => {
+      // A hidden tab lets none out, so it doesn't come back to a pile of them.
+      if (document.visibilityState === 'visible') {
+        const flight = createFlight(stream, performance.now())
+        flight.duration /= speed
+        const particle = { id: ++nextId.current, flight }
+        setParticles((list) => [...list, particle])
+        flew(flight)
+      }
+      timer = setTimeout(emit, randomBetween(emitEvery.min, emitEvery.max) / speed)
+    }
+    timer = setTimeout(emit, 300 / speed)
+    // On waking, the Z's already out float on and fade.
+    return () => clearTimeout(timer)
+  }, [isSleeping, reducedMotion, speed])
+
+  // Breathing: the photo swells and settles, on its own clock.
   useEffect(() => {
     if (!isSleeping || reducedMotion) return
     const image = photo.current
+    if (!image) return
     let timer: ReturnType<typeof setTimeout>
     let breathing: AnimationPlaybackControls | undefined
     const breathe = () => {
-      // A hidden tab skips its breaths, so it doesn't come back to a pile of them.
       if (document.visibilityState === 'visible') {
-        // The breath's times count from its first Z leaving, at the end of the inhale.
-        const now = performance.now()
-        const flights = createBreath(0).map((flight) => ({
-          ...flight,
-          start: now + (inhale + flight.start) / speed,
-          duration: flight.duration / speed,
-        }))
-        const added = flights.map((flight) => ({ id: ++nextId.current, flight }))
-        setParticles((list) => [...list, ...added])
-        breathed(flights)
-        if (image) {
-          breathing?.stop()
-          breathing = animate(
-            image,
-            { scale: [null, swell, 1] },
-            {
-              duration: (inhale + exhale) / 1000 / speed,
-              times: [0, inhale / (inhale + exhale), 1],
-              ease: ['easeInOut', 'easeOut'],
-            },
-          )
-        }
+        breathing?.stop()
+        breathing = animate(
+          image,
+          { scale: [null, swell, 1] },
+          {
+            duration: (inhale + exhale) / 1000 / speed,
+            times: [0, inhale / (inhale + exhale), 1],
+            ease: ['easeInOut', 'easeOut'],
+          },
+        )
       }
       timer = setTimeout(breathe, randomBetween(breathPeriod.min, breathPeriod.max) / speed)
     }
-    timer = setTimeout(breathe, 300 / speed)
+    timer = setTimeout(breathe, randomBetween(0, breathPeriod.min) / speed)
     return () => {
       clearTimeout(timer)
       breathing?.stop()
-      if (image) animate(image, { scale: 1 }, { duration: 0.6, ease: 'easeOut' })
-      // On waking, Z's already out float on and dissolve; those still to leave stay in.
-      const now = performance.now()
-      setParticles((list) => list.filter((particle) => particle.flight.start <= now))
+      animate(image, { scale: 1 }, { duration: 0.6, ease: 'easeOut' })
     }
   }, [isSleeping, reducedMotion, photo, speed])
 
