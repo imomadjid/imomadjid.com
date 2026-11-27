@@ -4,6 +4,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
+import { BrowserEscape } from '#/components/browser-escape'
 import { overlayLayerId } from '#/lib/dialog-layer'
 import { ShapeProvider } from '#/lib/shape-context'
 import { startSounds } from '#/lib/sound'
@@ -70,7 +71,10 @@ function RootDocument({ children }: { children: ReactNode }) {
         <div id={overlayLayerId} className="contents" />
         {/* Site-wide FF corner style. */}
         <ShapeProvider defaultShape="pill">
-          <SurfaceProvider value={1}>{children}</SurfaceProvider>
+          <SurfaceProvider value={1}>
+            {children}
+            <BrowserEscape />
+          </SurfaceProvider>
         </ShapeProvider>
         <TanStackDevtools
           config={{ position: 'bottom-right' }}

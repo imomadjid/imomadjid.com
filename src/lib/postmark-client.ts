@@ -62,6 +62,8 @@ function stopListening() {
 
 function stampOnAction(event: Event) {
   if (!event.isTrusted || stamping || performance.now() < retryAt) return
+  // Leaving an app's in-app browser for their own (BrowserEscape): they're stamped there instead.
+  if (event.target instanceof Element && event.target.closest('[data-escape-open]')) return
   stamping = true
   void ask('POST')
     .then((found) => {
