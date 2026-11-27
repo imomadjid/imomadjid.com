@@ -1,114 +1,105 @@
 import { smoothStep } from '#/lib/ambient-transition'
 
+// The sleep Z's, breath by breath. Each exhale lets out two or three Z's, a few hundred ms apart,
+// along one heading up and to the right of the head. Each floats out quickly, slows as it rises,
+// sways a little, leaning into its drift as a leaf does, grows as it goes, and dissolves near the
+// top. The first of a breath floats farthest, so a breath settles into the classic "zzZ": small
+// by the head, larger away from it. Positions are px from the avatar's centre, y down.
+
 export function randomBetween(min: number, max: number) {
   return min + Math.random() * (max - min)
 }
 
-function bezier(t: number, start: number, first: number, second: number, end: number) {
-  const remaining = 1 - t
-  return (
-    remaining ** 3 * start +
-    3 * remaining ** 2 * t * first +
-    3 * remaining * t ** 2 * second +
-    t ** 3 * end
-  )
+export type SleepFlight = {
+  /** When it leaves the head (performance.now() ms) and how long it floats. */
+  start: number
+  duration: number
+  originX: number
+  originY: number
+  /** Degrees right of straight up. */
+  heading: number
+  /** How far it floats along its heading. */
+  distance: number
+  size: number
+  /** Sideways sway, px either way (its sign sets which way it starts), and how many swings. */
+  sway: number
+  swayCycles: number
+  /** Its resting lean, degrees. */
+  tilt: number
 }
 
-export function createFlight(start: number) {
-  return {
-    start,
-    duration: randomBetween(4800, 5800),
-    startX: randomBetween(5, 10),
-    startY: randomBetween(-13, -8),
-    crestX: randomBetween(28, 32),
-    crestY: randomBetween(-32, -28),
-    size: randomBetween(0.9, 1.05),
-    tilt: randomBetween(-12, 8),
-    sway: randomBetween(-4, 4),
-  }
+/** The breath's rhythm: a breath every 4.8 to 5.8 s, slower than waking breath. */
+export const breathPeriod = { min: 4800, max: 5800 }
+
+/** One exhale's Z's, the first leaving at `start`. */
+export function createBreath(start: number): SleepFlight[] {
+  const count = Math.random() < 0.25 ? 2 : 3
+  const heading = randomBetween(18, 50)
+  const originX = randomBetween(7, 10)
+  const originY = randomBetween(-12, -9)
+  // Where the nearest comes to rest, clear of the photo, and the gap between their resting
+  // places, a little more than a Z is wide at its largest.
+  const nearest = randomBetween(22, 28)
+  const spacing = randomBetween(16.5, 19)
+  // One breath is one puff of air: its Z's sway the same way, at about the same pace.
+  const swaySide = Math.random() < 0.5 ? -1 : 1
+  const swayCycles = randomBetween(0.75, 1.25)
+  let leaves = start
+  return Array.from({ length: count }, (_, index) => {
+    if (index) leaves += randomBetween(650, 800)
+    return {
+      start: leaves,
+      duration: randomBetween(4200, 5000),
+      originX: originX + randomBetween(-1, 1),
+      originY: originY + randomBetween(-1, 1),
+      heading: heading + randomBetween(-2.5, 2.5),
+      distance: nearest + (count - 1 - index) * spacing + randomBetween(-0.5, 0.5),
+      size: randomBetween(0.94, 1.02),
+      sway: randomBetween(2.5, 4.5) * swaySide,
+      swayCycles: swayCycles + randomBetween(-0.08, 0.08),
+      tilt: randomBetween(-6, 10),
+    }
+  })
 }
 
-export type SleepFlight = ReturnType<typeof createFlight>
+// Along its heading it covers most of its way quickly out of the head, then keeps creeping, so it
+// never stops dead. Normalised to cover `distance` at the end.
+const travelOf = (progress: number) => 0.88 * (1 - (1 - progress) ** 2.4) + 0.12 * progress
+const travelRateOf = (progress: number) => 0.88 * 2.4 * (1 - progress) ** 1.4 + 0.12
+
+/** The most it leans into its sway, degrees, approached softly. */
+export const maxBank = 14
 
 export function flightPose(flight: SleepFlight, progress: number) {
-  const { startX, startY, crestX, crestY, size, tilt, sway } = flight
-  const rising = progress < 0.55
-  const t = rising ? progress / 0.55 : (progress - 0.55) / 0.45
-  const x = rising
-    ? bezier(t, startX, startX - 3, crestX - 9, crestX)
-    : bezier(t, crestX, crestX + 9 * (0.45 / 0.55), 18, 8)
-  const y = rising
-    ? bezier(t, startY, startY - 12, crestY - 4, crestY)
-    : bezier(t, crestY, crestY + 4 * (0.45 / 0.55), 8, -6)
-  const drift = sway * Math.sin(Math.PI * progress) ** 2 * Math.sin(2 * Math.PI * progress)
-  const emerge = smoothStep(progress / 0.24)
-  const retreat = smoothStep((progress - 0.55) / 0.45)
-  const fade = smoothStep((progress - 0.72) / 0.28)
+  const { originX, originY, heading, distance, size, sway, swayCycles, tilt } = flight
+  const angle = (heading * Math.PI) / 180
+  const along = distance * travelOf(progress)
+  // The sway grows in as it leaves the head.
+  // A shorter flight sways less, in proportion, so the nearest Z doesn't wander more than it rises.
+  const reach = sway * Math.min(1, distance / 50) * smoothStep(progress / 0.35)
+  const phase = 2 * Math.PI * swayCycles * progress
+  const aside = reach * Math.sin(phase)
+  const x = originX + Math.sin(angle) * along + Math.cos(angle) * aside
+  const y = originY - Math.cos(angle) * along + Math.sin(angle) * aside
+
+  // Lean into the sideways drift, by half the angle of its way, eased into the limit so it never
+  // pins there and flips.
+  const asideRate = reach * 2 * Math.PI * swayCycles * Math.cos(phase)
+  const drift = (Math.atan2(asideRate, distance * travelRateOf(progress)) * 180) / Math.PI
+  const rotation = tilt + 0.25 * heading + maxBank * Math.tanh((0.5 * drift) / maxBank)
+
+  const emerge = smoothStep(progress / 0.18)
+  const dissolve = smoothStep((progress - 0.62) / 0.38)
+  const blur = 4 * (1 - emerge) + 3 * dissolve
   return {
-    x: x + drift,
+    x,
     y,
-    scale: (0.25 + 0.75 * emerge) * size * (1 - 0.35 * retreat),
-    rotation: tilt + 12 * Math.sin(Math.PI * progress),
-    opacity: smoothStep(progress / 0.16) * (1 - fade),
-    blur: 4 * (1 - emerge) + 4 * fade,
+    rotation,
+    // It grows with how far it has floated, so the farthest of a breath is the largest: zzZ.
+    scale: size * (0.3 + 0.7 * emerge) * (0.7 + 0.5 * Math.min(1, along / 60)),
+    opacity: smoothStep(progress / 0.14) * (1 - dissolve),
+    blur,
+    /** How much of its ring shows: none while it's out of focus, so a blurred ring isn't a haze. */
+    ring: Math.max(0, Math.min(1, 1 - blur / 2.5)),
   }
-}
-
-// Approximate the glyph with a rotated 16px square. Sample only
-// shared visible space, so letters returning under the photo do not block spawns.
-function footprint(flight: SleepFlight, time: number) {
-  const progress = (time - flight.start) / flight.duration
-  if (progress < 0 || progress > 1) return null
-  const pose = flightPose(flight, progress)
-  if (pose.opacity < 0.25) return null
-  const angle = (pose.rotation * Math.PI) / 180
-  const half = 8 * pose.scale * (Math.abs(Math.cos(angle)) + Math.abs(Math.sin(angle)))
-  return { ...pose, half, behind: progress >= 0.55 }
-}
-
-export function flightsConflict(candidate: SleepFlight, other: SleepFlight) {
-  const start = Math.max(candidate.start, other.start)
-  const end = Math.min(candidate.start + candidate.duration, other.start + other.duration)
-  let overlapSince: number | undefined
-  for (let time = start; time <= end; time += 50) {
-    const a = footprint(candidate, time)
-    const b = footprint(other, time)
-    let area = 0
-    if (a && b) {
-      const left = Math.max(a.x - a.half, b.x - b.half)
-      const right = Math.min(a.x + a.half, b.x + b.half)
-      const top = Math.max(a.y - a.half, b.y - b.half)
-      const bottom = Math.min(a.y + a.half, b.y + b.half)
-      // A 2px grid removes the part of the overlap covered by the photo.
-      for (let x = left + 1; x < right; x += 2) {
-        for (let y = top + 1; y < bottom; y += 2) {
-          if (!(a.behind || b.behind) || Math.hypot(x, y) > 24) area += 4
-        }
-      }
-      if (area > 0.2 * (2 * Math.min(a.half, b.half)) ** 2) {
-        overlapSince ??= time
-        if (time - overlapSince >= 100) return true
-        continue
-      }
-    }
-    overlapSince = undefined
-  }
-  return false
-}
-
-export function reserveFlight(flights: Map<number, SleepFlight>, slot: number, earliest: number) {
-  flights.delete(slot)
-  const others = [...flights.values()]
-  // Try different curves first, then small delays. The last attempt starts
-  // after all reservations end, which guarantees a bounded search.
-  const latestEnd = Math.max(earliest, ...others.map((flight) => flight.start + flight.duration))
-  for (let attempt = 0; attempt <= 24; attempt++) {
-    const start = attempt === 24 ? latestEnd : earliest + Math.floor(attempt / 4) * 180
-    const candidate = createFlight(start)
-    if (!others.some((other) => flightsConflict(candidate, other))) {
-      flights.set(slot, candidate)
-      return candidate
-    }
-  }
-  throw new Error('A non-overlapping sleep flight must be available after the last reservation')
 }
