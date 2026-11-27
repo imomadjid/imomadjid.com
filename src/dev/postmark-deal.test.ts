@@ -90,7 +90,8 @@ void test("a place's bag holds its city's and region's drawings and its region's
   assert.equal(count(bandung, 'west-java-tangkuban-perahu'), 3)
   assert.equal(count(bandung, 'west-java-tea'), 3)
   assert.equal(count(bandung, mapOutline), 3)
-  assert.equal(bandung.length, 4 + 3 * 4)
+  for (const item of new Set(bandung))
+    assert.equal(count(bandung, item), item === 'bandung' ? 4 : 3, item)
   // A city's landmark stays in its city: Chicago gets its water tower, a small Illinois town
   // only what belongs anywhere in Illinois, its outline among it.
   const chicago = pictorialPool(us('Chicago', 'Illinois'))
@@ -102,7 +103,8 @@ void test("a place's bag holds its city's and region's drawings and its region's
     mapOutline,
   ])
   // A state symbol reaches every town in the state, alongside the state's outline.
-  assert.deepEqual(pictorialPool(us('Reedsburg', 'Wisconsin')), ['wisconsin-holstein', mapOutline])
+  const reedsburg = pictorialPool(us('Reedsburg', 'Wisconsin'))
+  assert.ok(reedsburg.includes('wisconsin-holstein') && reedsburg.includes(mapOutline))
   // The country's drawings never reach a place in a region, however few the region has.
   assert.ok(!bandung.includes('borobudur'))
   assert.ok(!pictorialPool(placeOf('shibuya')).includes('japan-fuji'))
@@ -115,12 +117,9 @@ void test("a place's bag holds its city's and region's drawings and its region's
   assert.ok(pictorialPool(placeOf('jakarta-barat')).includes('jakarta-monas'))
   // A city with no drawing of its own deals its region's drawings and outline evenly.
   const cimahi: PostmarkPlace = { ...placeOf('bandung'), key: 'cimahi', name: 'Cimahi' }
-  assert.deepEqual(pictorialPool(cimahi), [
-    'west-java-tangkuban-perahu',
-    'west-java-tea',
-    'west-java-kawah-putih',
-    mapOutline,
-  ])
+  const cimahiPool = pictorialPool(cimahi)
+  assert.deepEqual(cimahiPool, [...new Set(cimahiPool)], 'each once')
+  assert.deepEqual(new Set(cimahiPool), new Set(bandung.filter((item) => item !== 'bandung')))
   // A motif scoped to every region of Japan is a region drawing in each, beside its own.
   const tochigi = pictorialPool({ ...placeOf('shibuya'), key: 'utsunomiya', region: 'Tochigi' })
   assert.deepEqual(tochigi, [

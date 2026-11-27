@@ -15,34 +15,34 @@ Each line is one drawing, under the scope it goes in (`region:US:California`, as
 
 **Breadth, one per state:**
 
-| State         | Subject                                                                                                          | State          | Subject                                                               |
-| ------------- | ---------------------------------------------------------------------------------------------------------------- | -------------- | --------------------------------------------------------------------- |
-| Alabama       | Saturn V rocket, Huntsville _(have)_                                                                             | Montana        | Mountain goat, Glacier _(have)_                                       |
-| Alaska        | Denali _(have)_                                                                                                  | Nebraska       | Chimney Rock _(have)_                                                 |
-| Arizona       | Saguaro _(have)_                                                                                                 | Nevada         | Hoover Dam (also Arizona) _(have)_                                    |
-| Arkansas      | The Old Mill, North Little Rock _(have)_                                                                         | New Hampshire  | Mount Washington and its cog railway _(have)_                         |
-| California    | Half Dome _(have)_                                                                                               | New Jersey     | Lucy the Elephant, Margate _(have)_                                   |
-| Colorado      | Maroon Bells _(have)_                                                                                            | New Mexico     | Balloons over the Sandias _(have)_                                    |
-| Connecticut   | Charles W. Morgan whaleship, Mystic _(have)_                                                                     | New York       | Statue of Liberty _(have, New York City)_; Niagara Falls _(have)_     |
-| Delaware      | Breakwater East End Lighthouse, Lewes _(have)_                                                                   | North Carolina | Wright Flyer, Kitty Hawk _(have)_                                     |
-| D.C.          | Capitol dome _(have)_                                                                                            | North Dakota   | Badlands buttes _(have)_                                              |
-| Florida       | Alligator in the Everglades _(have)_                                                                             | Ohio           | Buckeye nut and leaf _(have)_                                         |
-| Georgia       | Peach, cut to show its stone _(have)_                                                                            | Oklahoma       | Scissor-tailed flycatcher _(have)_                                    |
-| Hawaii        | Diamond Head _(have)_                                                                                            | Oregon         | Crater Lake and Wizard Island _(have)_                                |
-| Idaho         | Shoshone Falls _(have)_                                                                                          | Pennsylvania   | Liberty Bell _(have, Philadelphia)_; Amish buggy _(have)_             |
-| Illinois      | Chicago Water Tower _(have, Chicago)_; white oak in big bluestem _(have)_; cornfield and grain elevator _(have)_ | Rhode Island   | Rhode Island Red hen _(have)_                                         |
-| Indiana       | Covered bridge, Parke County _(have)_                                                                            | South Carolina | Angel Oak _(have)_                                                    |
-| Iowa          | The American Gothic house, Eldon _(have)_                                                                        | South Dakota   | Corn Palace, Mitchell _(have)_                                        |
-| Kansas        | Sunflower _(have)_                                                                                               | Tennessee      | Parthenon, Nashville _(have)_                                         |
-| Kentucky      | Thoroughbred horse _(have)_                                                                                      | Texas          | The Alamo _(have, San Antonio)_; longhorn in the bluebonnets _(have)_ |
-| Louisiana     | Brown pelican _(have)_                                                                                           | Utah           | Delicate Arch _(have)_                                                |
-| Maine         | Portland Head Light _(have)_                                                                                     | Vermont        | Sugar maple with a sap bucket _(have)_                                |
-| Maryland      | Blue crab _(have)_                                                                                               | Virginia       | Monticello _(have, Charlottesville)_; cardinal on dogwood _(have)_    |
-| Massachusetts | Old North Church steeple _(have)_                                                                                | Washington     | Mount Rainier _(have)_                                                |
-| Michigan      | Mackinac Bridge _(have)_                                                                                         | West Virginia  | New River Gorge Bridge _(have)_                                       |
-| Minnesota     | Common loon _(have)_                                                                                             | Wisconsin      | Holstein cow _(have)_                                                 |
-| Mississippi   | Magnolia blossom _(have)_                                                                                        | Wyoming        | Old Faithful _(have)_                                                 |
-| Missouri      | Gateway Arch _(have)_                                                                                            |                |                                                                       |
+| State         | Subject                                                                                                          | State          | Subject                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| Alabama       | Saturn V rocket, Huntsville _(have)_                                                                             | Montana        | Mountain goat, Glacier _(have)_                                                                   |
+| Alaska        | Denali _(have)_                                                                                                  | Nebraska       | Chimney Rock _(have)_                                                                             |
+| Arizona       | Saguaro _(have)_                                                                                                 | Nevada         | Hoover Dam (also Arizona) _(have)_                                                                |
+| Arkansas      | The Old Mill, North Little Rock _(have)_                                                                         | New Hampshire  | Mount Washington and its cog railway _(have)_                                                     |
+| California    | Half Dome _(have)_                                                                                               | New Jersey     | Lucy the Elephant, Margate _(have)_                                                               |
+| Colorado      | Maroon Bells _(have)_                                                                                            | New Mexico     | Balloons over the Sandias _(have)_                                                                |
+| Connecticut   | Charles W. Morgan whaleship, Mystic _(have)_                                                                     | New York       | Statue of Liberty _(have, New York City)_; Niagara Falls _(have)_                                 |
+| Delaware      | Breakwater East End Lighthouse, Lewes _(have)_                                                                   | North Carolina | Wright Flyer, Kitty Hawk _(have)_                                                                 |
+| D.C.          | Capitol dome _(have)_                                                                                            | North Dakota   | Badlands buttes _(have)_                                                                          |
+| Florida       | Alligator in the Everglades _(have)_                                                                             | Ohio           | Buckeye nut and leaf _(have)_                                                                     |
+| Georgia       | Peach, cut to show its stone _(have)_                                                                            | Oklahoma       | Scissor-tailed flycatcher _(have)_                                                                |
+| Hawaii        | Diamond Head _(have)_                                                                                            | Oregon         | Crater Lake and Wizard Island _(have)_                                                            |
+| Idaho         | Shoshone Falls _(have)_                                                                                          | Pennsylvania   | Liberty Bell _(have, Philadelphia)_; Amish buggy _(have)_; ruffed grouse _(have)_                 |
+| Illinois      | Chicago Water Tower _(have, Chicago)_; white oak in big bluestem _(have)_; cornfield and grain elevator _(have)_ | Rhode Island   | Rhode Island Red hen _(have)_                                                                     |
+| Indiana       | Covered bridge, Parke County _(have)_                                                                            | South Carolina | Angel Oak _(have)_                                                                                |
+| Iowa          | The American Gothic house, Eldon _(have)_                                                                        | South Dakota   | Corn Palace, Mitchell _(have)_                                                                    |
+| Kansas        | Sunflower _(have)_                                                                                               | Tennessee      | Parthenon, Nashville _(have)_                                                                     |
+| Kentucky      | Thoroughbred horse _(have)_                                                                                      | Texas          | The Alamo _(have, San Antonio)_; longhorn in the bluebonnets _(have)_                             |
+| Louisiana     | Brown pelican _(have)_                                                                                           | Utah           | Delicate Arch _(have)_                                                                            |
+| Maine         | Portland Head Light _(have)_                                                                                     | Vermont        | Sugar maple with a sap bucket _(have)_                                                            |
+| Maryland      | Blue crab _(have)_                                                                                               | Virginia       | Monticello _(have, Charlottesville)_; cardinal on dogwood _(have)_; Blue Ridge Mountains _(have)_ |
+| Massachusetts | Old North Church steeple _(have)_                                                                                | Washington     | Mount Rainier _(have)_                                                                            |
+| Michigan      | Mackinac Bridge _(have)_                                                                                         | West Virginia  | New River Gorge Bridge _(have)_                                                                   |
+| Minnesota     | Common loon _(have)_                                                                                             | Wisconsin      | Holstein cow _(have)_; badger _(have)_                                                            |
+| Mississippi   | Magnolia blossom _(have)_                                                                                        | Wyoming        | Old Faithful _(have)_                                                                             |
+| Missouri      | Gateway Arch _(have)_                                                                                            |                |                                                                                                   |
 
 **Depth, first:**
 
@@ -58,11 +58,11 @@ Each line is one drawing, under the scope it goes in (`region:US:California`, as
 
 **Breadth, first wave** (the six provinces on Java, then Bali, North Sumatra and South Sulawesi):
 
-- **Jakarta:** Museum Fatahillah _(have, West Jakarta)_; Monas _(have)_; Istiqlal Mosque _(have)_; ondel-ondel _(have)_; bajaj _(have)_.
-- **West Java:** Gedung Sate _(have, Bandung)_; Tangkuban Perahu crater _(have)_; tea hills _(have)_; Kawah Putih _(have)_.
+- **Jakarta:** Museum Fatahillah _(have, West Jakarta)_; Monas _(have)_; Istiqlal Mosque _(have)_; ondel-ondel _(have)_; bajaj _(have)_; Brahminy kite (elang bondol) _(have)_; salak condet _(have)_.
+- **West Java:** Gedung Sate _(have, Bandung)_; Tangkuban Perahu crater _(have)_; tea hills _(have)_; Kawah Putih _(have)_; Javan hawk-eagle _(have)_; saung in the paddies _(have)_.
   - **Depok** (`city:depok`): starfruit cross-section _(have)_; Masjid Kubah Emas _(have)_; UI Central Library.
   - **Bandung** (`city:bandung`): Gedung Merdeka; Pasupati bridge.
-- **Banten:** Masjid Agung Banten _(have, Serang)_; Javan rhino, Ujung Kulon _(have)_; Anyer lighthouse _(have, Serang)_.
+- **Banten:** Masjid Agung Banten _(have, Serang)_; Javan rhino, Ujung Kulon _(have)_; Anyer lighthouse _(have, Serang)_; rampak bedug _(have)_.
 - **Central Java:** Borobudur _(have)_; Lawang Sewu _(have, Semarang)_; gunungan _(have)_.
 - **Yogyakarta:** Tugu before Merapi _(have)_; Prambanan _(have)_; Taman Sari; Kraton pavilion.
 - **East Java:** Mount Bromo _(have)_; Suramadu bridge _(have, Surabaya)_; Tugu Pahlawan _(have, Surabaya)_; reog Ponorogo _(have)_; karapan sapi _(have)_.
@@ -93,6 +93,6 @@ Country drawings first, then the regions that send visitors.
 
 ## Not on the list
 
-Tried and dropped, because they don't read at 64 px: the wayang golek rod puppet (thirteen rounds; its carved head and kain read as a generic doll), Camel Rock in Garden of the Gods (reads as a domed building or an igloo), the starfruit on the branch (without its cut star, a side-view starfruit reads as a bell pepper or okra) Lombard Street from above (its switchbacks in plan read as a coil spring), and the angklung (in front view its tubes and cut tongues read as bottles, chess pawns or fingers).
+Tried and dropped, because they don't read at 64 px: Zion Canyon (fifteen compositions; its walls read as generic cliffs), the outrigger on the Carita coast (the jukung's floats and booms don't read), the wayang golek rod puppet (thirteen rounds; its carved head and kain read as a generic doll), Camel Rock in Garden of the Gods (reads as a domed building or an igloo), the starfruit on the branch (without its cut star, a side-view starfruit reads as a bell pepper or okra) Lombard Street from above (its switchbacks in plan read as a coil spring), and the angklung (in front view its tubes and cut tongues read as bottles, chess pawns or fingers).
 
 Left out under the style guide's never-draw rules: the Sydney Opera House, Marina Bay Sands, the Petronas Towers, Tokyo Tower, Tokyo Skytree, the Space Needle, the Empire State Building, the Hollywood sign, Churchill Downs' twin spires, Cloud Gate, the Transamerica Pyramid, the K6 phone box, the Shinkansen, the Merlion and Thorncrown Chapel (protected designs); Uluru and Taos Pueblo (their peoples restrict images of them); the Eiffel Tower lit at night; torii gates and the lotus (religious symbols); the Garuda and the maple leaf (national emblems).
