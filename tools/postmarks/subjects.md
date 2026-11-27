@@ -4,7 +4,8 @@ The plan for `src/dev/postmark-pictorials.tsx`, region first. Cloudflare places 
 
 1. **Breadth:** one drawing for every region of a country we cover, so no visitor from it falls back to the country's drawings.
 2. **Depth:** three or four for the regions that send visitors, with city drawings on top only for cities that send many.
-3. **Country drawings** stand in for a region not drawn yet, and only there: a region with a drawing of its own never deals its country's, so depth comes from more drawings of the region, not the country.
+3. **Country drawings** stand in only for a visitor whose region Cloudflare doesn't know: every region deals its own map outline among its drawings, so depth comes from more drawings of the region, not the country.
+4. **City landmarks** go under their city, not the state: a state's own line needs subjects that belong anywhere in it (its landscape, wildlife, crops, symbols), since its towns see nothing else.
 
 Each line is one drawing, under the scope it goes in (`region:US:California`, as Cloudflare names the region). A drawing that also stands for its country lists both scopes. Every subject still needs its "why it belongs" line checked when it's drawn (`pictorial-style.md`), and two drawings of one subject must be different compositions. _(have)_ marks drawings that exist.
 

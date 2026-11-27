@@ -197,7 +197,53 @@ void test("a place nobody has drawn gets its map outline once, after the answer;
     }),
   )
   await book.drawOutlines()
-  assert.equal(outlines.length, 1, 'Depok has its drawings')
+  assert.equal(outlines.length, 1, "Depok, a prototype place, carries its region's outline")
+})
+
+void test("every place in a region shares the region's outline, fetched once", async () => {
+  const { book, outlines } = ledger()
+  await book.stamp(visit())
+  await book.drawOutlines()
+  const lowerHutt = visit({
+    address: '198.51.100.9',
+    geo: { city: 'Lower Hutt', region: 'Wellington Region', countryCode: 'NZ' },
+  })
+  const { visitor } = await book.stamp(lowerHutt)
+  await book.drawOutlines()
+  assert.deepEqual(outlines, ['nz-wellington-region-wellington'])
+  const { pile } = await book.look({ ...lowerHutt, visitor })
+  assert.equal(pile.you?.place.outline, 'M0 0L100 0L100 100Z')
+})
+
+void test("places drawn with their own boundary are redrawn with their region's, once", async () => {
+  const sql = memory()
+  const fetched: string[] = []
+  let queued = 0
+  const open = () =>
+    new Ledger(sql, {
+      outline: (place) => {
+        fetched.push(place.key)
+        return Promise.resolve('M5 5Z')
+      },
+      queued: () => {
+        queued += 1
+      },
+    })
+  const book = open()
+  const { visitor } = await book.stamp(visit())
+  await book.drawOutlines()
+  // As a place was drawn before this backfill: with its own boundary.
+  sql.exec("UPDATE places SET outline = 'M9 9Z'")
+  sql.exec("DELETE FROM meta WHERE key = 'backfill:region-outlines-2026-11'")
+  const before = queued
+  const again = open()
+  assert.equal(queued, before + 1, 'the alarm is set to draw them')
+  await again.drawOutlines()
+  assert.deepEqual(fetched, ['nz-wellington-region-wellington', 'nz-wellington-region-wellington'])
+  const { pile } = await again.look(visit({ visitor }))
+  assert.equal(pile.you?.place.outline, 'M5 5Z')
+  open()
+  assert.equal(queued, before + 1, 'it runs once')
 })
 
 void test('a place Nominatim has no boundary for shows the placeholder, and the next visitor tries again', async () => {

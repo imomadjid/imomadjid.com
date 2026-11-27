@@ -1,12 +1,12 @@
 import type { DurableObjectState } from 'cloudflare:workers'
 
-import { dealPostmark, pictorialPool } from '#/dev/postmark-deal'
+import { dealPostmark } from '#/dev/postmark-deal'
 import type { PostmarkPlace } from '#/dev/postmark-kit'
 import { placeholderOutline, visitorPlaces } from '#/dev/postmark-visitor-places'
 import { pileSettings, postmarkDate, stampFor } from '#/dev/postmark-visits'
 import type { StampRecord } from '#/dev/postmark-visits'
 
-import { nominatimOutline } from './osm-outline'
+import { regionOutline } from './osm-outline'
 
 // The postmark footer's ledger: one stamp per visitor, saved the day they first came and never
 // dealt again. It runs in a Durable Object (postmark-ledger-object.ts) over its SQLite storage,
@@ -155,28 +155,6 @@ export function placeFor({ city, region, countryCode }: Geo): PostmarkPlace | un
   }
 }
 
-/**
- * The outline for a place nobody has drawn: its own boundary, else its region's, else its
- * country's, each a little coarser. Nominatim knows many towns only as points.
- */
-async function placeOutline(place: PostmarkPlace) {
-  const searches: [Record<string, string>, number][] = []
-  if (place.name !== place.region && place.name !== place.country)
-    searches.push([
-      { city: place.name, state: place.region, countrycodes: place.countryCode },
-      0.0007,
-    ])
-  if (place.region) searches.push([{ state: place.region, countrycodes: place.countryCode }, 0.004])
-  searches.push([{ country: place.countryCode }, 0.02])
-  for (const [query, detail] of searches) {
-    // Only a search Nominatim has no boundary for falls back to the next, coarser one; one that
-    // fails or takes too long throws, so the place is tried again rather than kept coarse.
-    const outline = await nominatimOutline(query, { detail, signal: AbortSignal.timeout(12_000) })
-    if (outline) return outline
-  }
-  return undefined
-}
-
 const schema = [
   `CREATE TABLE IF NOT EXISTS visitors (
     id TEXT PRIMARY KEY, idx INTEGER NOT NULL UNIQUE, place TEXT NOT NULL,
@@ -201,6 +179,9 @@ const schema = [
 // remembered in `meta` under its name. This one gives the stamps that showed a map outline,
 // because their place had no drawing when they came, one of the drawings their place has now.
 const pictorialBackfill = 'backfill:outline-pictorials-2026-11'
+// A place's map outline was its own boundary; it is now its region's, one of the region's
+// drawings, so every place's outline is cleared once and drawn again.
+const regionOutlines = 'backfill:region-outlines-2026-11'
 
 // Stamps that weren't visitors' and are taken off the pile, once, as a backfill is run. Each names
 // its place and day as well as its number, so a ledger where those numbers are someone else's
@@ -261,7 +242,7 @@ export class Ledger {
     sql: Sql,
     {
       now = Date.now,
-      outline = placeOutline,
+      outline = regionOutline,
       queued = () => {},
       retry = () => {},
     }: {
@@ -290,6 +271,13 @@ export class Ledger {
     ) {
       this.#pictorialsForOutlines()
       sql.exec('INSERT INTO meta (key, value) VALUES (?, ?)', pictorialBackfill, String(now()))
+    }
+    if (sql.exec('SELECT value FROM meta WHERE key = ?', regionOutlines).toArray().length === 0) {
+      // Places drawn with their own boundary are redrawn with their region's.
+      sql.exec("UPDATE places SET outline = ''")
+      sql.exec('INSERT OR IGNORE INTO outline_queue (key) SELECT key FROM places')
+      sql.exec('INSERT INTO meta (key, value) VALUES (?, ?)', regionOutlines, String(now()))
+      if (sql.exec('SELECT key FROM outline_queue LIMIT 1').toArray().length > 0) this.#queued()
     }
     if (sql.exec('SELECT value FROM meta WHERE key = ?', strayStamps.name).toArray().length === 0) {
       this.#removeStrayStamps()
@@ -525,8 +513,8 @@ export class Ledger {
         today,
       )
     this.#remember(fingerprint, id, now)
-    // Drawn places, and places with pictorials, need no outline.
-    if (!text(saved?.outline) && !place.outline && pictorialPool(place).length === 0) {
+    // Every place's bag holds its region's outline, so every place needs one.
+    if (!text(saved?.outline) && !place.outline) {
       this.#sql.exec('INSERT OR IGNORE INTO outline_queue (key) VALUES (?)', place.key)
       this.#queued()
     }
@@ -556,8 +544,18 @@ export class Ledger {
     const row = this.#sql
       .exec('SELECT name, region, country, country_code, outline FROM places WHERE key = ?', key)
       .toArray()[0]
-    let outline: string | undefined
-    if (row && !text(row.outline))
+    // Every place in a region draws the region's outline, so one already drawn is shared.
+    const drawn = row
+      ? this.#sql
+          .exec(
+            "SELECT outline FROM places WHERE country_code = ? AND region = ? AND outline != '' LIMIT 1",
+            text(row.country_code),
+            text(row.region),
+          )
+          .toArray()[0]
+      : undefined
+    let outline = drawn ? text(drawn.outline) : undefined
+    if (row && !text(row.outline) && !outline)
       try {
         outline = await this.#outline({
           key,

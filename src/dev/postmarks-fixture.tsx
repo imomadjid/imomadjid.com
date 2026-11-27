@@ -5,9 +5,9 @@ import { Button } from '#/components/ui/button'
 import { Postmark } from './postmark'
 import type { PostmarkPlace } from './postmark'
 import { checkClearance } from './postmark-clearance'
-import { houseStyle, pictorialPool } from './postmark-deal'
+import { houseStyle, mapOutline, pictorialPool } from './postmark-deal'
+import type { BagItem } from './postmark-deal'
 import { families, familyNames } from './postmark-kit'
-import type { PictorialKey } from './postmark-kit'
 import { PostmarkMixer } from './postmark-mixer'
 import { PictorialSheet } from './postmark-pictorial-sheet'
 import { pictorials } from './postmark-pictorials'
@@ -196,7 +196,7 @@ export function PostmarksFixture() {
           {typedPlaces.map((place) => {
             const house = houseStyle(place, salt)
             const pool = pictorialPool(place)
-            const counts = new Map<PictorialKey, number>()
+            const counts = new Map<BagItem, number>()
             for (const key of pool) counts.set(key, (counts.get(key) ?? 0) + 1)
             return (
               <div key={place.key} className="space-y-3">
@@ -208,11 +208,12 @@ export function PostmarksFixture() {
                   </span>
                 </h3>
                 <p className="text-caption text-muted-foreground">
-                  {pool.length === 0
-                    ? 'No pictorials yet: map outline'
-                    : `Pictorial bag: ${[...counts]
-                        .map(([key, count]) => `${pictorials[key].subject} ×${count}`)
-                        .join(', ')}`}
+                  {`Pictorial bag: ${[...counts]
+                    .map(
+                      ([key, count]) =>
+                        `${key === mapOutline ? 'Map outline' : pictorials[key].subject} ×${count}`,
+                    )
+                    .join(', ')}`}
                 </p>
                 <div className="flex flex-wrap items-center gap-6">
                   {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (

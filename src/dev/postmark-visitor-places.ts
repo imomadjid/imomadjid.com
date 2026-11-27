@@ -1,14 +1,24 @@
 import type { PostmarkPlace } from './postmark-kit'
 import places from './postmark-places.json'
+import regionOutlines from './postmark-region-outlines.json'
 
 // Where the prototype wall's made-up visitors come from, and how often: mostly Depok and the
-// rest of Indonesia, then the places the pilot drew for. Places beyond postmark-places.json have
-// no map outline of their own; their region's or country's drawings stand in.
+// rest of Indonesia, then the places the pilot drew for. Each place's map outline is its region's
+// (tools/postmarks/region-outlines.ts), as the ledger draws a real visitor's.
 
 // A rounded blob standing in for a map outline: the last fallback for a place nobody has drawn
 // and OpenStreetMap has no boundary for.
 export const placeholderOutline =
   'M50 6C71 6 92 20 94 42C96 62 84 80 66 90C52 97 34 96 21 86C8 76 4 58 8 42C12 22 30 6 50 6Z'
+
+/** The key a region's outline is kept under. */
+export const regionKey = ({ countryCode, region }: PostmarkPlace) => `${countryCode}:${region}`
+
+const outlines: Record<string, string> = regionOutlines
+const withRegionOutline = (place: PostmarkPlace): PostmarkPlace => ({
+  ...place,
+  outline: outlines[regionKey(place)] ?? placeholderOutline,
+})
 
 const extra = (
   key: string,
@@ -16,13 +26,13 @@ const extra = (
   region: string,
   country: string,
   countryCode: string,
-): PostmarkPlace => ({ key, name, region, country, countryCode, outline: placeholderOutline })
+): PostmarkPlace => withRegionOutline({ key, name, region, country, countryCode, outline: '' })
 
 const known: PostmarkPlace[] = places
 const find = (key: string) => {
   const place = known.find((candidate) => candidate.key === key)
   if (!place) throw new Error(`No place ${key}`)
-  return place
+  return withRegionOutline(place)
 }
 
 export const visitorPlaces: { place: PostmarkPlace; weight: number }[] = [

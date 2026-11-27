@@ -172,16 +172,21 @@ const levelSlots = { city: 4, region: 3, country: 2 } as const
 
 const greatestDivisor = (a: number, b: number): number => (b === 0 ? a : greatestDivisor(b, a % b))
 
+/** In a bag, the map outline of the place's region (or its country's, without one). */
+export const mapOutline = 'map-outline' as const
+
+export type BagItem = PictorialKey | typeof mapOutline
+
 /**
  * A place's pictorial bag: every drawing its city and region have, each weighted by its level
  * (4 : 3) rather than each level by its share, so a city with one drawing doesn't repeat it on
  * every other stamp when its region has several, and variety grows with every drawing added. The
- * country's drawings are a last resort, for a place whose city and region have none: a small town
- * in Illinois gets the Illinois drawings, never the bison that stands for all of the US. A drawing
- * scoped to several levels counts at the most specific. Empty where nothing is drawn yet, and the
- * postmark shows the place's map outline.
+ * region's map outline is one of its drawings, as a state's shape is as much a postmark's picture
+ * as its bird. The country's drawings are a last resort, for a place Cloudflare knows no region
+ * for: a small town in Illinois gets Illinois, never the bison that stands for all of the US. A
+ * drawing scoped to several levels counts at the most specific.
  */
-export function pictorialPool(place: PostmarkPlace): PictorialKey[] {
+export function pictorialPool(place: PostmarkPlace): BagItem[] {
   const scopes = {
     city: `city:${place.key}`,
     region: `region:${place.countryCode}:${place.region}`,
@@ -193,11 +198,13 @@ export function pictorialPool(place: PostmarkPlace): PictorialKey[] {
       (key) => !taken.has(key) && scopeSets.get(key)?.has(scopes[level]),
     )
     for (const key of keys) taken.add(key)
-    return { slots: levelSlots[level], keys }
+    // The outline is the region's where there is one, else the country's.
+    const outline: BagItem[] = level === (place.region ? 'region' : 'country') ? [mapOutline] : []
+    return { slots: levelSlots[level], keys: [...keys, ...outline] }
   })
   const [city, region, country] = levels
   const local = [city, region].filter((level) => level.keys.length > 0)
-  const present = local.length > 0 ? local : [country].filter((level) => level.keys.length > 0)
+  const present = local.length > 0 ? local : [country]
   // The shortest bag with those proportions: one level alone deals each of its drawings once.
   const divisor = present.reduce((gcd, level) => greatestDivisor(level.slots, gcd), 0)
   return present.flatMap(({ slots, keys }) =>
@@ -212,6 +219,9 @@ export type Deal = {
   design: ReturnType<typeof postmarkDesign>
   style: Style
 }
+
+/** A dealt bag item as a stamp records it: no pictorial means the map outline. */
+const pictorialOf = (item: BagItem | undefined) => (item === mapOutline ? undefined : item)
 
 /**
  * The postmark dealt to a place's visitor at `ordinal`: the next family and pictorial from the
@@ -231,7 +241,9 @@ export function dealPostmark(
   return {
     house,
     family: dealt,
-    pictorial: dealFrom(pictorialPool(place), ordinal, `${place.key}:${salt}:pictorials`),
+    pictorial: pictorialOf(
+      dealFrom(pictorialPool(place), ordinal, `${place.key}:${salt}:pictorials`),
+    ),
     design: postmarkDesign(seed, salt),
     style: postmarkStyle(seed, salt, dealt, { ink: house.ink, ...choices }),
   }

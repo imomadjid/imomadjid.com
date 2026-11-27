@@ -106,3 +106,27 @@ export async function nominatimOutline(
   const ring = hit?.geojson ? mainRing(hit.geojson) : undefined
   return ring ? toPath(ring) : undefined
 }
+
+/**
+ * A place's map outline, one of its region's drawings: its region's boundary, else its country's,
+ * a little coarser. The ledger draws each new place's with it, and tools/postmarks/region-outlines.ts
+ * the made-up visitors'.
+ */
+export async function regionOutline({
+  region,
+  countryCode,
+}: {
+  region: string
+  countryCode: string
+}) {
+  const searches: [Record<string, string>, number][] = []
+  if (region) searches.push([{ state: region, countrycodes: countryCode }, 0.004])
+  searches.push([{ country: countryCode }, 0.02])
+  for (const [query, detail] of searches) {
+    // Only a search Nominatim has no boundary for falls back to the next, coarser one; one that
+    // fails or takes too long throws, so the place is tried again rather than kept coarse.
+    const outline = await nominatimOutline(query, { detail, signal: AbortSignal.timeout(12_000) })
+    if (outline) return outline
+  }
+  return undefined
+}

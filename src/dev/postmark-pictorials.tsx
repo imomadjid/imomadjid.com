@@ -144,7 +144,7 @@ export const pictorials = {
   },
   bandung: {
     subject: 'Gedung Sate, Bandung',
-    scopes: ['city:bandung', 'region:ID:West Java'],
+    scopes: ['city:bandung'],
     ink: [0.3, 4.2, 99.4, 83.5],
     draw: (_id) => (
       <>
@@ -444,7 +444,15 @@ export const pictorials = {
   // The Statue of Liberty stands on Liberty Island, which belongs to New York State (New York County) under the 1834 New York–New Jersey compact, though New Jersey's waters surround it.
   'new-york-liberty': {
     subject: 'Statue of Liberty, New York',
-    scopes: ['region:US:New York'],
+    scopes: [
+      'city:us-new-york-new-york',
+      'city:brooklyn',
+      'city:us-new-york-manhattan',
+      'city:us-new-york-queens',
+      'city:us-new-york-bronx',
+      'city:us-new-york-the-bronx',
+      'city:us-new-york-staten-island',
+    ],
     ink: [2.3, 4.1, 95.4, 92],
     draw: (id) => (
       <>
@@ -543,7 +551,7 @@ export const pictorials = {
   // The Alamo church stands at 300 Alamo Plaza in downtown San Antonio, Bexar County, Texas, and is the state's best-known landmark.
   'texas-alamo': {
     subject: 'The Alamo, San Antonio',
-    scopes: ['region:US:Texas'],
+    scopes: ['city:us-texas-san-antonio'],
     ink: [2.3, 20.3, 95.4, 74.9],
     draw: (_id) => (
       <>
@@ -626,7 +634,7 @@ export const pictorials = {
   // The Great Mosque of Banten stands in Banten Lama (Kasemen, Kota Serang), the old capital of the Banten Sultanate in Banten province. Its five-tiered tumpang roof and lighthouse-like minaret are the province's best-known landmark.
   'banten-masjid-agung': {
     subject: 'Masjid Agung Banten',
-    scopes: ['region:ID:Banten'],
+    scopes: ['city:id-banten-serang'],
     ink: [2.3, 8, 95.4, 87.2],
     draw: (_id) => (
       <>
@@ -735,7 +743,7 @@ export const pictorials = {
   // The Suramadu Bridge links Surabaya on Java with Bangkalan on Madura across the Madura Strait, and both ends lie in East Java. It is Indonesia's longest bridge, with cable-stayed spans of 192-434-192 m.
   'east-java-suramadu': {
     subject: 'Suramadu Bridge',
-    scopes: ['region:ID:East Java'],
+    scopes: ['city:id-east-java-surabaya', 'city:id-east-java-bangkalan'],
     ink: [0.3, 6.3, 99.4, 88.9],
     draw: (_id) => (
       <>
@@ -765,7 +773,7 @@ export const pictorials = {
   // The Heroes Monument stands on Jalan Pahlawan in central Surabaya, East Java, beside the East Java Governor's Office. It is the city's emblem of the Battle of Surabaya (10 November 1945).
   'east-java-tugu-pahlawan': {
     subject: 'Tugu Pahlawan, Surabaya',
-    scopes: ['region:ID:East Java'],
+    scopes: ['city:id-east-java-surabaya'],
     ink: [2.3, 4.8, 95.4, 88.4],
     draw: (_id) => (
       <>
@@ -895,7 +903,7 @@ export const pictorials = {
   // Monticello, Thomas Jefferson's house, stands at 931 Thomas Jefferson Parkway outside Charlottesville in Albemarle County, Virginia; its west front is the building on the reverse of the US nickel.
   'virginia-monticello': {
     subject: 'Monticello',
-    scopes: ['region:US:Virginia'],
+    scopes: ['city:us-virginia-charlottesville'],
     ink: [2.3, 24.8, 95.4, 70.4],
     draw: (_id) => (
       <>
@@ -966,7 +974,7 @@ export const pictorials = {
   // Lawang Sewu, the former Dutch East Indies railway company (NIS) office, stands on Jalan Pemuda at Tugu Muda in Semarang, the capital of Central Java.
   'central-java-lawang-sewu': {
     subject: 'Lawang Sewu, Semarang',
-    scopes: ['region:ID:Central Java'],
+    scopes: ['city:id-central-java-semarang'],
     ink: [2.3, 15.8, 95.4, 79.4],
     draw: (_id) => (
       <>
@@ -1248,7 +1256,7 @@ export const pictorials = {
   // Maimun Palace, built in 1888 by the Sultan of Deli, stands on Jalan Brigjend Katamso in Medan, the capital of North Sumatra, and is the city's best-known landmark.
   'north-sumatra-istana-maimun': {
     subject: 'Istana Maimun, Medan',
-    scopes: ['region:ID:North Sumatra'],
+    scopes: ['city:id-north-sumatra-medan'],
     ink: [2.3, 9.4, 95.4, 80.3],
     draw: (_id) => (
       <>
@@ -1491,7 +1499,7 @@ export const pictorials = {
   // The Saturn V was developed at NASA's Marshall Space Flight Center on Redstone Arsenal, Huntsville, Alabama, and a full-size Saturn V stands upright at the U.S. Space & Rocket Center there (One Tranquility Base, Huntsville).
   'alabama-saturn-v': {
     subject: 'Saturn V rocket, Huntsville',
-    scopes: ['region:US:Alabama'],
+    scopes: ['city:us-alabama-huntsville'],
     ink: [2.3, 4.4, 95.4, 90.8],
     draw: (_id) => (
       <>
@@ -1559,7 +1567,7 @@ export const pictorials = {
   // The Old Mill (1933, Dionicio Rodriguez's faux-bois concrete) stands in T.R. Pugh Memorial Park, Lakeshore Drive, North Little Rock, Pulaski County, Arkansas, and is the state's best-known postcard view (the opening of Gone with the Wind).
   'arkansas-old-mill': {
     subject: 'The Old Mill, North Little Rock',
-    scopes: ['region:US:Arkansas'],
+    scopes: ['city:us-arkansas-north-little-rock', 'city:us-arkansas-little-rock'],
     ink: [0.3, 24.3, 99.4, 68.2],
     draw: (id) => (
       <>
@@ -1651,7 +1659,11 @@ export const pictorials = {
   // The Charles W. Morgan (1841), the last surviving wooden whaleship and a National Historic Landmark, is berthed at Mystic Seaport Museum in Mystic, New London County, Connecticut.
   'connecticut-charles-morgan': {
     subject: 'Charles W. Morgan whaleship, Mystic',
-    scopes: ['region:US:Connecticut'],
+    scopes: [
+      'city:us-connecticut-mystic',
+      'city:us-connecticut-groton',
+      'city:us-connecticut-stonington',
+    ],
     ink: [0.8, 11.3, 98.4, 77.8],
     draw: (id) => (
       <>
@@ -1713,7 +1725,7 @@ export const pictorials = {
   // The Delaware Breakwater East End Light (1885), a cast-iron sparkplug tower with its keeper's quarters built in, stands on the Delaware Breakwater off Cape Henlopen at Lewes, Sussex County, Delaware, and was conveyed to the State of Delaware in 1999.
   'delaware-breakwater-light': {
     subject: 'Breakwater East End Lighthouse, Lewes',
-    scopes: ['region:US:Delaware'],
+    scopes: ['city:us-delaware-lewes'],
     ink: [0.3, 5.6, 99.4, 85.9],
     draw: (_id) => (
       <>
@@ -1936,7 +1948,7 @@ export const pictorials = {
   // The Chicago Water Tower stands at 806 N Michigan Avenue in Chicago, Cook County, Illinois.
   'illinois-water-tower': {
     subject: 'Chicago Water Tower',
-    scopes: ['region:US:Illinois'],
+    scopes: ['city:us-illinois-chicago'],
     ink: [2.3, 5.8, 95.4, 89.4],
     draw: (_id) => (
       <>
@@ -2129,7 +2141,11 @@ export const pictorials = {
   // Portland Head Light (1791) stands on Portland Head in Fort Williams Park, Cape Elizabeth, Cumberland County, Maine. It is the state's best-known lighthouse: a white conical tower joined to the red-roofed 1891 keepers' house.
   'maine-portland-head-light': {
     subject: 'Portland Head Light',
-    scopes: ['region:US:Maine'],
+    scopes: [
+      'city:us-maine-portland',
+      'city:us-maine-cape-elizabeth',
+      'city:us-maine-south-portland',
+    ],
     ink: [2.3, 8.3, 95.4, 88.2],
     draw: (_id) => (
       <>
@@ -2163,7 +2179,7 @@ export const pictorials = {
   // Old North Church (Christ Church, 193 Salem Street, North End, Boston, Massachusetts) is where the two 'one if by land, two if by sea' lanterns were hung on 18 April 1775.
   'massachusetts-old-north-church': {
     subject: 'Old North Church steeple, Boston',
-    scopes: ['region:US:Massachusetts'],
+    scopes: ['city:us-massachusetts-boston'],
     ink: [2.3, 4.9, 95.4, 84.8],
     draw: (_id) => (
       <>
@@ -2740,7 +2756,7 @@ export const pictorials = {
   // The Gateway Arch stands on the Mississippi riverfront in downtown St. Louis, Missouri (Gateway Arch National Park), with the Old Courthouse on its axis to the west.
   'missouri-gateway-arch': {
     subject: 'Gateway Arch, St. Louis',
-    scopes: ['region:US:Missouri'],
+    scopes: ['city:us-missouri-st-louis', 'city:us-missouri-saint-louis'],
     ink: [1.3, 4.3, 97.4, 90.2],
     draw: (_id) => (
       <>
@@ -2990,7 +3006,7 @@ export const pictorials = {
   // Lucy the Elephant, the six-storey elephant-shaped building from 1881, stands on the beach at 9200 Atlantic Avenue in Margate City, Atlantic County, New Jersey.
   'new-jersey-lucy': {
     subject: 'Lucy the Elephant, Margate',
-    scopes: ['region:US:New Jersey'],
+    scopes: ['city:us-new-jersey-margate-city'],
     ink: [2.3, 5.5, 95.4, 84.2],
     draw: (_id) => (
       <>
@@ -3016,7 +3032,7 @@ export const pictorials = {
   // The Albuquerque International Balloon Fiesta is held every October in Albuquerque, New Mexico, and its balloons rise in front of the Sandia Mountains along the city's eastern edge.
   'new-mexico-balloons': {
     subject: 'Balloons over the Sandias',
-    scopes: ['region:US:New Mexico'],
+    scopes: ['city:us-new-mexico-albuquerque'],
     ink: [0.8, 5.8, 98.4, 82.9],
     draw: (id) => (
       <>
@@ -3335,7 +3351,7 @@ export const pictorials = {
   // The Liberty Bell hangs in the Liberty Bell Center, Independence National Historical Park, 526 Market St, Philadelphia, Pennsylvania.
   'pennsylvania-liberty-bell': {
     subject: 'Liberty Bell',
-    scopes: ['region:US:Pennsylvania'],
+    scopes: ['city:us-pennsylvania-philadelphia'],
     ink: [7.3, 8.3, 85.4, 81.4],
     draw: (_id) => (
       <>
@@ -3420,7 +3436,7 @@ export const pictorials = {
   // The Corn Palace stands at 604 N Main St in Mitchell, South Dakota, and its murals are redone in corn every year.
   'south-dakota-corn-palace': {
     subject: 'Corn Palace, Mitchell',
-    scopes: ['region:US:South Dakota'],
+    scopes: ['city:us-south-dakota-mitchell'],
     ink: [2.3, 17.8, 95.4, 71.9],
     draw: (_id) => (
       <>
@@ -3464,7 +3480,7 @@ export const pictorials = {
   // Nashville's full-scale Parthenon replica stands in Centennial Park, Nashville, Tennessee (2500 West End Ave), and is the city's best-known landmark.
   'tennessee-parthenon': {
     subject: 'The Parthenon, Nashville',
-    scopes: ['region:US:Tennessee'],
+    scopes: ['city:us-tennessee-nashville'],
     ink: [0.3, 15.8, 99.4, 75.9],
     draw: (_id) => (
       <>
