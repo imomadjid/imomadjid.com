@@ -1,4 +1,4 @@
-import { IconX } from '@tabler/icons-react'
+import { IconArrowUpRight, IconCheck, IconLink, IconX } from '@tabler/icons-react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
 import { IconButton } from '#/components/ui/icon-button'
@@ -118,28 +118,42 @@ export function BrowserEscape() {
     <section
       aria-label="Open in your browser"
       className={cn(
-        'fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-sm animate-enter items-center gap-2 rounded-3xl py-2 pr-2 pl-4 text-neutral-800 [--enter-step:0ms] [animation-delay:800ms] dark:text-neutral-200',
+        'fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-sm animate-enter items-center gap-2 rounded-full py-2 pr-2 pl-5 text-neutral-800 [--enter-step:0ms] [animation-delay:800ms] dark:text-neutral-200',
         surfaceClasses(level),
       )}
     >
       <SurfaceProvider value={level}>
-        <p className="min-w-0 flex-1 text-caption text-pretty">
-          {escape.kind === 'menu'
-            ? `Best seen in your browser: tap ${menu} and open it there.`
-            : 'Best seen in your browser.'}
+        <p className="min-w-0 flex-1 text-caption">
+          {escape.kind === 'menu' ? (
+            <>
+              Tap {menu} to open in <span className="max-[359px]:hidden">your </span>browser
+            </>
+          ) : (
+            'Best seen in your browser'
+          )}
         </p>
         {escape.kind === 'menu' ? (
           <button
             type="button"
             data-escape-open
-            className={actionClass}
+            aria-label={copied ? 'Link copied' : 'Copy link'}
+            className={`${actionClass} gap-1 pl-3 max-[359px]:px-2`}
             onClick={() => void copyLink()}
           >
-            {copied ? 'Copied' : 'Copy link'}
+            {copied ? (
+              <IconCheck aria-hidden="true" size={16} strokeWidth={2} />
+            ) : (
+              <IconLink aria-hidden="true" size={16} strokeWidth={2} />
+            )}
+            {/* On the narrowest phones the icon alone keeps the line on one row. */}
+            <span aria-hidden="true" className="max-[359px]:hidden">
+              {copied ? 'Copied' : 'Copy'}
+            </span>
           </button>
         ) : (
-          <a href={escape.url} data-escape-open className={actionClass}>
+          <a href={escape.url} data-escape-open className={`${actionClass} gap-1 pr-3`}>
             Open
+            <IconArrowUpRight aria-hidden="true" size={16} strokeWidth={2} />
           </a>
         )}
         <IconButton
