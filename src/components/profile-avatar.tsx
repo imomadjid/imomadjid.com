@@ -1,10 +1,19 @@
 import { Suspense, lazy, useRef, useState } from 'react'
 
+import type { SleepTuning } from './sleep-particles'
+
 // The Z's load only once the avatar first falls asleep, so a page that never sees Imo asleep
 // never loads them. Once loaded they stay mounted, so waking plays their exit.
 const SleepParticles = lazy(() => import('./sleep-particles'))
 
-export function ProfileAvatar({ isSleeping }: { isSleeping: boolean }) {
+export function ProfileAvatar({
+  isSleeping,
+  sleepTuning,
+}: {
+  isSleeping: boolean
+  /** /dev/sleep's slow motion and breath reports; the homepage leaves it out. */
+  sleepTuning?: SleepTuning
+}) {
   const [hasSlept, setHasSlept] = useState(false)
   // The photo breathes while Imo sleeps; the particles drive it.
   const photo = useRef<HTMLImageElement>(null)
@@ -22,7 +31,7 @@ export function ProfileAvatar({ isSleeping }: { isSleeping: boolean }) {
       />
       {hasSlept && (
         <Suspense>
-          <SleepParticles isSleeping={isSleeping} photo={photo} />
+          <SleepParticles isSleeping={isSleeping} photo={photo} tuning={sleepTuning} />
         </Suspense>
       )}
     </div>

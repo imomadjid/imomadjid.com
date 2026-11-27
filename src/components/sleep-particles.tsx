@@ -26,6 +26,13 @@ const swell = 1.02
 
 type Particle = { id: number; flight: SleepFlight }
 
+/** For /dev/sleep: play the Z's and the breathing slower, and hear of each breath's flights. */
+export type SleepTuning = {
+  /** 1 is real time; 0.25 plays at a quarter speed. It takes effect from the next breath. */
+  speed?: number
+  onBreath?: (flights: SleepFlight[]) => void
+}
+
 /** The Z, as SVG text for its round stroke joins: HTML text strokes mitre, spiking the corners. */
 function ZGlyph({
   textRef,
@@ -126,14 +133,18 @@ function RestingZ({ isSleeping }: { isSleeping: boolean }) {
 export default function SleepParticles({
   isSleeping,
   photo,
+  tuning,
 }: {
   isSleeping: boolean
   photo: RefObject<HTMLImageElement | null>
+  tuning?: SleepTuning
 }) {
+  const { speed = 1, onBreath } = tuning ?? {}
   const reducedMotion = useReducedMotion() ?? false
   const [particles, setParticles] = useState<Particle[]>([])
   const nextId = useRef(0)
   const ring = useRef<HTMLSpanElement>(null)
+  const breathed = useEffectEvent((flights: SleepFlight[]) => onBreath?.(flights))
 
   // The rings take the wall's colour as the renderer paints it, frame by frame through theme
   // changes and the glow; without the renderer, the wall is the surface colour they fall back to.
@@ -157,27 +168,32 @@ export default function SleepParticles({
     const breathe = () => {
       // A hidden tab skips its breaths, so it doesn't come back to a pile of them.
       if (document.visibilityState === 'visible') {
-        const added = createBreath(performance.now() + inhale).map((flight) => ({
-          id: ++nextId.current,
-          flight,
+        // The breath's times count from its first Z leaving, at the end of the inhale.
+        const now = performance.now()
+        const flights = createBreath(0).map((flight) => ({
+          ...flight,
+          start: now + (inhale + flight.start) / speed,
+          duration: flight.duration / speed,
         }))
+        const added = flights.map((flight) => ({ id: ++nextId.current, flight }))
         setParticles((list) => [...list, ...added])
+        breathed(flights)
         if (image) {
           breathing?.stop()
           breathing = animate(
             image,
             { scale: [null, swell, 1] },
             {
-              duration: (inhale + exhale) / 1000,
+              duration: (inhale + exhale) / 1000 / speed,
               times: [0, inhale / (inhale + exhale), 1],
               ease: ['easeInOut', 'easeOut'],
             },
           )
         }
       }
-      timer = setTimeout(breathe, randomBetween(breathPeriod.min, breathPeriod.max))
+      timer = setTimeout(breathe, randomBetween(breathPeriod.min, breathPeriod.max) / speed)
     }
-    timer = setTimeout(breathe, 300)
+    timer = setTimeout(breathe, 300 / speed)
     return () => {
       clearTimeout(timer)
       breathing?.stop()
@@ -186,7 +202,7 @@ export default function SleepParticles({
       const now = performance.now()
       setParticles((list) => list.filter((particle) => particle.flight.start <= now))
     }
-  }, [isSleeping, reducedMotion, photo])
+  }, [isSleeping, reducedMotion, photo, speed])
 
   const land = (id: number) => setParticles((list) => list.filter((particle) => particle.id !== id))
 

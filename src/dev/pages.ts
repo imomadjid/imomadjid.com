@@ -9,6 +9,7 @@ import {
   Layers,
   LayoutGrid,
   MapPin,
+  Moon,
   Stamp,
 } from 'lucide-react'
 
@@ -63,6 +64,12 @@ export const devPages = [
     icon: MapPin,
     description:
       'Passport-style postmarks for the postmark footer, one design per place and a print per visitor.',
+  },
+  {
+    to: '/dev/sleep',
+    label: 'Sleep',
+    icon: Moon,
+    description: "The avatar in Sleep Focus: breaths of Z's, in slow motion, with their paths.",
   },
   {
     to: '/dev/stamps',
