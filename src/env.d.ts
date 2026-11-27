@@ -1,6 +1,6 @@
 interface ImportMetaEnv {
   /**
-   * Build-time switch for the dev tools: Sleep Focus, renderer profiling, and the /dev
+   * Build-time switch for the dev tools: the `?sleep` override, renderer profiling, and the /dev
    * playground. True in the dev server and on dev.imomadjid.com; production builds drop the code
    * it guards. Set by the `dev-tools` plugin in vite.config.ts.
    */

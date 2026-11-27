@@ -162,7 +162,7 @@ export default function SleepParticles({ isSleeping }: { isSleeping: boolean }) 
           </AnimatePresence>
         </LazyMotion>
       </MotionConfig>
-      <output className="sr-only">{isSleeping ? 'Sleep Focus is on' : ''}</output>
+      <output className="sr-only">{isSleeping ? 'Imo’s Sleep Focus is on' : ''}</output>
     </>
   )
 }

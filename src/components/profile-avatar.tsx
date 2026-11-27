@@ -1,9 +1,13 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useState } from 'react'
 
-// Sleep Focus is a dev tool (`?sleep` on the homepage); production never loads the particles.
-const SleepParticles = import.meta.env.DEV_TOOLS ? lazy(() => import('./sleep-particles')) : null
+// The Z's load only once the avatar first falls asleep, so a page that never sees Imo asleep
+// never loads them. Once loaded they stay mounted, so waking plays their exit.
+const SleepParticles = lazy(() => import('./sleep-particles'))
 
 export function ProfileAvatar({ isSleeping }: { isSleeping: boolean }) {
+  const [hasSlept, setHasSlept] = useState(false)
+  if (isSleeping && !hasSlept) setHasSlept(true)
+
   return (
     <div className="relative isolate size-12 shrink-0">
       <img
@@ -13,7 +17,7 @@ export function ProfileAvatar({ isSleeping }: { isSleeping: boolean }) {
         height={144}
         className="relative z-10 size-full rounded-full bg-surface-1"
       />
-      {SleepParticles && (
+      {hasSlept && (
         <Suspense>
           <SleepParticles isSleeping={isSleeping} />
         </Suspense>

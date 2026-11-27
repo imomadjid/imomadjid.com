@@ -14,17 +14,34 @@
     "run_worker_first": ["/assets/*.webm", "/assets/*.mp4"],
   },
   // The postmark footer's ledger (src/lib/postmark-ledger-object.ts): one SQLite-backed Durable
-  // Object holding every visitor's stamp. Each environment has its own.
-  "durable_objects": { "bindings": [{ "name": "POSTMARKS", "class_name": "PostmarkLedger" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PostmarkLedger"] }],
+  // Object holding every visitor's stamp. Sleep Focus (src/lib/sleep-focus-object.ts) is another,
+  // holding whether Imo's phone is in its Sleep Focus. Each environment has its own.
+  "durable_objects": {
+    "bindings": [
+      { "name": "POSTMARKS", "class_name": "PostmarkLedger" },
+      { "name": "SLEEP", "class_name": "SleepFocus" },
+    ],
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["PostmarkLedger"] },
+    { "tag": "v2", "new_sqlite_classes": ["SleepFocus"] },
+  ],
   "env": {
     // dev.imomadjid.com: a separate Worker built with `CLOUDFLARE_ENV=dev`, from the dev branch.
     "dev": {
       "name": "imomadjid-com-dev",
       "routes": [{ "pattern": "dev.imomadjid.com", "custom_domain": true }],
-      // Its own postmark ledger: bindings aren't inherited, so it repeats them.
-      "durable_objects": { "bindings": [{ "name": "POSTMARKS", "class_name": "PostmarkLedger" }] },
-      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PostmarkLedger"] }],
+      // Its own postmark ledger and Sleep Focus: bindings aren't inherited, so it repeats them.
+      "durable_objects": {
+        "bindings": [
+          { "name": "POSTMARKS", "class_name": "PostmarkLedger" },
+          { "name": "SLEEP", "class_name": "SleepFocus" },
+        ],
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["PostmarkLedger"] },
+        { "tag": "v2", "new_sqlite_classes": ["SleepFocus"] },
+      ],
     },
   },
 }

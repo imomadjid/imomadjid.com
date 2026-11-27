@@ -39,6 +39,35 @@ The Sunlit background's settings are `defaultAmbientSettings` in
 `?sleep` on the homepage turns on the Sleep Focus avatar state; a hook chosen at
 build time by `import.meta.env.DEV_TOOLS` keeps it out of production.
 
+### Sleep Focus
+
+The homepage avatar sleeps (Z's float off it) while Imo's iPhone is in its Sleep
+Focus. Two Shortcuts automations report it to `/api/sleep` (`src/lib/sleep-focus.ts`),
+and the page reads `GET /api/sleep` on load, when the tab comes back into view, and
+every minute. A sleep ends by itself after 14 hours, in case the "off" report never
+arrives.
+
+Writes need a bearer token, a Worker secret that is unset until you set it:
+
+```sh
+openssl rand -base64 32 | tr -d '=+/'   # pick a token
+bunx wrangler secret put SLEEP_TOKEN                # imomadjid.com
+bunx wrangler secret put SLEEP_TOKEN --env dev      # dev.imomadjid.com
+```
+
+For the local dev server, put `SLEEP_TOKEN=...` in `.dev.vars` (gitignored).
+
+On the phone, in Shortcuts → Automation → New Automation → Sleep (under Focus),
+pick **When Turning On** and **Run Immediately**, then add **Get Contents of URL**:
+`https://imomadjid.com/api/sleep/on`, method POST, header `Authorization` set to
+`Bearer <token>`. Make a second one for **When Turning Off** that posts to
+`/api/sleep/off`. Test either from the shell:
+
+```sh
+curl -X POST -H "Authorization: Bearer $TOKEN" https://imomadjid.com/api/sleep/on
+curl https://imomadjid.com/api/sleep
+```
+
 Inside `main`, the `dark:` variant follows the renderer's `data-scene-tone`
 crossover instead of the instant `.dark` class, so text and inverted marks flip
 with the light. Without WebGPU it falls back to `.dark`.
@@ -144,8 +173,9 @@ deployed version. Check `bunx wrangler deployments list` for deployment history.
 
 Pushes to the `dev` branch deploy dev.imomadjid.com, a second Worker
 (`imomadjid-com-dev`) from the `dev` environment in `wrangler.jsonc`. It is a
-production build with the dev tools on: the `/dev` playground, Sleep Focus
-(`?sleep`), and `?ambientProfile`. It also answers on its own `workers.dev` subdomain.
+production build with the dev tools on: the `/dev` playground, the Sleep Focus
+override (`?sleep`), and `?ambientProfile`. It has its own Sleep Focus state and
+`SLEEP_TOKEN`. It also answers on its own `workers.dev` subdomain.
 Every page carries a `noindex` robots meta tag, and static files send
 `X-Robots-Tag: noindex`. `robots.txt` still lets crawlers in, because a crawler
 that is kept out never reads the noindex and can list a linked URL anyway.
