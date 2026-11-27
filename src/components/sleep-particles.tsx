@@ -20,7 +20,7 @@ import type { SleepFlight } from './sleep-flight'
 // Each Z wears a ring in the wall's colour, so where it crosses the photo it seems to cut the photo
 // away, as a badge does an avatar. The ring is this many px wide outside the glyph at full size,
 // and shrinks with it.
-const ringWidth = 2
+const ringWidth = 3.5
 
 // Stacking within the avatar, whose photo is z-10: a Z climbs in front of the photo and sinks
 // behind it on the way back. Among the Z's on one side, a newer one lies over an older one, so
