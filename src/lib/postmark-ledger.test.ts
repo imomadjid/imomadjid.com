@@ -329,3 +329,36 @@ void test('stamps that came before their place was drawn get a pictorial once, k
   const later = (await new Ledger(sql).look({ ...jakarta, address: '192.0.2.1' })).pile.newest
   assert.equal(later[0]?.deal.pictorial, undefined)
 })
+
+void test("the browser test's stamps come off the pile once, and only where they are those", async () => {
+  const sql = memory()
+  const book = new Ledger(sql, { now: () => Date.UTC(2026, 10, 26, 9) })
+  const columbus = { city: 'Columbus', region: 'Ohio', countryCode: 'US' }
+  for (let at = 0; at < 49; at += 1) await book.stamp(visit({ address: `198.51.${at}.1` }))
+  for (let at = 0; at < 3; at += 1)
+    await book.stamp(
+      visit({ address: `203.0.${at}.9`, userAgent: `${browser} ${at}`, geo: columbus }),
+    )
+  await book.stamp(visit({ address: '192.0.2.200' }))
+  sql.exec("DELETE FROM meta WHERE key LIKE 'cleanup:%'")
+
+  const after = new Ledger(sql, { now: () => Date.UTC(2026, 10, 27, 9) })
+  const { pile } = await after.look(
+    visit({ address: '203.0.0.9', userAgent: `${browser} 0`, geo: columbus }),
+  )
+  assert.equal(pile.you, null, 'their fingerprint finds no stamp')
+  assert.deepEqual(
+    pile.newest.filter((record) => record.place.key === 'us-ohio-columbus'),
+    [],
+  )
+  assert.equal(pile.newest.at(-1)?.index, 52, 'the stamp after them keeps its number')
+  assert.equal(sql.exec("SELECT 1 FROM places WHERE key = 'us-ohio-columbus'").toArray().length, 0)
+
+  // On a ledger where those numbers are other visitors', nothing goes.
+  const other = memory()
+  const dev = new Ledger(other, { now: () => Date.UTC(2026, 10, 26, 9) })
+  for (let at = 0; at < 52; at += 1) await dev.stamp(visit({ address: `198.51.${at}.1` }))
+  other.exec("DELETE FROM meta WHERE key LIKE 'cleanup:%'")
+  const kept = await new Ledger(other).look(visit({ address: '192.0.2.1' }))
+  assert.equal(kept.pile.newest.length, 52)
+})

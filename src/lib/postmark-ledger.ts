@@ -202,6 +202,18 @@ const schema = [
 // because their place had no drawing when they came, one of the drawings their place has now.
 const pictorialBackfill = 'backfill:outline-pictorials-2026-11'
 
+// Stamps that weren't visitors' and are taken off the pile, once, as a backfill is run. Each names
+// its place and day as well as its number, so a ledger where those numbers are someone else's
+// (the dev site's) keeps them.
+const strayStamps = {
+  name: 'cleanup:test-stamps-2026-11-27',
+  // A browser test of the in-app browser bar on 27 November 2026 tapped the live page from a cloud
+  // machine whose address places it in Columbus, Ohio.
+  stamps: [49, 50, 51],
+  place: 'us-ohio-columbus',
+  date: { day: 26, month: 10, year: 2026 },
+}
+
 const stampColumns = `v.idx, v.ordinal, v.day, v.month, v.year, v.deal, v.print,
   p.key, p.name, p.region, p.country, p.country_code, p.outline`
 
@@ -279,6 +291,36 @@ export class Ledger {
       this.#pictorialsForOutlines()
       sql.exec('INSERT INTO meta (key, value) VALUES (?, ?)', pictorialBackfill, String(now()))
     }
+    if (sql.exec('SELECT value FROM meta WHERE key = ?', strayStamps.name).toArray().length === 0) {
+      this.#removeStrayStamps()
+      sql.exec('INSERT INTO meta (key, value) VALUES (?, ?)', strayStamps.name, String(now()))
+    }
+  }
+
+  /**
+   * Takes `strayStamps` off the pile: their records, the fingerprints that would find them again,
+   * and their count among their place's visitors. The numbers after them stay as they are.
+   */
+  #removeStrayStamps() {
+    const { stamps, place, date } = strayStamps
+    for (const index of stamps) {
+      const row = this.#sql
+        .exec(
+          'SELECT id FROM visitors WHERE idx = ? AND place = ? AND day = ? AND month = ? AND year = ?',
+          index,
+          place,
+          date.day,
+          date.month,
+          date.year,
+        )
+        .toArray()[0]
+      if (!row) continue
+      const id = text(row.id)
+      this.#sql.exec('DELETE FROM visitors WHERE id = ?', id)
+      this.#sql.exec('DELETE FROM fingerprints WHERE visitor = ?', id)
+      this.#sql.exec('UPDATE places SET visitors = visitors - 1 WHERE key = ?', place)
+    }
+    this.#sql.exec('DELETE FROM places WHERE key = ? AND visitors <= 0', place)
   }
 
   /**
