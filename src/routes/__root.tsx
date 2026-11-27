@@ -36,7 +36,7 @@ export const Route = createRootRoute({
         crossOrigin: 'anonymous',
       },
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-      { rel: 'icon', type: 'image/png', sizes: '64x64', href: '/favicon.png' },
+      { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/favicon.png' },
       { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
     ],
   }),

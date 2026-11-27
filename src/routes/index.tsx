@@ -21,9 +21,8 @@ import { textLinkClass } from '#/lib/text-link'
 import { cn } from '#/lib/utils'
 
 const siteUrl = 'https://imomadjid.com/'
-const title = 'Imo’s Portfolio'
-const description =
-  'I’m Imo, a software engineer and design engineer in Jakarta who loves design, engineering, and product.'
+const title = 'Imo Madjid'
+const description = 'Software engineer at DocDraft, based in Jakarta.'
 const ogImage = {
   url: `${siteUrl}og.jpg`,
   alt: 'The imo logo on a wall in dappled sunlight, through blinds and leaves',
@@ -47,7 +46,7 @@ const structuredData = {
       alternateName: 'Imo',
       url: siteUrl,
       image: `${siteUrl}images/imo-avatar.webp`,
-      jobTitle: 'Software engineer and design engineer',
+      jobTitle: 'Software engineer',
       worksFor: { '@type': 'Organization', name: 'DocDraft', url: 'https://docdraft.ai' },
       homeLocation: { '@type': 'Place', name: 'Jakarta, Indonesia' },
       sameAs: ['https://github.com/imomadjid', 'https://www.linkedin.com/in/imomadjid/'],
@@ -58,8 +57,7 @@ const structuredData = {
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      // The full name stays in the document title for search; shares use the shorter title.
-      { title: 'Imo Madjid’s Portfolio' },
+      { title },
       { name: 'description', content: description },
       { property: 'og:type', content: 'website' },
       { property: 'og:url', content: siteUrl },
