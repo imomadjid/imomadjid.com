@@ -73,11 +73,12 @@ void test('names fit the roomy families and long names drop the cramped ones', (
   }
 })
 
-void test("a place's pictorials come from its city, region and country, weighted to the city", () => {
+void test("a place's pictorials come from its city and region, weighted to the city", () => {
   const bandung = pictorialPool(placeOf('bandung'))
   assert.equal(bandung.filter((key) => key === 'bandung').length, 4)
   assert.ok(bandung.includes('west-java-tangkuban-perahu'))
-  assert.ok(bandung.includes('borobudur'))
+  // The country's drawings don't reach a place whose region has its own.
+  assert.ok(!bandung.includes('borobudur'))
   const jakarta = pictorialPool(placeOf('jakarta-barat'))
   assert.ok(jakarta.includes('jakarta-barat'))
   assert.deepEqual(pictorialPool(placeOf('singapore')), ['singapore'])
@@ -95,16 +96,34 @@ void test("a place's pictorials come from its city, region and country, weighted
   const tampines: PostmarkPlace = { ...placeOf('singapore'), key: 'tampines', name: 'Tampines' }
   assert.deepEqual(pictorialPool(tampines), ['singapore'])
   // Each drawing is weighted by its level: Depok's two drawings come up 4 times each to each of
-  // West Java's 3 and each of Indonesia's 2, and each comes up less often as the others gain drawings.
+  // West Java's 3, and each comes up less often as the others gain drawings.
   const depok = pictorialPool(placeOf('depok'))
   assert.equal(depok.filter((key) => key === 'depok').length, 4)
   assert.equal(depok.filter((key) => key === 'depok-kubah-emas').length, 4)
   assert.equal(depok.filter((key) => key === 'bandung').length, 3)
-  assert.equal(depok.filter((key) => key === 'rafflesia').length, 2)
-  assert.equal(depok.length, 20)
-  // Jakarta's Monas reaches West Jakarta through its region, Mount Fuji Shibuya through Japan.
+  assert.equal(depok.filter((key) => key === 'west-java-tangkuban-perahu').length, 3)
+  assert.equal(depok.length, 14)
+  // Jakarta's Monas reaches West Jakarta through its region; Tokyo's gate keeps Mount Fuji from
+  // Shibuya, and a Tokyo-less corner of Japan gets Fuji.
   assert.ok(pictorialPool(placeOf('jakarta-barat')).includes('jakarta-monas'))
-  assert.ok(pictorialPool(placeOf('shibuya')).includes('japan-fuji'))
+  assert.ok(!pictorialPool(placeOf('shibuya')).includes('japan-fuji'))
+  const utsunomiya: PostmarkPlace = {
+    ...placeOf('shibuya'),
+    key: 'jp-tochigi-utsunomiya',
+    name: 'Utsunomiya',
+    region: 'Tochigi',
+  }
+  assert.deepEqual(pictorialPool(utsunomiya), ['japan-fuji'])
+  // A small town with no drawing of its own gets every drawing its state has, never the country's.
+  const carbondale: PostmarkPlace = {
+    key: 'us-illinois-carbondale',
+    name: 'Carbondale',
+    region: 'Illinois',
+    country: 'United States',
+    countryCode: 'US',
+    outline: '',
+  }
+  assert.deepEqual(pictorialPool(carbondale), ['illinois-water-tower'])
 })
 
 void test('visitors from one place share its ink and frames and are dealt each in turn', () => {

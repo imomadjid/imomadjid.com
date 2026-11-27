@@ -173,11 +173,13 @@ const levelSlots = { city: 4, region: 3, country: 2 } as const
 const greatestDivisor = (a: number, b: number): number => (b === 0 ? a : greatestDivisor(b, a % b))
 
 /**
- * A place's pictorial bag: every drawing its city, region and country have, each weighted by its
- * level (4 : 3 : 2) rather than each level by its share, so a city with one drawing doesn't repeat
- * it on every other stamp when its region has several, and variety grows with every drawing added.
- * A drawing scoped to several levels counts at the most specific. Empty where nothing is drawn
- * yet, and the postmark shows the place's map outline.
+ * A place's pictorial bag: every drawing its city and region have, each weighted by its level
+ * (4 : 3) rather than each level by its share, so a city with one drawing doesn't repeat it on
+ * every other stamp when its region has several, and variety grows with every drawing added. The
+ * country's drawings are a last resort, for a place whose city and region have none: a small town
+ * in Illinois gets the Illinois drawings, never the bison that stands for all of the US. A drawing
+ * scoped to several levels counts at the most specific. Empty where nothing is drawn yet, and the
+ * postmark shows the place's map outline.
  */
 export function pictorialPool(place: PostmarkPlace): PictorialKey[] {
   const scopes = {
@@ -193,7 +195,9 @@ export function pictorialPool(place: PostmarkPlace): PictorialKey[] {
     for (const key of keys) taken.add(key)
     return { slots: levelSlots[level], keys }
   })
-  const present = levels.filter((level) => level.keys.length > 0)
+  const [city, region, country] = levels
+  const local = [city, region].filter((level) => level.keys.length > 0)
+  const present = local.length > 0 ? local : [country].filter((level) => level.keys.length > 0)
   // The shortest bag with those proportions: one level alone deals each of its drawings once.
   const divisor = present.reduce((gcd, level) => greatestDivisor(level.slots, gcd), 0)
   return present.flatMap(({ slots, keys }) =>
