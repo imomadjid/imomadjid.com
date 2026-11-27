@@ -1,10 +1,12 @@
 import { smoothStep } from '#/lib/ambient-transition'
 
-// The sleep Z's, breath by breath. Each exhale lets out two or three Z's, a few hundred ms apart,
-// along one heading up and to the right of the head. Each floats out quickly, slows as it rises,
-// sways a little, leaning into its drift as a leaf does, grows as it goes, and dissolves near the
-// top. The first of a breath floats farthest, so a breath settles into the classic "zzZ": small
-// by the head, larger away from it. Positions are px from the avatar's centre, y down.
+// The sleep Z's: a steady stream, as the familiar sleeping "zzz" is. One Z leaves the head every
+// 1.6 to 1.9 s and floats up and to the right along the sleep's one path, drifting a little slower
+// as it rises, swaying and leaning into its drift as a leaf does, growing all the way, and fading
+// near the top. Each lives about two and a half intervals, so two or three are always out, the
+// older ones higher and larger: the stream itself reads zzZ. Measured against sleeping animations
+// on LottieFiles (steady streams 0.5 to 1.2 s apart, paths 0 to 27° off vertical, near-even speed,
+// growth over the whole life). Positions are px from the avatar's centre, y down.
 
 export function randomBetween(min: number, max: number) {
   return min + Math.random() * (max - min)
@@ -21,64 +23,72 @@ export type SleepFlight = {
   /** How far it floats along its heading. */
   distance: number
   size: number
-  /** Sideways sway, px either way (its sign sets which way it starts), and how many swings. */
+  /** Sideways sway, px either way (its sign sets which way it starts), how many swings, and where
+   *  in its swing it starts. */
   sway: number
   swayCycles: number
+  swayPhase: number
   /** Its resting lean, degrees. */
   tilt: number
 }
 
-/** The breath's rhythm: a breath every 4.8 to 5.8 s, slower than waking breath. */
-export const breathPeriod = { min: 4800, max: 5800 }
+/** The gap between one Z leaving the head and the next, ms. */
+export const emitEvery = { min: 1600, max: 1900 }
 
-/** One exhale's Z's, the first leaving at `start`. */
-export function createBreath(start: number): SleepFlight[] {
-  const count = Math.random() < 0.25 ? 2 : 3
-  const heading = randomBetween(18, 50)
-  const originX = randomBetween(7, 10)
-  const originY = randomBetween(-12, -9)
-  // Where the nearest comes to rest, clear of the photo, and the gap between their resting
-  // places, a little more than a Z is wide at its largest.
-  const nearest = randomBetween(22, 28)
-  const spacing = randomBetween(16.5, 19)
-  // One breath is one puff of air: its Z's sway the same way, at about the same pace.
-  const swaySide = Math.random() < 0.5 ? -1 : 1
-  const swayCycles = randomBetween(0.75, 1.25)
-  let leaves = start
-  return Array.from({ length: count }, (_, index) => {
-    if (index) leaves += randomBetween(650, 800)
-    return {
-      start: leaves,
-      duration: randomBetween(4200, 5000),
-      originX: originX + randomBetween(-1, 1),
-      originY: originY + randomBetween(-1, 1),
-      heading: heading + randomBetween(-2.5, 2.5),
-      distance: nearest + (count - 1 - index) * spacing + randomBetween(-0.5, 0.5),
-      size: randomBetween(0.94, 1.02),
-      sway: randomBetween(2.5, 4.5) * swaySide,
-      swayCycles: swayCycles + randomBetween(-0.08, 0.08),
-      tilt: randomBetween(-6, 10),
-    }
-  })
+/** One sleep's path, the same for every Z while it lasts. */
+export type SleepStream = {
+  heading: number
+  originX: number
+  originY: number
+  distance: number
+  duration: number
 }
 
-// Along its heading it covers most of its way quickly out of the head, then keeps creeping, so it
-// never stops dead. Normalised to cover `distance` at the end.
-const travelOf = (progress: number) => 0.88 * (1 - (1 - progress) ** 2.4) + 0.12 * progress
-const travelRateOf = (progress: number) => 0.88 * 2.4 * (1 - progress) ** 1.4 + 0.12
+export function createStream(): SleepStream {
+  return {
+    heading: randomBetween(20, 30),
+    originX: randomBetween(7, 10),
+    originY: randomBetween(-12, -9),
+    distance: randomBetween(52, 58),
+    duration: randomBetween(4300, 4700),
+  }
+}
+
+/** The next Z along the stream, leaving the head at `start`. */
+export function createFlight(stream: SleepStream, start: number): SleepFlight {
+  return {
+    start,
+    // Small differences only, so a Z never gains on the one ahead of it.
+    duration: stream.duration * randomBetween(0.98, 1.02),
+    originX: stream.originX + randomBetween(-0.5, 0.5),
+    originY: stream.originY + randomBetween(-0.5, 0.5),
+    heading: stream.heading + randomBetween(-3, 3),
+    distance: stream.distance + randomBetween(-1.5, 1.5),
+    size: randomBetween(0.94, 1.02),
+    sway: randomBetween(2.5, 4.5) * (Math.random() < 0.5 ? -1 : 1),
+    swayCycles: randomBetween(0.75, 1.25),
+    swayPhase: randomBetween(0, 2 * Math.PI),
+    tilt: randomBetween(-6, 10),
+  }
+}
+
+// Along its heading it drifts a little slower as it rises (about 1.7 times as fast in its first
+// third as in its last), so it never darts out and hovers.
+const travelOf = (progress: number) => 1 - (1 - progress) ** 1.3
+const travelRateOf = (progress: number) => 1.3 * (1 - progress) ** 0.3
 
 /** The most it leans into its sway, degrees, approached softly. */
 export const maxBank = 14
 
 export function flightPose(flight: SleepFlight, progress: number) {
-  const { originX, originY, heading, distance, size, sway, swayCycles, tilt } = flight
+  const { originX, originY, heading, distance, size, sway, swayCycles, swayPhase, tilt } = flight
   const angle = (heading * Math.PI) / 180
-  const along = distance * travelOf(progress)
-  // The sway grows in as it leaves the head.
-  // A shorter flight sways less, in proportion, so the nearest Z doesn't wander more than it rises.
-  const reach = sway * Math.min(1, distance / 50) * smoothStep(progress / 0.35)
-  const phase = 2 * Math.PI * swayCycles * progress
-  const aside = reach * Math.sin(phase)
+  const travel = travelOf(progress)
+  const along = distance * travel
+  // The sway grows in as it leaves the head, so it starts on its path whatever its phase.
+  const reach = sway * smoothStep(progress / 0.35)
+  const phase = swayPhase + 2 * Math.PI * swayCycles * progress
+  const aside = reach * (Math.sin(phase) - Math.sin(swayPhase))
   const x = originX + Math.sin(angle) * along + Math.cos(angle) * aside
   const y = originY - Math.cos(angle) * along + Math.sin(angle) * aside
 
@@ -88,18 +98,18 @@ export function flightPose(flight: SleepFlight, progress: number) {
   const drift = (Math.atan2(asideRate, distance * travelRateOf(progress)) * 180) / Math.PI
   const rotation = tilt + 0.25 * heading + maxBank * Math.tanh((0.5 * drift) / maxBank)
 
-  const emerge = smoothStep(progress / 0.18)
-  const dissolve = smoothStep((progress - 0.62) / 0.38)
-  const blur = 4 * (1 - emerge) + 3 * dissolve
+  // A quick pop out of the head, then steady growth the whole way up, and a short fade at the top.
+  const pop = smoothStep(progress / 0.1)
+  const fade = smoothStep((progress - 0.78) / 0.22)
+  const blur = 2.5 * (1 - pop) + 1.5 * fade
   return {
     x,
     y,
     rotation,
-    // It grows with how far it has floated, so the farthest of a breath is the largest: zzZ.
-    scale: size * (0.3 + 0.7 * emerge) * (0.7 + 0.5 * Math.min(1, along / 60)),
-    opacity: smoothStep(progress / 0.14) * (1 - dissolve),
+    scale: size * (0.6 + 0.4 * pop) * (0.8 + 0.4 * travel),
+    opacity: pop * (1 - fade),
     blur,
     /** How much of its ring shows: none while it's out of focus, so a blurred ring isn't a haze. */
-    ring: Math.max(0, Math.min(1, 1 - blur / 2.5)),
+    ring: Math.max(0, Math.min(1, 1 - blur / 1.5)),
   }
 }

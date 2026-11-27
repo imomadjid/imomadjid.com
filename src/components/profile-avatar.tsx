@@ -11,11 +11,11 @@ export function ProfileAvatar({
   sleepTuning,
 }: {
   isSleeping: boolean
-  /** /dev/sleep's slow motion and breath reports; the homepage leaves it out. */
+  /** /dev/sleep's slow motion and flight reports; the homepage leaves it out. */
   sleepTuning?: SleepTuning
 }) {
   const [hasSlept, setHasSlept] = useState(false)
-  // The photo breathes while Imo sleeps; the particles drive it.
+  // The photo breathes while Imo sleeps; the particles drive it on their own clock.
   const photo = useRef<HTMLImageElement>(null)
   if (isSleeping && !hasSlept) setHasSlept(true)
 

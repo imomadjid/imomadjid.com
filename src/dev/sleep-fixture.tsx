@@ -4,28 +4,26 @@ import { ProfileAvatar } from '#/components/profile-avatar'
 import type { SleepFlight } from '#/components/sleep-flight'
 import { flightPose } from '#/components/sleep-flight'
 
-// How many recent breaths the path overlay keeps, newest drawn strongest.
-const keptBreaths = 4
+// How many recent Z's the path overlay keeps, newest drawn strongest.
+const keptFlights = 6
 
 // The stage, in px before zooming: the avatar sits near its bottom left, with room above and to
 // the right for the farthest Z (about 70 px up and 50 px across from the avatar's centre).
 const stage = { width: 170, height: 150, avatarX: 48, avatarY: 110 }
 
-function FlightPaths({ breaths }: { breaths: SleepFlight[][] }) {
+function FlightPaths({ flights }: { flights: SleepFlight[] }) {
   // Each path samples its flight while the Z is visible, from the avatar's centre.
   const paths = useMemo(
     () =>
-      breaths.map((flights) =>
-        flights.map((flight) => {
-          const points: string[] = []
-          for (let step = 0; step <= 60; step++) {
-            const pose = flightPose(flight, step / 60)
-            if (pose.opacity > 0.05) points.push(`${pose.x.toFixed(2)},${pose.y.toFixed(2)}`)
-          }
-          return points.join(' ')
-        }),
-      ),
-    [breaths],
+      flights.map((flight) => {
+        const points: string[] = []
+        for (let step = 0; step <= 60; step++) {
+          const pose = flightPose(flight, step / 60)
+          if (pose.opacity > 0.05) points.push(`${pose.x.toFixed(2)},${pose.y.toFixed(2)}`)
+        }
+        return { id: flight.start, points: points.join(' ') }
+      }),
+    [flights],
   )
   return (
     <svg
@@ -33,22 +31,18 @@ function FlightPaths({ breaths }: { breaths: SleepFlight[][] }) {
       className="pointer-events-none absolute inset-0 size-full overflow-visible text-muted-foreground"
       viewBox={`${-stage.avatarX} ${-stage.avatarY} ${stage.width} ${stage.height}`}
     >
-      {paths.map((breath, age) =>
-        breath.map((points, index) => (
-          <polyline
-            // Paths are redrawn whole each breath, so their place in the list is their identity.
-            // eslint-disable-next-line react/no-array-index-key
-            key={`${age}-${index}`}
-            points={points}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={0.6}
-            strokeLinecap="round"
-            strokeDasharray="1.5 1.5"
-            opacity={0.2 + (0.6 * (age + 1)) / paths.length}
-          />
-        )),
-      )}
+      {paths.map(({ id, points }, age) => (
+        <polyline
+          key={id}
+          points={points}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={0.6}
+          strokeLinecap="round"
+          strokeDasharray="1.5 1.5"
+          opacity={0.2 + (0.6 * (age + 1)) / paths.length}
+        />
+      ))}
     </svg>
   )
 }
@@ -58,24 +52,27 @@ export function SleepFixture() {
   const [speed, setSpeed] = useState(1)
   const [zoom, setZoom] = useState(3)
   const [showPaths, setShowPaths] = useState(true)
-  const [breaths, setBreaths] = useState<SleepFlight[][]>([])
-  const onBreath = useCallback(
-    (flights: SleepFlight[]) => setBreaths((kept) => [...kept.slice(1 - keptBreaths), flights]),
+  const [flights, setFlights] = useState<SleepFlight[]>([])
+  const onFlight = useCallback(
+    (flight: SleepFlight) => setFlights((kept) => [...kept.slice(1 - keptFlights), flight]),
     [],
   )
-  const tuning = useMemo(() => ({ speed, onBreath }), [speed, onBreath])
-  const last = breaths.at(-1)
+  const tuning = useMemo(() => ({ speed, onFlight }), [speed, onFlight])
+  const last = flights.at(-1)
+  const gap =
+    flights.length > 1 && last ? (last.start - flights[flights.length - 2].start) * speed : null
 
   return (
     <div className="max-w-5xl space-y-10">
       <header className="space-y-1">
         <h1 className="text-display font-medium">Sleep</h1>
         <p className="text-body text-muted-foreground">
-          The homepage avatar while Imo’s phone is in its Sleep Focus: each breath lets out two or
-          three Z’s that float off and settle into zzZ (src/components/sleep-flight.ts). Turn sleep
-          off to see the Z’s already out float on. Slow motion takes effect from the next breath.
-          Emulate reduced motion in the browser’s dev tools to see the resting Z. Here the rings
-          take the plain surface colour; on the homepage they follow the lit wall.
+          The homepage avatar while Imo’s phone is in its Sleep Focus: a steady stream of Z’s, one
+          every 1.6 to 1.9 s along the sleep’s one path, growing as they rise
+          (src/components/sleep-flight.ts). The photo breathes on its own clock. Turn sleep off to
+          see the Z’s already out float on; changing the speed starts a new stream. Emulate reduced
+          motion in the browser’s dev tools to see the resting Z. Here the rings take the plain
+          surface colour; on the homepage they follow the lit wall.
         </p>
       </header>
 
@@ -120,7 +117,7 @@ export function SleepFixture() {
             className="accent-foreground"
             onChange={(event) => setShowPaths(event.target.checked)}
           />
-          {`Paths of the last ${keptBreaths} breaths`}
+          {`Paths of the last ${keptFlights} Z’s`}
         </label>
       </div>
 
@@ -130,7 +127,7 @@ export function SleepFixture() {
           style={{ width: stage.width, height: stage.height, zoom }}
           data-sleep-stage
         >
-          {showPaths && <FlightPaths breaths={breaths} />}
+          {showPaths && <FlightPaths flights={flights} />}
           <div className="absolute" style={{ left: stage.avatarX - 24, top: stage.avatarY - 24 }}>
             <ProfileAvatar isSleeping={asleep} sleepTuning={tuning} />
           </div>
@@ -139,10 +136,11 @@ export function SleepFixture() {
 
       <p className="text-caption text-muted-foreground tabular-nums">
         {last
-          ? `Last breath: ${last.length} Z’s, heading ${last[0].heading.toFixed(0)}° right of up, ` +
-            `floating ${last.map((flight) => flight.distance.toFixed(0)).join(', ')} px, ` +
-            `swaying ${last[0].swayCycles.toFixed(2)} times`
-          : 'Waiting for the first breath…'}
+          ? `Last Z: heading ${last.heading.toFixed(0)}° right of up, ` +
+            `floating ${last.distance.toFixed(0)} px over ${((last.duration * speed) / 1000).toFixed(1)} s, ` +
+            `swaying ${last.swayCycles.toFixed(2)} times` +
+            (gap === null ? '' : `, ${(gap / 1000).toFixed(2)} s after the one before`)
+          : 'Waiting for the first Z…'}
       </p>
     </div>
   )
